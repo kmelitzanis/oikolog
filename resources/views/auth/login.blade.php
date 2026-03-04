@@ -1,0 +1,2 @@
+@include('layouts.auth.login')
+
