@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register — BillsTrack</title>
+    <title>Register — Oikolog</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     @php $m = json_decode(file_get_contents(public_path('build/manifest.json')),true); $e = $m['resources/js/app.js'] ?? null; @endphp

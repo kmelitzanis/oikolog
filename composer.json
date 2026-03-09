@@ -1,5 +1,5 @@
 {
-    "name": "billstrack/api",
+    "name": "oikolog/app",
     "type": "project",
     "description": "Oikolog — a Laravel app to track household bills, shared expenses, and spending insights",
     "license": "MIT",

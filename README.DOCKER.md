@@ -1,4 +1,4 @@
-# Running bills-log in Docker (development)
+# Running Oikolog in Docker (development)
 
 This repository includes a simple Docker setup for local development.
 
@@ -22,7 +22,7 @@ Notes:
 
 - The `app` service uses PHP-FPM and runs an entrypoint that will run `composer install` if `vendor` doesn't exist and (
   optionally) run migrations when `APP_ENV=local` or `FORCE_MIGRATE=1`.
-- MySQL is configured with root/secret and database `bills_log` in `docker-compose.yml`. Adjust `.env` and
+- MySQL is configured with root/secret and database `oikolog` in `docker-compose.yml`. Adjust `.env` and
   `docker-compose.yml` to match your preferred credentials.
 - Volumes mount your project into the container so changes on disk are visible immediately.
 
@@ -31,4 +31,3 @@ Troubleshooting:
 - If you hit permission issues, ensure the `storage` and `bootstrap/cache` directories are writable by the container
   user. The entrypoint sets these to `www-data:www-data`.
 - For production use you'll want to build assets, run migrations in a safe way, and configure a proper secret APP_KEY.
-

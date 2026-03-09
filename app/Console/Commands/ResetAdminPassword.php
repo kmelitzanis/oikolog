@@ -12,7 +12,7 @@ class ResetAdminPassword extends Command
 
     public function handle(): int
     {
-        $email    = $this->option('email') ?? env('ADMIN_EMAIL', 'admin@billstrack.local');
+        $email = $this->option('email') ?? env('ADMIN_EMAIL', 'admin@oikolog.local');
         $password = $this->option('password') ?? env('ADMIN_PASSWORD', 'changeme123');
 
         $user = User::where('email', $email)->first();
@@ -38,4 +38,3 @@ class ResetAdminPassword extends Command
         return self::SUCCESS;
     }
 }
-
