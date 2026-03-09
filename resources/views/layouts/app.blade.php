@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') — BillsTrack</title>
+    <title>@yield('title', 'Dashboard') — Oikolog</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -51,7 +51,7 @@
                 class="w-9 h-9 bg-linear-to-br from-indigo-600 to-indigo-500 rounded-xl flex items-center justify-center shrink-0">
                 <span class="material-icons-round text-white text-xl">account_balance_wallet</span>
             </div>
-            <span class="font-extrabold text-lg text-gray-900">BillsTrack</span>
+            <span class="font-extrabold text-lg text-gray-900">Oikolog</span>
         </div>
 
         {{-- Nav --}}
@@ -139,7 +139,7 @@
                         class="p-2 -ml-2 rounded-xl text-gray-600 hover:bg-gray-100 transition">
                     <span class="material-icons-round">menu</span>
                 </button>
-                <span class="font-extrabold text-gray-900">BillsTrack</span>
+                <span class="font-extrabold text-gray-900">Oikolog</span>
             </div>
             <a href="{{ route('bills.create') }}" class="p-2 rounded-xl text-indigo-600 hover:bg-indigo-50 transition">
                 <span class="material-icons-round">add_circle</span>

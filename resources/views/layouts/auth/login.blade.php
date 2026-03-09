@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In — BillsTrack</title>
+    <title>Sign In — Oikolog</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     @php $m = json_decode(file_get_contents(public_path('build/manifest.json')),true); $e = $m['resources/js/app.js'] ?? null; @endphp
@@ -24,7 +24,7 @@
             class="w-14 h-14 bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl inline-flex items-center justify-center mb-4 shadow-lg">
             <span class="material-icons-round text-white text-3xl">account_balance_wallet</span>
         </div>
-        <h1 class="text-2xl font-extrabold text-gray-900">BillsTrack</h1>
+        <h1 class="text-2xl font-extrabold text-gray-900">Oikolog</h1>
         <p class="text-sm text-gray-400 mt-1">Sign in to your account</p>
     </div>
 
