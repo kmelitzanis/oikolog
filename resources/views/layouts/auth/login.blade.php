@@ -6,51 +6,58 @@
     <title>Sign In — BillsTrack</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .card { background: #fff; border-radius: 24px; border: 1px solid #e2e8f0; padding: 40px; width: 100%; max-width: 420px; }
-        .input { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border 0.15s; }
-        .input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
-        .btn { width: 100%; background: #6366f1; color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.15s; }
-        .btn:hover { background: #4f46e5; }
-        label { display: block; font-size: 13px; font-weight: 500; color: #475569; margin-bottom: 6px; }
-    </style>
+    @php $m = json_decode(file_get_contents(public_path('build/manifest.json')),true); $e = $m['resources/js/app.js'] ?? null; @endphp
+    @if($e)
+        @if(!empty($e['css'][0]))
+            <link rel="stylesheet" href="{{ asset('build/'.$e['css'][0]) }}">
+        @endif
+        <script defer src="{{ asset('build/'.$e['file']) }}"></script>
+    @endif
 </head>
-<body>
-<div class="card">
+<body class="min-h-screen bg-linear-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-6">
+
+<div class="w-full max-w-md bg-white rounded-3xl border border-gray-200 shadow-xl p-10">
+
     {{-- Logo --}}
-    <div style="text-align:center; margin-bottom:32px;">
-        <div style="width:56px; height:56px; background:linear-gradient(135deg,#6366f1,#4f46e5); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;">
-            <span class="material-icons-round" style="color:#fff; font-size:28px;">account_balance_wallet</span>
+    <div class="text-center mb-8">
+        <div
+            class="w-14 h-14 bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl inline-flex items-center justify-center mb-4 shadow-lg">
+            <span class="material-icons-round text-white text-3xl">account_balance_wallet</span>
         </div>
-        <h1 style="font-size:26px; font-weight:800; color:#0f172a;">BillsTrack</h1>
-        <p style="font-size:14px; color:#94a3b8; margin-top:4px;">Sign in to your account</p>
+        <h1 class="text-2xl font-extrabold text-gray-900">BillsTrack</h1>
+        <p class="text-sm text-gray-400 mt-1">Sign in to your account</p>
     </div>
 
-    {{-- Error --}}
+    {{-- Errors --}}
     @if(isset($errors) && $errors->any())
-        <div style="background:#fee2e2; border:1px solid #fca5a5; color:#dc2626; border-radius:10px; padding:12px 14px; font-size:13px; margin-bottom:20px;">
+        <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-6">
             {{ $errors->first() }}
         </div>
     @endif
 
-    <form method="POST" action="{{ route('login.post') }}">
+    <form method="POST" action="{{ route('login.post') }}" class="space-y-5">
         @csrf
-        <div style="margin-bottom:16px;">
-            <label>Email</label>
-            <input class="input" type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com" required>
+        <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1.5">Email</label>
+            <input type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com" required
+                   autocomplete="email"
+                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
         </div>
-        <div style="margin-bottom:24px;">
-            <label>Password</label>
-            <input class="input" type="password" name="password" placeholder="••••••••" required>
+        <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1.5">Password</label>
+            <input type="password" name="password" placeholder="••••••••" required
+                   autocomplete="current-password"
+                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
         </div>
-        <button class="btn" type="submit">Sign In</button>
+        <button type="submit"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3 text-sm transition">
+            Sign In
+        </button>
     </form>
 
-    <p style="text-align:center; font-size:13px; color:#94a3b8; margin-top:24px;">
+    <p class="text-center text-sm text-gray-400 mt-6">
         Don't have an account?
-        <a href="{{ route('register') }}" style="color:#6366f1; font-weight:600; text-decoration:none;">Create one</a>
+        <a href="{{ route('register') }}" class="text-indigo-600 font-semibold hover:underline">Create one</a>
     </p>
 </div>
 </body>

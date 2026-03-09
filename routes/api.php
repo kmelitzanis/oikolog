@@ -15,7 +15,7 @@ Route::prefix('auth')->group(function () {
 Route::get('/health', fn() => response()->json(['status' => 'ok', 'version' => '1.0']));
 
 // ── Authenticated ─────────────────────────────────────────────────────────────
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum,web'])->group(function () {
 
     Route::prefix('auth')->group(function () {
         Route::get('/me',          [AuthController::class, 'me']);
@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('bills')->group(function () {
         Route::get('/stats',           [BillController::class, 'stats']);
+        Route::get('/series', [BillController::class, 'series']);
         Route::get('/',                [BillController::class, 'index']);
         Route::post('/',               [BillController::class, 'store']);
         Route::get('/{bill}',          [BillController::class, 'show']);

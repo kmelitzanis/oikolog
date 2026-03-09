@@ -15,7 +15,11 @@ class BillController extends Controller
     public function index(Request $request)
     {
         $user  = $request->user();
-        $query = Bill::with(['category'])->forUser($user)->orderBy('next_due_date');
+        $query = Bill::with(['category', 'payments' => function ($q) {
+            $q->latest('paid_at')->with('paidBy');
+        }])
+            ->forUser($user)
+            ->orderBy('next_due_date');
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -51,7 +55,6 @@ class BillController extends Controller
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
             'amount'             => ['required', 'numeric', 'min:0.01'],
-            'currency_code'      => ['required', 'string', 'size:3'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],
             'end_date'           => ['nullable', 'date', 'after:start_date'],
@@ -64,12 +67,24 @@ class BillController extends Controller
 
         $bill = Bill::create([
             ...$data,
+            'currency_code' => $request->user()->currency_code,
             'is_shared'      => (bool) ($data['is_shared'] ?? false),
             'notify_enabled' => (bool) ($data['notify_enabled'] ?? false),
             'created_by'     => $request->user()->id,
             'family_id'      => ($data['is_shared'] ?? false) ? $request->user()->family_id : null,
             'next_due_date'  => $data['start_date'],
         ]);
+
+        // Handle uploaded receipt images (optional, via Spatie medialibrary)
+        if ($request->hasFile('receipts') && class_exists(\Spatie\MediaLibrary\MediaCollections\Models\Media::class) && method_exists($bill, 'addMedia')) {
+            foreach ($request->file('receipts') as $file) {
+                try {
+                    $bill->addMedia($file->getRealPath())->usingFileName(uniqid() . '.' . $file->getClientOriginalExtension())->toMediaCollection('receipts');
+                } catch (\Exception $e) {
+                    // ignore individual failures
+                }
+            }
+        }
 
         return redirect()->route('bills.show', $bill)->with('success', 'Bill created.');
     }
@@ -81,6 +96,31 @@ class BillController extends Controller
         $payments = $bill->payments()->with('paidBy')->orderByDesc('paid_at')->get();
 
         return view('bills.show', compact('bill', 'payments'));
+    }
+
+    // Calendar view
+    public function calendar()
+    {
+        return view('calendar.index');
+    }
+
+    // Events for FullCalendar
+    public function events(Request $request)
+    {
+        $user = $request->user();
+        $bills = Bill::forUser($user)->whereNotNull('next_due_date')->get();
+
+        $events = $bills->map(function ($b) {
+            return [
+                'id' => $b->id,
+                'title' => $b->name . ' (' . $b->currency_code . ' ' . number_format($b->amount, 2) . ')',
+                'start' => $b->next_due_date?->toDateString(),
+                'allDay' => true,
+                'url' => route('bills.show', $b),
+            ];
+        });
+
+        return response()->json($events);
     }
 
     public function edit(Bill $bill)
@@ -100,7 +140,6 @@ class BillController extends Controller
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
             'amount'             => ['required', 'numeric', 'min:0.01'],
-            'currency_code'      => ['required', 'string', 'size:3'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],
             'end_date'           => ['nullable', 'date'],
@@ -119,6 +158,17 @@ class BillController extends Controller
         }
 
         $bill->update($data);
+
+        // Handle uploaded receipt images on update
+        if ($request->hasFile('receipts') && class_exists(\Spatie\MediaLibrary\MediaCollections\Models\Media::class) && method_exists($bill, 'addMedia')) {
+            foreach ($request->file('receipts') as $file) {
+                try {
+                    $bill->addMedia($file->getRealPath())->usingFileName(uniqid() . '.' . $file->getClientOriginalExtension())->toMediaCollection('receipts');
+                } catch (\Exception $e) {
+                    // ignore
+                }
+            }
+        }
 
         return redirect()->route('bills.show', $bill)->with('success', 'Bill updated.');
     }
@@ -151,7 +201,56 @@ class BillController extends Controller
             ]);
         });
 
+        if ($request->wantsJson() || $request->ajax()) {
+            $bill->refresh();
+            return response()->json([
+                'status' => 'paid',
+                'last_paid_date' => $bill->last_paid_date?->toDateString(),
+                'next_due_date' => $bill->next_due_date?->toDateString(),
+                'message' => 'Payment recorded.',
+            ]);
+        }
+
         return back()->with('success', 'Payment recorded.');
+    }
+
+    public function undoLastPayment(Bill $bill)
+    {
+        $this->authorizeView($bill);
+
+        $lastPayment = $bill->payments()->latest('paid_at')->first();
+
+        if (!$lastPayment) {
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json(['status' => 'none', 'message' => 'No payment to undo.'], 422);
+            }
+            return back()->with('error', 'No payment found to undo.');
+        }
+
+        DB::transaction(function () use ($bill, $lastPayment) {
+            $paidAt = $lastPayment->paid_at; // store
+            $lastPayment->delete();
+
+            // Previous payment becomes last_paid_date
+            $prevPayment = $bill->payments()->latest('paid_at')->first();
+            $bill->update([
+                'last_paid_date' => $prevPayment?->paid_at?->toDateString(),
+                'next_due_date' => $paidAt?->toDateString(),
+            ]);
+        });
+
+        $bill->refresh();
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'status' => 'undone',
+                'last_paid_date' => $bill->last_paid_date?->toDateString(),
+                'next_due_date' => $bill->next_due_date?->toDateString(),
+                'message' => 'Payment undone successfully.',
+            ]);
+        }
+
+        return back()->with('success', 'Payment undone successfully.');
     }
 
     private function authorizeView(Bill $bill): void

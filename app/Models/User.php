@@ -17,7 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password', 'avatar_url',
         'currency_code', 'timezone', 'notifications_enabled',
-        'family_id', 'family_role',
+        'family_id', 'family_role', 'locale',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -53,5 +53,27 @@ class User extends Authenticatable
     public function isFamilyAdmin(): bool
     {
         return in_array($this->family_role, ['owner', 'admin']);
+    }
+
+    // Helper to get avatar url — prefer media library if available
+    public function avatarUrl(): ?string
+    {
+        if (method_exists($this, 'hasMedia') && $this->hasMedia('avatars')) {
+            if (method_exists($this, 'getFirstMediaUrl')) {
+                // Try thumbnail first if available
+                return $this->getFirstMediaUrl('avatars', 'thumb') ?: $this->getFirstMediaUrl('avatars') ?: $this->avatar_url;
+            }
+        }
+        return $this->avatar_url;
+    }
+
+    // Provide a no-op conversion registrar if medialibrary is installed; guarded so no fatal when absent
+    public function registerMediaConversions($media = null): void
+    {
+        if (!method_exists($this, 'addMediaConversion')) return;
+
+        $this->addMediaConversion('thumb')
+            ->fit('crop', 256, 256)
+            ->performOnCollections('avatars');
     }
 }

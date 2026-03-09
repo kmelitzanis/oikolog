@@ -78,7 +78,8 @@ class FamilyController extends Controller
     public function removeMember(Request $request, User $member)
     {
         $user = $request->user();
-        abort_unless($user->isFamilyAdmin(), 403, 'Admins only.');
+        // Only family owner (creator) may remove members
+        abort_unless($user->isFamilyOwner(), 403, 'Only family owner may remove members.');
         abort_unless($member->family_id === $user->family_id, 422, 'Not in your family.');
         abort_if($member->id === $user->id, 422, 'Cannot remove yourself.');
 
@@ -86,5 +87,21 @@ class FamilyController extends Controller
 
         return back()->with('success', $member->name . ' removed from family.');
     }
-}
 
+    public function transferOwnership(Request $request, User $member)
+    {
+        $user = $request->user();
+        abort_unless($user->isFamilyOwner(), 403, 'Only family owner may transfer ownership.');
+        abort_unless($member->family_id === $user->family_id, 422, 'Not in your family.');
+        abort_if($member->id === $user->id, 422, 'Cannot transfer to yourself.');
+
+        // Demote current owner to admin
+        $user->update(['family_role' => 'admin']);
+        // Promote new owner
+        $member->update(['family_role' => 'owner']);
+        // Update family owner_id
+        $user->family->update(['owner_id' => $member->id]);
+
+        return back()->with('success', 'Ownership transferred to ' . $member->name);
+    }
+}

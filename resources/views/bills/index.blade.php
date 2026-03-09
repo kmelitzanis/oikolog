@@ -3,121 +3,176 @@
 
 @section('content')
 
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
-        <h1 style="font-size:24px; font-weight:800; color:#0f172a;">Bills & Subscriptions</h1>
-        <a href="{{ route('bills.create') }}" class="btn btn-primary">
-            <span class="material-icons-round" style="font-size:18px;">add</span>
-            Add Bill
+    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <h1 class="text-2xl font-extrabold text-gray-900">Bills & Subscriptions</h1>
+        <a href="{{ route('bills.create') }}"
+           class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+            <span class="material-icons-round text-lg">add</span> Add Bill
         </a>
     </div>
 
     {{-- Filters --}}
-    <form method="GET" action="{{ route('bills.index') }}" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <input class="input" style="max-width:220px;" type="text" name="search" value="{{ request('search') }}" placeholder="Search bills...">
-        <select class="input" style="max-width:160px;" name="frequency" onchange="this.form.submit()">
+    <form method="GET" action="{{ route('bills.index') }}"
+          class="flex flex-wrap gap-3 mb-6" x-data>
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search bills…"
+               class="flex-1 min-w-40 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
+        <select name="frequency" @change="$el.form.submit()"
+                class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
             <option value="">All frequencies</option>
             @foreach(['once','weekly','monthly','quarterly','yearly'] as $f)
-                <option value="{{ $f }}" {{ request('frequency') === $f ? 'selected' : '' }}>{{ ucfirst($f) }}</option>
+                <option value="{{ $f }}" {{ request('frequency')===$f ? 'selected' : '' }}>{{ ucfirst($f) }}</option>
             @endforeach
         </select>
-        <select class="input" style="max-width:180px;" name="status" onchange="this.form.submit()">
+        <select name="status" @change="$el.form.submit()"
+                class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
             <option value="">All status</option>
-            <option value="active"  {{ request('status') === 'active'  ? 'selected' : '' }}>Active</option>
-            <option value="overdue" {{ request('status') === 'overdue' ? 'selected' : '' }}>Overdue</option>
-            <option value="inactive"{{ request('status') === 'inactive'? 'selected' : '' }}>Inactive</option>
+            <option value="active" {{ request('status')==='active'   ? 'selected' : '' }}>Active</option>
+            <option value="overdue" {{ request('status')==='overdue'  ? 'selected' : '' }}>Overdue</option>
+            <option value="inactive" {{ request('status')==='inactive' ? 'selected' : '' }}>Inactive</option>
         </select>
-        <button class="btn btn-secondary" type="submit">
-            <span class="material-icons-round" style="font-size:16px;">search</span> Filter
+        <button type="submit"
+                class="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+            <span class="material-icons-round text-base">search</span> Filter
         </button>
         @if(request()->hasAny(['search','frequency','status']))
-            <a href="{{ route('bills.index') }}" class="btn btn-secondary">Clear</a>
+            <a href="{{ route('bills.index') }}"
+               class="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition">
+                Clear
+            </a>
         @endif
     </form>
 
-    {{-- Bills Table --}}
-    <div class="card">
+    {{-- Bills --}}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         @forelse($bills as $bill)
             @php
-                $isOverdue = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
-                $daysUntil = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : 0;
-                $color     = $bill->category?->color_hex ?? '#6366F1';
+                $isOverdue  = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
+                $daysUntil  = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : null;
+                $isSoon     = !$isOverdue && $daysUntil !== null && $daysUntil <= 7 && $bill->is_active;
+                $lastPayment = $bill->payments->first();
+                $isPaid     = (bool)$bill->last_paid_date;
+                $color      = $bill->category?->color_hex ?? '#6366F1';
+                $rowClass   = $isOverdue ? 'bg-red-50' : ($isSoon ? 'bg-orange-50' : ($isPaid ? 'bg-green-50' : 'bg-white'));
+                $amountClass = $isOverdue ? 'text-red-600 font-bold' : ($isSoon ? 'text-orange-600 font-bold' : ($isPaid ? 'text-emerald-600 font-bold' : 'text-gray-900 font-bold'));
             @endphp
-            <div style="display:flex; align-items:center; gap:14px; padding:16px 20px; {{ !$loop->last ? 'border-bottom:1px solid #f8fafc;' : '' }}">
+            <div x-data="{ paid: {{ $lastPayment ? 'true' : 'false' }} }"
+                 class="flex items-center gap-3 sm:gap-4 px-4 py-4 {{ !$loop->last ? 'border-b border-gray-50' : '' }} {{ $rowClass }} hover:brightness-95 transition cursor-pointer"
+                 @click.self="window.location='{{ route('bills.show', $bill) }}'">
 
-                {{-- Icon --}}
-                <div style="width:44px; height:44px; border-radius:12px; background:{{ $color }}1a; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                    <span class="material-icons-round" style="color:{{ $color }}; font-size:22px;">{{ $bill->category?->icon ?? 'receipt' }}</span>
+                {{-- Category icon --}}
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                     style="background:{{ $color }}1a;" @click="window.location='{{ route('bills.show', $bill) }}'">
+                    <span class="material-icons-round text-xl"
+                          style="color:{{ $color }}">{{ $bill->category?->icon ?? 'receipt' }}</span>
                 </div>
 
                 {{-- Info --}}
-                <div style="flex:1; min-width:0;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:15px; font-weight:600; color:#0f172a;">{{ $bill->name }}</span>
+                <div class="flex-1 min-w-0" @click="window.location='{{ route('bills.show', $bill) }}'">
+                    <div class="text-sm font-semibold text-gray-900 flex items-center gap-1.5 truncate">
+                        {{ $bill->name }}
                         @if($bill->is_shared)
-                            <span class="material-icons-round" style="font-size:14px; color:#94a3b8;" title="Shared">group</span>
-                        @endif
-                        @if(!$bill->is_active)
-                            <span class="badge" style="background:#f1f5f9; color:#94a3b8;">Inactive</span>
+                            <span class="material-icons-round text-gray-300" style="font-size:14px;">group</span>
                         @endif
                     </div>
-                    <div style="font-size:12px; color:{{ $isOverdue ? '#ef4444' : '#94a3b8' }}; margin-top:3px;">
-                        {{ $bill->category?->name }} ·
-                        @if($isOverdue) Overdue by {{ abs($daysUntil) }}d
-                        @elseif($daysUntil === 0) Due today
-                        @else Due in {{ $daysUntil }}d @endif
+                    <div
+                        class="text-xs mt-0.5 {{ $isOverdue ? 'text-red-500' : ($isSoon ? 'text-orange-500' : 'text-gray-400') }}">
+                        {{ $bill->category?->name ?? '—' }} ·
+                        @if($isOverdue)
+                            Overdue {{ abs($daysUntil) }}d
+                        @elseif($daysUntil === 0)
+                            Due today
+                        @elseif($daysUntil !== null)
+                            In {{ $daysUntil }}d
+                        @else
+                            —
+                        @endif
                     </div>
                 </div>
 
-                {{-- Frequency badge --}}
-                <div style="flex-shrink:0;">
-                    <span class="badge badge-monthly">{{ ucfirst($bill->frequency) }}</span>
-                </div>
+                {{-- Badges (hidden on mobile) --}}
+                <span
+                    class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
+                {{ ucfirst($bill->frequency) }}
+            </span>
+
+                @if($isOverdue)
+                    <span
+                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Overdue</span>
+                @elseif($isSoon)
+                    <span
+                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">Soon</span>
+                @elseif($isPaid)
+                    <span
+                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Paid</span>
+                @else
+                    <span
+                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Active</span>
+                @endif
 
                 {{-- Amount --}}
-                <div style="text-align:right; flex-shrink:0; min-width:110px;">
-                    <div style="font-size:16px; font-weight:700; color:{{ $isOverdue ? '#ef4444' : '#0f172a' }};">
-                        {{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}
-                    </div>
-                    <div style="font-size:11px; color:#94a3b8;">{{ number_format($bill->monthlyEquivalent(), 2) }}/mo</div>
+                <div class="text-right shrink-0" @click="window.location='{{ route('bills.show', $bill) }}'">
+                    <div
+                        class="text-sm {{ $amountClass }}">{{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}</div>
+                    <div class="text-xs text-gray-400">{{ number_format($bill->monthlyEquivalent(), 2) }}/mo</div>
                 </div>
 
                 {{-- Actions --}}
-                <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                    <form method="POST" action="{{ route('bills.pay', $bill) }}">
+                <div class="flex items-center gap-1.5 shrink-0" @click.stop>
+
+                    {{-- Pay --}}
+                    <form method="POST" action="{{ route('bills.pay', $bill) }}" x-show="!paid">
                         @csrf
-                        <button type="submit" class="btn btn-secondary" style="padding:7px 12px;" title="Mark as paid">
-                            <span class="material-icons-round" style="font-size:16px; color:#10b981;">check_circle</span>
+                        <button type="submit" title="Mark paid"
+                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition">
+                            <span class="material-icons-round text-base">check_circle</span>
                         </button>
                     </form>
-                    <a href="{{ route('bills.edit', $bill) }}" class="btn btn-secondary" style="padding:7px 12px;">
-                        <span class="material-icons-round" style="font-size:16px;">edit</span>
-                    </a>
-                    <form method="POST" action="{{ route('bills.destroy', $bill) }}" onsubmit="return confirm('Delete {{ addslashes($bill->name) }}?')">
+
+                    {{-- Unpay --}}
+                    <form method="POST" action="{{ route('bills.unpay', $bill) }}" x-show="paid"
+                          x-cloak>
                         @csrf @method('DELETE')
-                        <button type="submit" class="btn btn-danger" style="padding:7px 12px;">
-                            <span class="material-icons-round" style="font-size:16px;">delete</span>
+                        <button type="submit" title="Undo payment"
+                                @click="if(!confirm('Undo this payment?')) $event.preventDefault()"
+                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-100 transition">
+                            <span class="material-icons-round text-base">undo</span>
+                        </button>
+                    </form>
+
+                    <a href="{{ route('bills.edit', $bill) }}" title="Edit"
+                       class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 transition">
+                        <span class="material-icons-round text-base">edit</span>
+                    </a>
+
+                    <form method="POST" action="{{ route('bills.destroy', $bill) }}">
+                        @csrf @method('DELETE')
+                        <button type="submit" title="Delete"
+                                @click="if(!confirm('Delete {{ addslashes($bill->name) }}?')) $event.preventDefault()"
+                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-red-400 hover:bg-red-50 hover:text-red-600 transition">
+                            <span class="material-icons-round text-base">delete</span>
                         </button>
                     </form>
                 </div>
             </div>
         @empty
-            <div style="text-align:center; padding:60px 20px; color:#94a3b8;">
-                <span class="material-icons-round" style="font-size:56px; display:block; margin-bottom:12px;">receipt_long</span>
-                <div style="font-size:16px; font-weight:600;">No bills found</div>
-                <div style="font-size:13px; margin-top:4px;">
+            <div class="flex flex-col items-center justify-center py-16 text-gray-400">
+                <span class="material-icons-round text-6xl mb-3">receipt_long</span>
+                <div class="text-base font-semibold">No bills found</div>
+                <div class="text-sm mt-1">
                     @if(request()->hasAny(['search','frequency','status']))
                         Try adjusting your filters
                     @else
-                        <a href="{{ route('bills.create') }}" style="color:#6366f1;">Add your first bill</a>
+                        <a href="{{ route('bills.create') }}" class="text-indigo-600 hover:underline">Add your first
+                            bill</a>
                     @endif
                 </div>
             </div>
         @endforelse
     </div>
 
-    {{-- Pagination --}}
     @if($bills->hasPages())
-        <div style="margin-top:20px;">{{ $bills->appends(request()->query())->links() }}</div>
+        <div class="mt-6">{{ $bills->appends(request()->query())->links() }}</div>
     @endif
 
 @endsection
+

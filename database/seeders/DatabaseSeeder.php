@@ -3,9 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -37,16 +35,6 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // ── Default Admin User (only if no users exist) ───────────────────────
-        if (User::count() === 0) {
-            User::create([
-                'name'          => 'Admin',
-                'email'         => env('ADMIN_EMAIL', 'admin@billstrack.local'),
-                // User model uses the "hashed" cast on the password attribute in Laravel 12,
-                // so provide the plain password here and let the model cast handle hashing.
-                'password'      => env('ADMIN_PASSWORD', 'changeme123'),
-                'currency_code' => 'EUR',
-            ]);
-        }
+        // Note: Admin user creation moved to `make:user:admin` artisan command.
     }
 }

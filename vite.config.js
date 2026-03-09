@@ -8,6 +8,7 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
         }),
+        // Use the Tailwind Vite plugin on Node 22+ for faster builds
         tailwindcss(),
     ],
     server: {

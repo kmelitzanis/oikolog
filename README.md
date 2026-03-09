@@ -57,3 +57,50 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Project setup (development)
+
+1. Install PHP dependencies:
+
+   ```bash
+   composer install
+   ```
+
+2. Copy `.env.example` to `.env` and set your database settings (MySQL or SQLite):
+
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+3. If you want to use SQLite for local dev, set in `.env`:
+
+   ```
+   DB_CONNECTION=sqlite
+   DB_DATABASE=database/database.sqlite
+   ```
+
+4. Run migrations and seed initial translations:
+
+   ```bash
+   php artisan migrate
+   php artisan db:seed --class="Database\\Seeders\\TranslationSeeder"
+   ```
+
+5. Create storage link so uploaded avatars are publicly accessible:
+
+   ```bash
+   php artisan storage:link
+   ```
+
+6. Translations management UI
+
+    - The Translations CRUD is accessible at `/translations` and is restricted to the account whose email matches
+      `ADMIN_EMAIL` in your `.env`.
+    - Use the Translations UI to edit values stored in the database; DB values override file-based translations.
+
+7. Run tests:
+
+   ```bash
+   php artisan test
+   ```
