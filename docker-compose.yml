@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bills-log-app
+    container_name: bills-log-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html:cached
+      - ./vendor:/var/www/html/vendor
+      - ./node_modules:/var/www/html/node_modules
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=base64:dockerdevkey
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=bills_log
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+      - FORCE_MIGRATE=1
+    ports:
+      - 9000:9000
+    depends_on:
+      - db
+
+  webserver:
+    image: nginx:1.25
+    container_name: bills-log-web
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.1
+    container_name: bills-log-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=bills_log
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - 3306:3306
+
+volumes:
+  dbdata:
+

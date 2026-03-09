@@ -1,0 +1,11 @@
+vendor
+node_modules
+npm-debug.log
+.env
+.env.*
+storage/*.key
+/public/storage
+/storage/*.key
+.DS_Store
+.git
+
