@@ -5,8 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: bills-log-app
-    container_name: bills-log-app
+    image: oikolog-app
+    container_name: oikolog-app
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
@@ -19,7 +19,7 @@ services:
       - APP_KEY=base64:dockerdevkey
       - DB_HOST=db
       - DB_PORT=3306
-      - DB_DATABASE=bills_log
+      - DB_DATABASE=oikolog
       - DB_USERNAME=root
       - DB_PASSWORD=secret
       - FORCE_MIGRATE=1
@@ -30,7 +30,7 @@ services:
 
   webserver:
     image: nginx:1.25
-    container_name: bills-log-web
+    container_name: oikolog-web
     ports:
       - 8000:80
     volumes:
@@ -41,7 +41,7 @@ services:
 
   db:
     image: mysql:8.1
-    container_name: bills-log-db
+    container_name: oikolog-db
     restart: unless-stopped
     environment:
       - MYSQL_ROOT_PASSWORD=secret
