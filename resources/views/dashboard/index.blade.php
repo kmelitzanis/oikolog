@@ -4,130 +4,248 @@
 @section('content')
 
     {{-- Header --}}
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
+    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <div>
-            <h1 style="font-size:24px; font-weight:800; color:#0f172a;">
+            <h1 class="text-2xl font-extrabold text-gray-900 leading-tight">
                 Hello, {{ explode(' ', auth()->user()->name)[0] }} 👋
             </h1>
-            <p style="font-size:14px; color:#94a3b8; margin-top:2px;">{{ now()->format('l, F j, Y') }}</p>
+            <p class="text-sm text-gray-400 mt-0.5">{{ now()->format('l, F j, Y') }}</p>
         </div>
-        <a href="{{ route('bills.create') }}" class="btn btn-primary">
-            <span class="material-icons-round" style="font-size:18px;">add</span>
+        <a href="{{ route('bills.create') }}"
+           class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+            <span class="material-icons-round text-lg">add</span>
             Add Bill
         </a>
     </div>
 
     {{-- Stats Row --}}
-    <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:16px; margin-bottom:24px;">
-
-        {{-- Monthly Total --}}
-        <div style="background:linear-gradient(135deg,#6366f1,#4338ca); border-radius:16px; padding:24px; color:#fff;">
-            <div style="font-size:13px; color:rgba(255,255,255,0.7); font-weight:500; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                <span class="material-icons-round" style="font-size:16px;">account_balance_wallet</span>
-                Monthly Total
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        {{-- Monthly total --}}
+        <div
+            class="bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl p-6 text-white col-span-1 sm:col-span-2 xl:col-span-1">
+            <div class="flex items-center gap-1.5 text-xs text-indigo-200 font-medium mb-2">
+                <span class="material-icons-round text-base">account_balance_wallet</span> Monthly Total
             </div>
-            <div style="font-size:38px; font-weight:800; letter-spacing:-1px; line-height:1;">
+            <div class="text-3xl font-extrabold tracking-tight leading-none">
                 {{ auth()->user()->currency_code }} {{ number_format($stats['monthly_total'], 2) }}
             </div>
-            <div style="font-size:12px; color:rgba(255,255,255,0.6); margin-top:8px;">
-                {{ auth()->user()->currency_code }} {{ number_format($stats['yearly_total'], 2) }} per year
+            <div class="text-xs text-indigo-300 mt-2">
+                {{ auth()->user()->currency_code }} {{ number_format($stats['yearly_total'], 2) }} / year
+        </div>
+        </div>
+
+        @foreach([
+            ['icon'=>'receipt_long', 'color'=>'text-indigo-500', 'value'=>$stats['active_count'],  'label'=>'Active Bills'],
+            ['icon'=>'schedule',     'color'=>'text-orange-500', 'value'=>$stats['due_this_week'],  'label'=>'Due This Week'],
+            ['icon'=>'warning',      'color'=>'text-red-500',    'value'=>$stats['overdue_count'],  'label'=>'Overdue'],
+        ] as $stat)
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-1">
+                <span class="material-icons-round {{ $stat['color'] }} text-2xl">{{ $stat['icon'] }}</span>
+                <div class="text-3xl font-extrabold text-gray-900 mt-1">{{ $stat['value'] }}</div>
+                <div class="text-sm text-gray-400 font-medium">{{ $stat['label'] }}</div>
             </div>
-        </div>
-
-        {{-- Active --}}
-        <div class="card" style="padding:20px;">
-            <span class="material-icons-round" style="color:#6366f1; font-size:24px;">receipt_long</span>
-            <div style="font-size:32px; font-weight:800; color:#0f172a; margin:8px 0 4px;">{{ $stats['active_count'] }}</div>
-            <div style="font-size:13px; color:#94a3b8; font-weight:500;">Active Bills</div>
-        </div>
-
-        {{-- Due This Week --}}
-        <div class="card" style="padding:20px;">
-            <span class="material-icons-round" style="color:#f59e0b; font-size:24px;">schedule</span>
-            <div style="font-size:32px; font-weight:800; color:#0f172a; margin:8px 0 4px;">{{ $stats['due_this_week'] }}</div>
-            <div style="font-size:13px; color:#94a3b8; font-weight:500;">Due This Week</div>
-        </div>
-
-        {{-- Overdue --}}
-        <div class="card" style="padding:20px;">
-            <span class="material-icons-round" style="color:#ef4444; font-size:24px;">warning</span>
-            <div style="font-size:32px; font-weight:800; color:{{ $stats['overdue_count'] > 0 ? '#ef4444' : '#0f172a' }}; margin:8px 0 4px;">{{ $stats['overdue_count'] }}</div>
-            <div style="font-size:13px; color:#94a3b8; font-weight:500;">Overdue</div>
-        </div>
+        @endforeach
     </div>
 
-    {{-- Main Content --}}
-    <div style="display:grid; grid-template-columns:1fr 320px; gap:20px;">
+    {{-- Main content --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
         {{-- Upcoming Bills --}}
-        <div class="card" style="padding:24px;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-                <h2 style="font-size:17px; font-weight:700; color:#0f172a;">Upcoming Bills</h2>
-                <a href="{{ route('bills.index') }}" style="font-size:13px; color:#6366f1; font-weight:600; text-decoration:none;">See all →</a>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-base font-bold text-gray-900">Upcoming Bills</h2>
+                <a href="{{ route('bills.index') }}" class="text-xs text-indigo-600 font-semibold hover:underline">See
+                    all →</a>
             </div>
 
             @forelse($upcoming as $bill)
                 @php
-                    $isOverdue  = $bill->next_due_date && $bill->next_due_date->isPast();
-                    $daysUntil  = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : 0;
-                    $color      = $bill->category?->color_hex ?? '#6366F1';
+                    $isOverdue = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
+                    $daysUntil = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : null;
+                    $isSoon    = !$isOverdue && $daysUntil !== null && $daysUntil <= 7;
+                    $color     = $bill->category?->color_hex ?? '#6366F1';
+                    $amountClass = $isOverdue ? 'text-red-600' : ($isSoon ? 'text-orange-500' : 'text-gray-900');
+                    $metaClass   = $isOverdue ? 'text-red-500' : ($isSoon ? 'text-orange-500' : 'text-gray-400');
                 @endphp
-                <div style="display:flex; align-items:center; gap:14px; padding:12px 0; {{ !$loop->last ? 'border-bottom:1px solid #f8fafc;' : '' }}">
-                    <div style="width:42px; height:42px; border-radius:12px; background:{{ $color }}1a; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                        <span class="material-icons-round" style="color:{{ $color }}; font-size:20px;">{{ $bill->category?->icon ?? 'receipt' }}</span>
+                <div class="flex items-center gap-3 py-3 {{ !$loop->last ? 'border-b border-gray-50' : '' }}">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                         style="background:{{ $color }}1a;">
+                        <span class="material-icons-round text-xl"
+                              style="color:{{ $color }}">{{ $bill->category?->icon ?? 'receipt' }}</span>
                     </div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-size:14px; font-weight:600; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $bill->name }}</div>
-                        <div style="font-size:12px; color:{{ $isOverdue ? '#ef4444' : '#94a3b8' }}; margin-top:2px;">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-900 truncate">{{ $bill->name }}</div>
+                        <div class="text-xs {{ $metaClass }} mt-0.5">
                             @if($isOverdue)
-                                Overdue by {{ abs($daysUntil) }} day{{ abs($daysUntil) !== 1 ? 's' : '' }}
+                                Overdue by {{ abs($daysUntil) }}d
                             @elseif($daysUntil === 0)
                                 Due today
-                            @else
+                            @elseif($daysUntil !== null)
                                 In {{ $daysUntil }} day{{ $daysUntil !== 1 ? 's' : '' }}
                             @endif
                         </div>
                     </div>
-                    <div style="text-align:right; flex-shrink:0;">
-                        <div style="font-size:15px; font-weight:700; color:{{ $isOverdue ? '#ef4444' : '#0f172a' }};">
-                            {{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}
+                    <div class="text-right shrink-0">
+                        <div class="text-sm font-bold {{ $amountClass }}">
+                            {{ auth()->user()->currency_code }} {{ number_format($bill->amount, 2) }}
                         </div>
-                        <form method="POST" action="{{ route('bills.pay', $bill) }}" style="margin-top:4px;">
+                        <form method="POST" action="{{ route('bills.pay', $bill) }}" class="mt-1">
                             @csrf
-                            <button type="submit" style="background:none; border:none; font-size:12px; color:#10b981; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; padding:0;">
-                                ✓ Mark paid
+                            <button type="submit"
+                                    class="text-xs text-emerald-600 font-semibold hover:underline bg-transparent border-0 cursor-pointer p-0">
+                                ✓ Pay
                             </button>
                         </form>
                     </div>
                 </div>
             @empty
-                <div style="text-align:center; padding:32px 0; color:#94a3b8;">
-                    <span class="material-icons-round" style="font-size:40px; display:block; margin-bottom:8px;">celebration</span>
-                    No upcoming bills — you're all caught up!
+                <div class="flex flex-col items-center justify-center py-10 text-gray-400">
+                    <span class="material-icons-round text-5xl mb-2">celebration</span>
+                    <span class="text-sm">No upcoming bills — you're all caught up!</span>
                 </div>
             @endforelse
         </div>
 
-        {{-- Spend by Category --}}
-        <div class="card" style="padding:24px;">
-            <h2 style="font-size:17px; font-weight:700; color:#0f172a; margin-bottom:20px;">By Category</h2>
-
+        {{-- By Category --}}
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 class="text-base font-bold text-gray-900 mb-5">By Category</h2>
             @php $total = $byCategory->sum(); @endphp
             @forelse($byCategory->take(10) as $name => $amount)
                 @php $pct = $total > 0 ? ($amount / $total * 100) : 0; @endphp
-                <div style="margin-bottom:14px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                        <span style="font-size:13px; color:#475569; font-weight:500;">{{ $name }}</span>
-                        <span style="font-size:13px; color:#0f172a; font-weight:600;">{{ number_format($amount, 2) }}</span>
+                <div class="mb-4">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-gray-500 font-medium">{{ $name }}</span>
+                        <span class="text-sm text-gray-900 font-semibold">{{ number_format($amount, 2) }}</span>
                     </div>
-                    <div style="background:#f1f5f9; border-radius:4px; height:5px; overflow:hidden;">
-                        <div style="background:#6366f1; height:100%; width:{{ $pct }}%; border-radius:4px;"></div>
+                    <div class="bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-indigo-500 h-full rounded-full transition-all" style="width:{{ $pct }}%"></div>
                     </div>
                 </div>
             @empty
-                <p style="font-size:13px; color:#94a3b8; text-align:center; padding:24px 0;">No bills yet.</p>
+                <p class="text-sm text-gray-400 text-center py-8">No bills yet.</p>
             @endforelse
         </div>
     </div>
 
+    {{-- Analytics Charts --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-gray-900">Monthly Overview</h3>
+                <span class="text-xs text-gray-400">Last 12 months</span>
+            </div>
+            <div class="relative h-48">
+                <canvas id="chart-monthly"></canvas>
+            </div>
+        </div>
+        <div class="flex flex-col gap-4">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <h3 class="text-sm font-bold text-gray-900 mb-3">Spending vs Income</h3>
+                <div class="relative h-32">
+                    <canvas id="chart-income-spend"></canvas>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <h3 class="text-sm font-bold text-gray-900 mb-3">By Category</h3>
+                <div class="relative h-32">
+                    <canvas id="chart-category"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
+
+@push('scripts')
+    <script>
+        (async function () {
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const headers = {'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json'};
+
+            // Read XSRF cookie
+            const xsrf = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            if (xsrf) headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf[1]);
+
+            try {
+                const [sRes, rRes] = await Promise.all([
+                    fetch('/api/bills/stats', {credentials: 'same-origin', headers}),
+                    fetch('/api/bills/series?months=12', {credentials: 'same-origin', headers}),
+                ]);
+                if (!sRes.ok || !rRes.ok) throw new Error('API error');
+                const stats = await sRes.json();
+                const series = await rRes.json();
+                const cur = stats.currency_code ?? 'EUR';
+                const fmt = v => `${cur} ${Number(v).toFixed(2)}`;
+
+                const monthlyCtx = document.getElementById('chart-monthly')?.getContext('2d');
+                if (monthlyCtx) new Chart(monthlyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: series.months, datasets: [
+                            {
+                                label: 'Spending',
+                                data: series.spending,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239,68,68,.07)',
+                                tension: .35,
+                                fill: true,
+                                pointRadius: 3
+                            },
+                            {
+                                label: 'Income',
+                                data: series.income,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16,185,129,.07)',
+                                tension: .35,
+                                fill: true,
+                                pointRadius: 3
+                            },
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {tooltip: {callbacks: {label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}`}}},
+                        scales: {y: {beginAtZero: true, ticks: {callback: v => fmt(v)}}}
+                    }
+                });
+
+                const isCtx = document.getElementById('chart-income-spend')?.getContext('2d');
+                if (isCtx) {
+                    const ts = series.spending.reduce((a, b) => a + b, 0);
+                    const ti = series.income.reduce((a, b) => a + b, 0);
+                    new Chart(isCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Spending', 'Income'],
+                            datasets: [{data: [ts, ti], backgroundColor: ['#ef4444', '#10b981'], borderWidth: 0}]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false, cutout: '65%',
+                            plugins: {tooltip: {callbacks: {label: c => `${c.label}: ${fmt(c.parsed)}`}}}
+                        }
+                    });
+                }
+
+                const catCtx = document.getElementById('chart-category')?.getContext('2d');
+                if (catCtx && stats.by_category) {
+                    const entries = Object.entries(stats.by_category).slice(0, 8);
+                    const palette = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#f97316', '#ec4899'];
+                    new Chart(catCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: entries.map(e => e[0]),
+                            datasets: [{data: entries.map(e => e[1]), backgroundColor: palette, borderWidth: 0}]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false, cutout: '55%',
+                            plugins: {tooltip: {callbacks: {label: c => `${c.label}: ${fmt(c.parsed)}`}}}
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('Charts unavailable:', e.message);
+            }
+        })();
+    </script>
+@endpush
+

@@ -3,9 +3,18 @@
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\BillController;
 use App\Http\Controllers\Web\FamilyController;
-use App\Http\Controllers\Admin\AdminController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
+// Temporary auth-check route (local only) - remove after debugging
+if (app()->environment('local')) {
+    Route::get('/_debug/auth', function () {
+        return response()->json([
+            'authenticated' => auth()->check(),
+            'user' => auth()->user() ? auth()->user()->only('id', 'email', 'name') : null,
+        ]);
+    });
+}
 
 Route::get('/login',    fn() => view('auth.login'))->name('login')->middleware('guest');
 Route::get('/register', fn() => view('auth.register'))->name('register')->middleware('guest');
@@ -18,6 +27,7 @@ Route::post('/logout', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/locale/{lang}', [\App\Http\Controllers\Web\DashboardController::class, 'setLocale'])->name('locale.set');
 
     // Bills
     Route::controller(BillController::class)
@@ -32,7 +42,12 @@ Route::middleware('auth')->group(function () {
             Route::put('/{bill}', 'update')->name('update');
             Route::delete('/{bill}', 'destroy')->name('destroy');
             Route::post('/{bill}/pay', 'markPaid')->name('pay');
+            Route::delete('/{bill}/unpay', 'undoLastPayment')->name('unpay');
         });
+
+    // Calendar
+    Route::get('/calendar', [\App\Http\Controllers\Web\BillController::class, 'calendar'])->name('calendar');
+    Route::get('/bills/events', [\App\Http\Controllers\Web\BillController::class, 'events'])->name('bills.events');
 
     // Family
     Route::controller(FamilyController::class)
@@ -45,14 +60,22 @@ Route::middleware('auth')->group(function () {
             Route::delete('/leave', 'leave')->name('leave');
             Route::post('/regenerate-code', 'regenerateCode')->name('regenerate');
             Route::delete('/members/{member}', 'removeMember')->name('remove');
+            Route::post('/members/{member}/transfer', 'transferOwnership')->name('transfer');
         });
 });
 
-Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/',                            [AdminController::class, 'index'])->name('dashboard');
-    Route::get('/users',                       [AdminController::class, 'users'])->name('users');
-    Route::delete('/users/{user}',             [AdminController::class, 'deleteUser'])->name('users.delete');
-    Route::get('/categories',                  [AdminController::class, 'categories'])->name('categories');
-    Route::post('/categories',                 [AdminController::class, 'storeCategory'])->name('categories.store');
-    Route::delete('/categories/{category}',    [AdminController::class, 'deleteCategory'])->name('categories.delete');
+// User settings (profile)
+Route::middleware('auth')->group(function () {
+    Route::get('/settings', [\App\Http\Controllers\Web\DashboardController::class, 'settings'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\Web\DashboardController::class, 'updateSettings'])->name('settings.update');
+
+    // Translations management
+    Route::prefix('translations')->name('translations.')->controller(\App\Http\Controllers\Web\TranslationController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{translation}/edit', 'edit')->name('edit');
+        Route::put('/{translation}', 'update')->name('update');
+        Route::delete('/{translation}', 'destroy')->name('destroy');
+    });
 });

@@ -51,7 +51,6 @@ class BillController extends Controller
             'category_id'        => ['required', 'exists:categories,id'],
             'assigned_to'        => ['nullable', 'exists:users,id'],
             'amount'             => ['required', 'numeric', 'min:0.01'],
-            'currency_code'      => ['required', 'string', 'size:3'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date'         => ['required', 'date'],
@@ -66,6 +65,7 @@ class BillController extends Controller
         $bill = Bill::create([
             ...$data,
             'created_by'    => $request->user()->id,
+            'currency_code' => $request->user()->currency_code,
             'family_id'     => ($data['is_shared'] ?? false) ? $request->user()->family_id : null,
             'next_due_date' => $data['start_date'],
         ]);
@@ -92,7 +92,6 @@ class BillController extends Controller
             'category_id'        => ['sometimes', 'exists:categories,id'],
             'assigned_to'        => ['nullable', 'exists:users,id'],
             'amount'             => ['sometimes', 'numeric', 'min:0.01'],
-            'currency_code'      => ['sometimes', 'string', 'size:3'],
             'frequency'          => ['sometimes', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1'],
             'start_date'         => ['sometimes', 'date'],
@@ -178,6 +177,64 @@ class BillController extends Controller
             'currency_code' => $user->currency_code,
             'by_category'   => $byCategory,
             'upcoming'      => $upcoming,
+        ]);
+    }
+
+    public function series(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $months = (int)$request->integer('months', 12);
+        $months = max(1, min(36, $months));
+
+        // Get active bills for user
+        $bills = Bill::forUser($user)->active()->with('category')->get();
+
+        // Build month labels (YYYY-MM) starting from current month going back
+        $labels = [];
+        $now = now()->startOfMonth();
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $labels[] = $now->copy()->subMonths($i)->format('Y-m');
+        }
+
+        // Map labels to indexes for quick lookup
+        $labelIndex = array_flip($labels);
+
+        // Initialize series arrays
+        $spending = array_fill(0, count($labels), 0.0);
+        $income = array_fill(0, count($labels), 0.0);
+
+        // Determine the date window to generate occurrences
+        $windowStart = now()->copy()->startOfMonth()->subMonths($months - 1)->startOfDay();
+        $windowEnd = now()->copy()->endOfMonth()->endOfDay();
+
+        // For each bill, generate occurrences in the window and add amounts to the month buckets
+        foreach ($bills as $bill) {
+            $occurrences = $bill->occurrencesBetween($windowStart, $windowEnd);
+            if (empty($occurrences)) continue;
+
+            foreach ($occurrences as $occ) {
+                $monthKey = $occ->format('Y-m');
+                if (!isset($labelIndex[$monthKey])) continue; // outside window
+
+                $idx = $labelIndex[$monthKey];
+                $amount = (float)$bill->amount;
+                if ($amount < 0) {
+                    $income[$idx] += abs($amount);
+                } else {
+                    $spending[$idx] += $amount;
+                }
+            }
+        }
+
+        // Round values to 2 decimals
+        $spending = array_map(fn($v) => round($v, 2), $spending);
+        $income = array_map(fn($v) => round($v, 2), $income);
+
+        return response()->json([
+            'months' => $labels,
+            'spending' => $spending,
+            'income' => $income,
+            'currency_code' => $user->currency_code,
         ]);
     }
 

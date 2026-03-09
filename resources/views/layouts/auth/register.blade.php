@@ -6,71 +6,80 @@
     <title>Register — BillsTrack</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .card { background: #fff; border-radius: 24px; border: 1px solid #e2e8f0; padding: 40px; width: 100%; max-width: 440px; }
-        .input { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border 0.15s; }
-        .input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
-        .btn { width: 100%; background: #6366f1; color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.15s; }
-        .btn:hover { background: #4f46e5; }
-        label { display: block; font-size: 13px; font-weight: 500; color: #475569; margin-bottom: 6px; }
-        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    </style>
+    @php $m = json_decode(file_get_contents(public_path('build/manifest.json')),true); $e = $m['resources/js/app.js'] ?? null; @endphp
+    @if($e)
+        @if(!empty($e['css'][0]))
+            <link rel="stylesheet" href="{{ asset('build/'.$e['css'][0]) }}">
+        @endif
+        <script defer src="{{ asset('build/'.$e['file']) }}"></script>
+    @endif
 </head>
-<body>
-<div class="card">
-    <div style="text-align:center; margin-bottom:32px;">
-        <div style="width:56px; height:56px; background:linear-gradient(135deg,#6366f1,#4f46e5); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;">
-            <span class="material-icons-round" style="color:#fff; font-size:28px;">account_balance_wallet</span>
+<body class="min-h-screen bg-linear-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-6">
+
+<div class="w-full max-w-md bg-white rounded-3xl border border-gray-200 shadow-xl p-10">
+
+    <div class="text-center mb-8">
+        <div
+            class="w-14 h-14 bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl inline-flex items-center justify-center mb-4 shadow-lg">
+            <span class="material-icons-round text-white text-3xl">account_balance_wallet</span>
         </div>
-        <h1 style="font-size:26px; font-weight:800; color:#0f172a;">Create Account</h1>
-        <p style="font-size:14px; color:#94a3b8; margin-top:4px;">Start tracking your household bills</p>
+        <h1 class="text-2xl font-extrabold text-gray-900">Create Account</h1>
+        <p class="text-sm text-gray-400 mt-1">Start tracking your household bills</p>
     </div>
 
     @if($errors->any())
-        <div style="background:#fee2e2; border:1px solid #fca5a5; color:#dc2626; border-radius:10px; padding:12px 14px; font-size:13px; margin-bottom:20px;">
-            @foreach($errors->all() as $e) <div>• {{ $e }}</div> @endforeach
+        <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-6 space-y-0.5">
+            @foreach($errors->all() as $err)
+                <div>• {{ $err }}</div>
+            @endforeach
         </div>
     @endif
 
-    <form method="POST" action="{{ route('register.post') }}">
+    <form method="POST" action="{{ route('register.post') }}" class="space-y-4">
         @csrf
-        <div style="margin-bottom:16px;">
-            <label>Full Name</label>
-            <input class="input" type="text" name="name" value="{{ old('name') }}" placeholder="Your name" required>
+        <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1.5">Full Name</label>
+            <input type="text" name="name" value="{{ old('name') }}" placeholder="Your name" required
+                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
         </div>
-        <div style="margin-bottom:16px;">
-            <label>Email</label>
-            <input class="input" type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com" required>
+        <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1.5">Email</label>
+            <input type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com" required
+                   autocomplete="email"
+                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
         </div>
-        <div class="row" style="margin-bottom:16px;">
+        <div class="grid grid-cols-2 gap-3">
             <div>
-                <label>Password</label>
-                <input class="input" type="password" name="password" placeholder="Min 8 chars" required>
+                <label class="block text-sm font-medium text-gray-600 mb-1.5">Password</label>
+                <input type="password" name="password" placeholder="Min 8 chars" required autocomplete="new-password"
+                       class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
             </div>
             <div>
-                <label>Confirm</label>
-                <input class="input" type="password" name="password_confirmation" placeholder="Repeat" required>
+                <label class="block text-sm font-medium text-gray-600 mb-1.5">Confirm</label>
+                <input type="password" name="password_confirmation" placeholder="Repeat" required
+                       autocomplete="new-password"
+                       class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
             </div>
         </div>
-        <div style="margin-bottom:28px;">
-            <label>Default Currency</label>
-            <select class="input" name="currency_code">
-                <option value="EUR" {{ old('currency_code','EUR')=='EUR'?'selected':'' }}>EUR — Euro</option>
-                <option value="USD" {{ old('currency_code')=='USD'?'selected':'' }}>USD — US Dollar</option>
-                <option value="GBP" {{ old('currency_code')=='GBP'?'selected':'' }}>GBP — British Pound</option>
-                <option value="CHF" {{ old('currency_code')=='CHF'?'selected':'' }}>CHF — Swiss Franc</option>
-                <option value="CAD" {{ old('currency_code')=='CAD'?'selected':'' }}>CAD — Canadian Dollar</option>
-                <option value="AUD" {{ old('currency_code')=='AUD'?'selected':'' }}>AUD — Australian Dollar</option>
+        <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1.5">Default Currency</label>
+            <select name="currency_code"
+                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
+                @foreach(['EUR'=>'EUR — Euro','USD'=>'USD — US Dollar','GBP'=>'GBP — British Pound','CHF'=>'CHF — Swiss Franc','CAD'=>'CAD — Canadian Dollar','AUD'=>'AUD — Australian Dollar'] as $code => $label)
+                    <option
+                        value="{{ $code }}" {{ old('currency_code','EUR') === $code ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
             </select>
         </div>
-        <button class="btn" type="submit">Create Account</button>
+        <button type="submit"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3 text-sm transition mt-2">
+            Create Account
+        </button>
     </form>
 
-    <p style="text-align:center; font-size:13px; color:#94a3b8; margin-top:24px;">
+    <p class="text-center text-sm text-gray-400 mt-6">
         Already have an account?
-        <a href="{{ route('login') }}" style="color:#6366f1; font-weight:600; text-decoration:none;">Sign In</a>
+        <a href="{{ route('login') }}" class="text-indigo-600 font-semibold hover:underline">Sign In</a>
     </p>
 </div>
 </body>

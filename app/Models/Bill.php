@@ -51,6 +51,21 @@ class Bill extends Model
         return $this->hasMany(Payment::class);
     }
 
+    // Provide guarded media collection registration (no-op when medialibrary not installed)
+    public function registerMediaCollections(): void
+    {
+        if (!method_exists($this, 'addMediaCollection')) return;
+        $this->addMediaCollection('receipts')->useDisk(config('medialibrary.disk_name', config('filesystems.default', 'public')));
+    }
+
+    public function registerMediaConversions($media = null): void
+    {
+        if (!method_exists($this, 'addMediaConversion')) return;
+        $this->addMediaConversion('thumb')
+            ->fit('crop', 600, 400)
+            ->performOnCollections('receipts');
+    }
+
     // Scopes
     public function scopeForUser($query, ?User $user)
     {
@@ -128,5 +143,89 @@ class Bill extends Model
             'yearly' => $date->addYears(1 * $interval),
             default => $date->addMonths(1 * $interval),
         };
+    }
+
+    /**
+     * Return an array of occurrence dates (Carbon) for this bill between $from and $to inclusive.
+     * This works for both expenses and incomes (no sign change here).
+     * It follows the bill recurrence (frequency + frequency_interval) and honors start_date and end_date.
+     * Implemented using recursion to step occurrences.
+     *
+     * @param \Carbon\Carbon $from
+     * @param \Carbon\Carbon $to
+     * @return array<int, \Carbon\Carbon>
+     */
+    public function occurrencesBetween(Carbon $from, Carbon $to): array
+    {
+        if (!$this->start_date) return [];
+
+        $start = Carbon::parse($this->start_date)->startOfDay();
+        $end = $this->end_date ? Carbon::parse($this->end_date)->endOfDay() : null;
+
+        // If the bill ends before our from or starts after to, nothing to return
+        if ($end && $end->lt($from)) return [];
+        if ($start->gt($to)) return [];
+
+        // Determine the first occurrence on/after $from
+        $current = $start->copy();
+
+        // If start before 'from', advance until >= from
+        while ($current->lt($from)) {
+            $next = $this->advanceDate($current);
+            if (!$next) return [];
+            // Avoid infinite loops
+            if ($next->eq($current)) break;
+            $current = $next;
+            // stop if we passed end
+            if ($end && $current->gt($end)) return [];
+        }
+
+        $occurrences = [];
+
+        // Recursive closure to collect occurrences
+        $collect = function (Carbon $dt) use (&$collect, $to, $end, &$occurrences) {
+            if ($dt->gt($to)) return;
+            if ($end && $dt->gt($end)) return;
+            $occurrences[] = $dt->copy();
+            $next = $this->advanceDate($dt);
+            if (!$next) return;
+            // Avoid infinite loops
+            if ($next->lte($dt)) return;
+            $collect($next);
+        };
+
+        $collect($current);
+
+        return $occurrences;
+    }
+
+    /**
+     * Advance a Carbon date according to this bill's frequency + interval.
+     * Returns a new Carbon instance or null for non-recurring (once).
+     */
+    private function advanceDate(Carbon $date): ?Carbon
+    {
+        $freq = $this->frequency ?? 'monthly';
+        $interval = (int)($this->frequency_interval ?? 1);
+
+        return match ($freq) {
+            'once' => null,
+            'daily' => $date->copy()->addDays(1 * $interval),
+            'weekly' => $date->copy()->addWeeks(1 * $interval),
+            'biweekly' => $date->copy()->addWeeks(2 * $interval),
+            'monthly' => $date->copy()->addMonths(1 * $interval),
+            'quarterly' => $date->copy()->addMonths(3 * $interval),
+            'yearly' => $date->copy()->addYears(1 * $interval),
+            default => $date->copy()->addMonths(1 * $interval),
+        };
+    }
+
+    // Helper to get receipt urls (if medialibrary installed)
+    public function receiptUrls(): array
+    {
+        if (method_exists($this, 'getMedia') && $this->hasMedia('receipts')) {
+            return $this->getMedia('receipts')->map(fn($m) => $m->getUrl())->toArray();
+        }
+        return [];
     }
 }
