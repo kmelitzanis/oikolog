@@ -1,7 +1,7 @@
 {
     "name": "billstrack/api",
     "type": "project",
-    "description": "BillsTrack — Household bills & subscriptions API",
+    "description": "Oikolog — a Laravel app to track household bills, shared expenses, and spending insights",
     "license": "MIT",
     "require": {
         "php": "^8.2",
