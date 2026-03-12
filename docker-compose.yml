@@ -1,9 +1,8 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: oikolog-app
+    # Use the image from Docker Hub
+    image: kostasmel/oikolog-app:latest
+    pull_policy: always
     container_name: oikolog-app
     restart: unless-stopped
     working_dir: /var/www/html
