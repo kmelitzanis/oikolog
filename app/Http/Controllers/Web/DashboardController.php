@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
+use App\Models\Income;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,12 +27,26 @@ class DashboardController extends Controller
             'due_this_week' => $bills->filter(fn($b) => $b->daysUntilDue() >= 0 && $b->daysUntilDue() <= 7)->count(),
         ];
 
-        $upcoming   = Bill::forUser($user)->dueWithin(30)->with('category')->orderBy('next_due_date')->take(8)->get();
+        // Income summary
+        $incomes = Income::forUser($user)->active()->get();
+        $incomeStats = [
+            'monthly_income' => round($incomes->sum(fn($i) => $i->monthlyEquivalent()), 2),
+            'yearly_income' => round($incomes->sum(fn($i) => $i->monthlyEquivalent()) * 12, 2),
+        ];
+        $stats = array_merge($stats, $incomeStats);
+        $stats['monthly_net'] = round($incomeStats['monthly_income'] - $stats['monthly_total'], 2);
+
+        $upcoming = Bill::forUser($user)->dueWithin(30)->with('category')->orderBy('next_due_date')->take(8)->get();
+        $upcomingIncomes = Income::forUser($user)->active()
+            ->where('frequency', '!=', 'once')
+            ->orderBy('next_date')
+            ->take(5)
+            ->get();
         $byCategory = $bills->groupBy('category.name')
             ->map(fn($g) => round($g->sum(fn($b) => $b->monthlyEquivalent()), 2))
             ->sortDesc();
 
-        return view('dashboard.index', compact('user', 'stats', 'upcoming', 'byCategory'));
+        return view('dashboard.index', compact('user', 'stats', 'upcoming', 'upcomingIncomes', 'byCategory'));
     }
 
     public function login(Request $request)

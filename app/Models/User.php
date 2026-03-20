@@ -40,6 +40,11 @@ class User extends Authenticatable
         return $this->hasMany(Bill::class, 'created_by');
     }
 
+    public function incomes(): HasMany
+    {
+        return $this->hasMany(Income::class, 'created_by');
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'paid_by');

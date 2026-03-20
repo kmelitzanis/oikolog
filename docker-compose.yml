@@ -1,6 +1,5 @@
 services:
   app:
-    # Use the image from Docker Hub
     image: kostasmel/oikolog-app:latest
     pull_policy: always
     container_name: oikolog-app
@@ -13,7 +12,7 @@ services:
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
-      - APP_KEY=base64:dockerdevkey
+      - APP_KEY=${APP_KEY}
       - DB_HOST=db
       - DB_PORT=3306
       - DB_DATABASE=oikolog
@@ -32,7 +31,7 @@ services:
       - 8000:80
     volumes:
       - ./:/var/www/html:ro
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${OIKOLOG_NGINX_CONF:-./docker/nginx/default.conf}:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - app
 

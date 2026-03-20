@@ -11,37 +11,68 @@
             </h1>
             <p class="text-sm text-gray-400 mt-0.5">{{ now()->format('l, F j, Y') }}</p>
         </div>
-        <a href="{{ route('bills.create') }}"
-           class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
-            <span class="material-icons-round text-lg">add</span>
-            Add Bill
-        </a>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{{ route('income.create') }}"
+               class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+                <span class="material-icons-round text-lg">add</span>
+                Add Income
+            </a>
+            <a href="{{ route('bills.create') }}"
+               class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+                <span class="material-icons-round text-lg">add</span>
+                Add Bill
+            </a>
+        </div>
     </div>
 
     {{-- Stats Row --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        {{-- Monthly total --}}
-        <div
-            class="bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl p-6 text-white col-span-1 sm:col-span-2 xl:col-span-1">
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        {{-- Monthly Spending --}}
+        <div class="bg-gradient-to-br from-indigo-600 to-indigo-500 rounded-2xl p-5 text-white">
             <div class="flex items-center gap-1.5 text-xs text-indigo-200 font-medium mb-2">
-                <span class="material-icons-round text-base">account_balance_wallet</span> Monthly Total
+                <span class="material-icons-round text-base">account_balance_wallet</span> Monthly Spend
             </div>
-            <div class="text-3xl font-extrabold tracking-tight leading-none">
+            <div class="text-2xl font-extrabold tracking-tight leading-none">
                 {{ auth()->user()->currency_code }} {{ number_format($stats['monthly_total'], 2) }}
             </div>
-            <div class="text-xs text-indigo-300 mt-2">
+            <div class="text-xs text-indigo-300 mt-1">
                 {{ auth()->user()->currency_code }} {{ number_format($stats['yearly_total'], 2) }} / year
+            </div>
         </div>
+
+        {{-- Monthly Income --}}
+        <div class="bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 text-white">
+            <div class="flex items-center gap-1.5 text-xs text-emerald-200 font-medium mb-2">
+                <span class="material-icons-round text-base">trending_up</span> Monthly Income
+            </div>
+            <div class="text-2xl font-extrabold tracking-tight leading-none">
+                {{ auth()->user()->currency_code }} {{ number_format($stats['monthly_income'], 2) }}
+            </div>
+            <div class="text-xs text-emerald-300 mt-1">
+                {{ auth()->user()->currency_code }} {{ number_format($stats['yearly_income'], 2) }} / year
+            </div>
+        </div>
+
+        {{-- Net Balance --}}
+        @php $netPositive = $stats['monthly_net'] >= 0; @endphp
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium mb-2">
+                <span
+                    class="material-icons-round text-base {{ $netPositive ? 'text-emerald-500' : 'text-red-500' }}">{{ $netPositive ? 'savings' : 'trending_down' }}</span>
+                Net / Month
+            </div>
+            <div class="text-2xl font-extrabold {{ $netPositive ? 'text-emerald-600' : 'text-red-600' }}">
+                {{ $netPositive ? '+' : '' }}{{ auth()->user()->currency_code }} {{ number_format($stats['monthly_net'], 2) }}
+            </div>
+            <div class="text-xs text-gray-400 mt-1">income minus expenses</div>
         </div>
 
         @foreach([
-            ['icon'=>'receipt_long', 'color'=>'text-indigo-500', 'value'=>$stats['active_count'],  'label'=>'Active Bills'],
-            ['icon'=>'schedule',     'color'=>'text-orange-500', 'value'=>$stats['due_this_week'],  'label'=>'Due This Week'],
-            ['icon'=>'warning',      'color'=>'text-red-500',    'value'=>$stats['overdue_count'],  'label'=>'Overdue'],
+            ['icon'=>'warning', 'color'=>'text-red-500', 'value'=>$stats['overdue_count'], 'label'=>'Overdue'],
         ] as $stat)
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-1">
                 <span class="material-icons-round {{ $stat['color'] }} text-2xl">{{ $stat['icon'] }}</span>
-                <div class="text-3xl font-extrabold text-gray-900 mt-1">{{ $stat['value'] }}</div>
+                <div class="text-2xl font-extrabold text-gray-900 mt-1">{{ $stat['value'] }}</div>
                 <div class="text-sm text-gray-400 font-medium">{{ $stat['label'] }}</div>
             </div>
         @endforeach
@@ -106,9 +137,59 @@
             @endforelse
         </div>
 
+        {{-- Upcoming Income --}}
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-base font-bold text-gray-900">Upcoming Income</h2>
+                <a href="{{ route('income.index') }}" class="text-xs text-emerald-600 font-semibold hover:underline">See
+                    all →</a>
+            </div>
+
+            @forelse($upcomingIncomes as $income)
+                @php
+                    $daysUntil = $income->daysUntilNext();
+                    $metaClass = ($daysUntil !== null && $daysUntil <= 3) ? 'text-emerald-500 font-semibold' : 'text-gray-400';
+                @endphp
+                <div class="flex items-center gap-3 py-3 {{ !$loop->last ? 'border-b border-gray-50' : '' }}">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50">
+                        <span class="material-icons-round text-xl text-emerald-600">repeat</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-900 truncate">{{ $income->name }}</div>
+                        <div class="text-xs {{ $metaClass }} mt-0.5">
+                            {{ $income->source ?? $income->frequencyLabel() }} ·
+                            @if($daysUntil === 0)
+                                Today
+                            @elseif($daysUntil !== null && $daysUntil > 0)
+                                In {{ $daysUntil }}d
+                            @elseif($daysUntil !== null && $daysUntil < 0)
+                                {{ abs($daysUntil) }}d ago
+                            @endif
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="text-sm font-bold text-emerald-600">
+                            +{{ auth()->user()->currency_code }} {{ number_format($income->amount, 2) }}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-0.5">{{ $income->frequencyLabel() }}</div>
+                    </div>
+                </div>
+            @empty
+                <div class="flex flex-col items-center justify-center py-10 text-gray-400">
+                    <span class="material-icons-round text-5xl mb-2">savings</span>
+                    <span class="text-sm">No recurring income set up yet</span>
+                    <a href="{{ route('income.create') }}"
+                       class="mt-3 text-xs text-emerald-600 font-semibold hover:underline">+ Add income source</a>
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- Category breakdown + Analytics --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {{-- By Category --}}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 class="text-base font-bold text-gray-900 mb-5">By Category</h2>
+            <h2 class="text-base font-bold text-gray-900 mb-5">Spending by Category</h2>
             @php $total = $byCategory->sum(); @endphp
             @forelse($byCategory->take(10) as $name => $amount)
                 @php $pct = $total > 0 ? ($amount / $total * 100) : 0; @endphp
@@ -123,6 +204,35 @@
                 </div>
             @empty
                 <p class="text-sm text-gray-400 text-center py-8">No bills yet.</p>
+            @endforelse
+        </div>
+
+        {{-- Quick Income breakdown by source --}}
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 class="text-base font-bold text-gray-900 mb-5">Income by Source</h2>
+            @php
+                $incomeBySource = $upcomingIncomes->isEmpty()
+                    ? collect()
+                    : \App\Models\Income::forUser(auth()->user())->active()->get()
+                        ->groupBy(fn($i) => $i->source ?: 'Other')
+                        ->map(fn($g) => round($g->sum(fn($i) => $i->monthlyEquivalent()), 2))
+                        ->sortDesc();
+                $totalIncome = $incomeBySource->sum();
+            @endphp
+            @forelse($incomeBySource->take(8) as $srcName => $srcAmount)
+                @php $pct = $totalIncome > 0 ? ($srcAmount / $totalIncome * 100) : 0; @endphp
+                <div class="mb-4">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-gray-500 font-medium">{{ $srcName }}</span>
+                        <span
+                            class="text-sm text-emerald-600 font-semibold">+{{ number_format($srcAmount, 2) }}/mo</span>
+                    </div>
+                    <div class="bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-emerald-500 h-full rounded-full transition-all" style="width:{{ $pct }}%"></div>
+                    </div>
+                </div>
+            @empty
+                <p class="text-sm text-gray-400 text-center py-8">No income sources yet.</p>
             @endforelse
         </div>
     </div>

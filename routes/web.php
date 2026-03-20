@@ -3,6 +3,7 @@
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\BillController;
 use App\Http\Controllers\Web\FamilyController;
+use App\Http\Controllers\Web\IncomeController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +44,21 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{bill}', 'destroy')->name('destroy');
             Route::post('/{bill}/pay', 'markPaid')->name('pay');
             Route::delete('/{bill}/unpay', 'undoLastPayment')->name('unpay');
+        });
+
+    // Income
+    Route::controller(IncomeController::class)
+        ->prefix('income')
+        ->name('income.')
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{income}', 'show')->name('show');
+            Route::get('/{income}/edit', 'edit')->name('edit');
+            Route::put('/{income}', 'update')->name('update');
+            Route::delete('/{income}', 'destroy')->name('destroy');
+            Route::post('/{income}/receive', 'markReceived')->name('receive');
         });
 
     // Calendar
