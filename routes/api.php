@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FamilyController;
+use App\Http\Controllers\Api\IncomeController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ────────────────────────────────────────────────────────────────────
@@ -40,6 +41,16 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::get('/categories',          [CategoryController::class, 'index']);
     Route::post('/categories',         [CategoryController::class, 'store']);
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+
+    Route::prefix('income')->group(function () {
+        Route::get('/stats', [IncomeController::class, 'stats']);
+        Route::get('/', [IncomeController::class, 'index']);
+        Route::post('/', [IncomeController::class, 'store']);
+        Route::get('/{income}', [IncomeController::class, 'show']);
+        Route::put('/{income}', [IncomeController::class, 'update']);
+        Route::delete('/{income}', [IncomeController::class, 'destroy']);
+        Route::post('/{income}/receive', [IncomeController::class, 'markReceived']);
+    });
 
     Route::prefix('family')->group(function () {
         Route::get('/',                      [FamilyController::class, 'show']);

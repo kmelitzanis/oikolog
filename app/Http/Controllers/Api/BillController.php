@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
+use App\Models\Income;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -159,7 +160,7 @@ class BillController extends Controller
         $user  = $request->user();
         $bills = Bill::forUser($user)->active()->with('category')->get();
 
-        $monthlyTotal = $bills->sum(fn($b) => $b->monthlyEquivalent());
+        $monthlySpend = $bills->sum(fn($b) => $b->monthlyEquivalent());
         $byCategory   = $bills->groupBy('category.name')
             ->map(fn($g) => round($g->sum(fn($b) => $b->monthlyEquivalent()), 2))
             ->sortDesc();
@@ -168,72 +169,70 @@ class BillController extends Controller
             ->orderBy('next_due_date')->take(10)->get()
             ->map(fn($b) => $this->billResource($b));
 
+        // Income
+        $incomes = Income::forUser($user)->active()->get();
+        $monthlyIncome = $incomes->sum(fn($i) => $i->monthlyEquivalent());
+
         return response()->json([
-            'monthly_total' => round($monthlyTotal, 2),
-            'yearly_total'  => round($monthlyTotal * 12, 2),
-            'active_count'  => $bills->count(),
+            'monthly_total' => round($monthlySpend, 2),
+            'yearly_total' => round($monthlySpend * 12, 2),
+            'monthly_income' => round($monthlyIncome, 2),
+            'yearly_income' => round($monthlyIncome * 12, 2),
+            'monthly_net' => round($monthlyIncome - $monthlySpend, 2),
+            'active_count' => $bills->count(),
             'overdue_count' => $bills->filter(fn($b) => $b->isOverdue())->count(),
             'due_this_week' => $bills->filter(fn($b) => $b->daysUntilDue() >= 0 && $b->daysUntilDue() <= 7)->count(),
             'currency_code' => $user->currency_code,
-            'by_category'   => $byCategory,
-            'upcoming'      => $upcoming,
+            'by_category' => $byCategory,
+            'upcoming' => $upcoming,
         ]);
     }
 
     public function series(Request $request): JsonResponse
     {
         $user = $request->user();
-        $months = (int)$request->integer('months', 12);
-        $months = max(1, min(36, $months));
+        $months = max(1, min(36, (int)$request->integer('months', 12)));
 
-        // Get active bills for user
-        $bills = Bill::forUser($user)->active()->with('category')->get();
-
-        // Build month labels (YYYY-MM) starting from current month going back
+        // Build month labels going back from current month
         $labels = [];
         $now = now()->startOfMonth();
         for ($i = $months - 1; $i >= 0; $i--) {
             $labels[] = $now->copy()->subMonths($i)->format('Y-m');
         }
-
-        // Map labels to indexes for quick lookup
         $labelIndex = array_flip($labels);
 
-        // Initialize series arrays
         $spending = array_fill(0, count($labels), 0.0);
         $income = array_fill(0, count($labels), 0.0);
 
-        // Determine the date window to generate occurrences
         $windowStart = now()->copy()->startOfMonth()->subMonths($months - 1)->startOfDay();
         $windowEnd = now()->copy()->endOfMonth()->endOfDay();
 
-        // For each bill, generate occurrences in the window and add amounts to the month buckets
+        // Spending: bills
+        $bills = Bill::forUser($user)->active()->get();
         foreach ($bills as $bill) {
-            $occurrences = $bill->occurrencesBetween($windowStart, $windowEnd);
-            if (empty($occurrences)) continue;
-
-            foreach ($occurrences as $occ) {
-                $monthKey = $occ->format('Y-m');
-                if (!isset($labelIndex[$monthKey])) continue; // outside window
-
-                $idx = $labelIndex[$monthKey];
-                $amount = (float)$bill->amount;
-                if ($amount < 0) {
-                    $income[$idx] += abs($amount);
-                } else {
-                    $spending[$idx] += $amount;
+            foreach ($bill->occurrencesBetween($windowStart, $windowEnd) as $occ) {
+                $key = $occ->format('Y-m');
+                if (isset($labelIndex[$key])) {
+                    $spending[$labelIndex[$key]] += (float)$bill->amount;
                 }
             }
         }
 
-        // Round values to 2 decimals
-        $spending = array_map(fn($v) => round($v, 2), $spending);
-        $income = array_map(fn($v) => round($v, 2), $income);
+        // Income: Income model
+        $incomes = Income::forUser($user)->active()->get();
+        foreach ($incomes as $inc) {
+            foreach ($inc->occurrencesBetween($windowStart, $windowEnd) as $occ) {
+                $key = $occ->format('Y-m');
+                if (isset($labelIndex[$key])) {
+                    $income[$labelIndex[$key]] += (float)$inc->amount;
+                }
+            }
+        }
 
         return response()->json([
             'months' => $labels,
-            'spending' => $spending,
-            'income' => $income,
+            'spending' => array_map(fn($v) => round($v, 2), $spending),
+            'income' => array_map(fn($v) => round($v, 2), $income),
             'currency_code' => $user->currency_code,
         ]);
     }
