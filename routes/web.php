@@ -17,6 +17,12 @@ if (app()->environment('local')) {
     });
 }
 
+// Admin routes (user/category management)
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+    Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
+});
+
 Route::get('/login',    fn() => view('auth.login'))->name('login')->middleware('guest');
 Route::get('/register', fn() => view('auth.register'))->name('register')->middleware('guest');
 Route::post('/login',    [DashboardController::class, 'login'])->name('login.post');
