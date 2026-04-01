@@ -20,12 +20,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files and install dependencies first for better caching
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader
-
 # Copy rest of the application
 COPY . .
+
+RUN composer install --no-dev --optimize-autoloader
 
 # Build assets (if using Vite/Mix)
 RUN npm ci && npm run build
