@@ -32,7 +32,7 @@ RUN npm ci && npm run build
 RUN chown -R www-data:www-data /var/www/html
 
 # ENV FILE
-COPY .env /var/www/html/.env
+COPY .env.example /var/www/html/.env
 
 # Entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
