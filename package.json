@@ -20,5 +20,12 @@
         "postcss": "^8.4.24",
         "tailwindcss": "^4.2.1",
         "vite": "^7.0.0"
+    },
+    "dependencies": {
+        "@fullcalendar/core": "^6.1.20",
+        "@fullcalendar/daygrid": "^6.1.20",
+        "@fullcalendar/interaction": "^6.1.20",
+        "filepond": "^4.32.12",
+        "filepond-plugin-image-preview": "^4.6.12"
     }
 }
