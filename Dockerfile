@@ -31,9 +31,6 @@ RUN npm ci && npm run build
 # Permissions
 RUN chown -R www-data:www-data /var/www/html
 
-# ENV FILE
-COPY .env.example /var/www/html/.env
-
 # Entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
