@@ -17,10 +17,11 @@ if (app()->environment('local')) {
     });
 }
 
-// Admin routes (user/category management)
+// Admin routes (user/category/provider management)
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('users', App\Http\Controllers\Admin\UserController::class);
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
+    Route::resource('providers', App\Http\Controllers\Admin\ProviderController::class);
 });
 
 Route::get('/login',    fn() => view('auth.login'))->name('login')->middleware('guest');
@@ -67,8 +68,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{income}/receive', 'markReceived')->name('receive');
         });
 
-    // Calendar
-    Route::get('/calendar', [\App\Http\Controllers\Web\BillController::class, 'calendar'])->name('calendar');
+    // Calendar events API (used by the inline calendar on the bills page)
     Route::get('/bills/events', [\App\Http\Controllers\Web\BillController::class, 'events'])->name('bills.events');
 
     // Family

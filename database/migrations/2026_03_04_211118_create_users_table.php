@@ -12,6 +12,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('name');
             $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('avatar_url')->nullable();
             $table->string('currency_code', 3)->default('EUR');
@@ -19,6 +20,8 @@ return new class extends Migration
             $table->boolean('notifications_enabled')->default(true);
             $table->string('family_id', 26)->nullable();
             $table->string('family_role', 20)->nullable();
+            $table->string('locale', 5)->default('en');
+            $table->boolean('is_admin')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });
