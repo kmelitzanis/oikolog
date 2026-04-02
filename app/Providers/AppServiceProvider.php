@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\App as LaravelApp;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,17 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Prefer an explicitly set session locale (immediate user choice)
-        $locale = session('locale');
-        if (empty($locale)) {
-            $locale = 'en';
-            if (Auth::check() && Auth::user()->locale) {
-                $locale = Auth::user()->locale;
-            }
-        }
-        LaravelApp::setLocale($locale);
-
-        // Share available locales (discover from resources/lang)
+        // Share available locales discovered from resources/lang (json files + subdirs)
         try {
             $langPath = resource_path('lang');
             $locales = [];
@@ -40,7 +28,6 @@ class AppServiceProvider extends ServiceProvider
                 foreach (scandir($langPath) as $entry) {
                     if (in_array($entry, ['.', '..'])) continue;
                     $full = $langPath . DIRECTORY_SEPARATOR . $entry;
-                    // json files (en.json) or directories (en/)
                     if (is_file($full) && pathinfo($full, PATHINFO_EXTENSION) === 'json') {
                         $locales[] = pathinfo($full, PATHINFO_FILENAME);
                     } elseif (is_dir($full)) {
@@ -54,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
             View::share('availableLocales', ['en']);
         }
 
-        // Use database-backed translation loader that falls back to file loader
+        // Database-backed translation loader (falls back to file loader)
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('translations')) {
                 $fileLoader = $this->app['translation.loader'];
@@ -62,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
                 $this->app->instance('translation.loader', $dbLoader);
             }
         } catch (\Throwable $e) {
-            // If the DB isn't ready (migrations running), skip binding DB loader
+            // Skip if DB isn't ready (e.g. during migrations)
         }
     }
 }

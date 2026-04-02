@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Bill;
 use App\Models\Category;
 use App\Models\Payment;
+use App\Models\Provider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ class BillController extends Controller
     public function index(Request $request)
     {
         $user  = $request->user();
-        $query = Bill::with(['category', 'payments' => function ($q) {
+        $query = Bill::with(['category', 'provider', 'payments' => function ($q) {
             $q->latest('paid_at')->with('paidBy');
         }])
             ->forUser($user)
@@ -23,6 +24,9 @@ class BillController extends Controller
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
         }
         if ($request->filled('frequency')) {
             $query->where('frequency', $request->frequency);
@@ -44,8 +48,14 @@ class BillController extends Controller
     public function create()
     {
         $categories = Category::orderBy('name')->get();
+        $providers = Provider::with('categories')->orderBy('name')->get()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'category_ids' => $p->categories->pluck('id')->all(),
+            ]);
 
-        return view('bills.form', compact('categories'));
+        return view('bills.form', compact('categories', 'providers'));
     }
 
     public function store(Request $request)
@@ -54,6 +64,7 @@ class BillController extends Controller
             'name'               => ['required', 'string', 'max:120'],
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
+            'provider_id' => ['nullable', 'exists:providers,id'],
             'amount'             => ['required', 'numeric', 'min:0.01'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],
@@ -92,7 +103,7 @@ class BillController extends Controller
     public function show(Bill $bill)
     {
         $this->authorizeView($bill);
-        $bill->load(['category', 'payments.paidBy']);
+        $bill->load(['category', 'provider', 'payments.paidBy']);
         $payments = $bill->payments()->with('paidBy')->orderByDesc('paid_at')->get();
 
         return view('bills.show', compact('bill', 'payments'));
@@ -104,31 +115,66 @@ class BillController extends Controller
         return view('calendar.index');
     }
 
-    // Events for FullCalendar
+    // Events for FullCalendar — returns bills + incomes
     public function events(Request $request)
     {
         $user = $request->user();
-        $bills = Bill::forUser($user)->whereNotNull('next_due_date')->get();
 
-        $events = $bills->map(function ($b) {
+        // ── Bills ─────────────────────────────────────────────────────────────
+        $bills = Bill::forUser($user)->whereNotNull('next_due_date')->with('category')->get();
+
+        $billEvents = $bills->map(function ($b) {
+            $isOverdue = $b->next_due_date && $b->next_due_date->isPast() && $b->is_active;
+            $color = $isOverdue ? '#ef4444' : ($b->category?->color_hex ?? '#6366f1');
+
             return [
-                'id' => $b->id,
-                'title' => $b->name . ' (' . $b->currency_code . ' ' . number_format($b->amount, 2) . ')',
+                'id' => 'bill-' . $b->id,
+                'title' => $b->name,
                 'start' => $b->next_due_date?->toDateString(),
                 'allDay' => true,
                 'url' => route('bills.show', $b),
+                'color' => $color,
+                'extendedProps' => [
+                    'type' => 'bill',
+                    'amount' => $b->currency_code . ' ' . number_format($b->amount, 2),
+                    'overdue' => $isOverdue,
+                ],
             ];
         });
 
-        return response()->json($events);
+        // ── Incomes ───────────────────────────────────────────────────────────
+        $incomes = \App\Models\Income::forUser($user)->active()->whereNotNull('next_date')->get();
+
+        $incomeEvents = $incomes->map(function ($i) {
+            return [
+                'id' => 'income-' . $i->id,
+                'title' => $i->name,
+                'start' => $i->next_date?->toDateString(),
+                'allDay' => true,
+                'url' => route('income.show', $i),
+                'color' => '#10b981',
+                'extendedProps' => [
+                    'type' => 'income',
+                    'amount' => $i->currency_code . ' ' . number_format($i->amount, 2),
+                ],
+            ];
+        });
+
+        return response()->json($billEvents->concat($incomeEvents)->values());
     }
 
     public function edit(Bill $bill)
     {
         $this->authorizeEdit($bill);
         $categories = Category::orderBy('name')->get();
+        $providers = Provider::with('categories')->orderBy('name')->get()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'category_ids' => $p->categories->pluck('id')->all(),
+            ]);
 
-        return view('bills.form', compact('bill', 'categories'));
+        return view('bills.form', compact('bill', 'categories', 'providers'));
     }
 
     public function update(Request $request, Bill $bill)
@@ -139,6 +185,7 @@ class BillController extends Controller
             'name'               => ['required', 'string', 'max:120'],
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
+            'provider_id' => ['nullable', 'exists:providers,id'],
             'amount'             => ['required', 'numeric', 'min:0.01'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],

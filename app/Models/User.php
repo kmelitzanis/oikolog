@@ -17,7 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password', 'avatar_url',
         'currency_code', 'timezone', 'notifications_enabled',
-        'family_id', 'family_role', 'locale',
+        'family_id', 'family_role', 'locale', 'is_admin',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -27,6 +27,7 @@ class User extends Authenticatable
         return [
             'password'              => 'hashed',
             'notifications_enabled' => 'boolean',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -48,6 +49,11 @@ class User extends Authenticatable
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'paid_by');
+    }
+
+    public function isAdmin(): bool
+    {
+        return (bool)$this->is_admin;
     }
 
     public function isFamilyOwner(): bool
