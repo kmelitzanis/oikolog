@@ -155,6 +155,7 @@ class DashboardController extends Controller
         }
 
         $user->update($update);
+        $user->refresh();
 
         return back()->with('success', 'Settings updated.');
     }
