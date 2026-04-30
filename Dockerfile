@@ -23,6 +23,9 @@ WORKDIR /var/www/html
 # Copy rest of the application
 COPY . .
 
+# Ensure PHP-FPM listens on all interfaces for Docker Compose networking
+RUN sed -i 's|^listen = .*|listen = 0.0.0.0:9000|' /usr/local/etc/php-fpm.d/www.conf
+
 RUN composer install --no-dev --optimize-autoloader
 
 # Build assets (if using Vite/Mix)
