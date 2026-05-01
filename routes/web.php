@@ -4,6 +4,7 @@ use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\BillController;
 use App\Http\Controllers\Web\FamilyController;
 use App\Http\Controllers\Web\IncomeController;
+use App\Http\Controllers\Web\ShoppingListController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -100,4 +101,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/{translation}', 'update')->name('update');
         Route::delete('/{translation}', 'destroy')->name('destroy');
     });
+
+    // Shopping Lists
+    Route::controller(ShoppingListController::class)
+        ->prefix('shopping-lists')
+        ->name('shopping-list.')
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{list}', 'show')->name('show');
+        });
 });
