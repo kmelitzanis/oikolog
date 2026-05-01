@@ -60,6 +60,7 @@ services:
       - MYSQL_PASSWORD=${DB_PASSWORD:-secret}
     volumes:
       - dbdata:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     healthcheck:
