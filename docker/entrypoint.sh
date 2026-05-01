@@ -1,19 +1,19 @@
-#!/usr/bin/env bash
+#!/bin/sh
 set -e
 
-# Ensure composer dependencies are installed
-if [ ! -d "vendor" ]; then
-  composer install --no-interaction --prefer-dist
+# Cache config/routes/views for production
+if [ "$APP_ENV" = "production" ]; then
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
 fi
 
-# Optionally run migrations in development
-if [ "$APP_ENV" = "local" ] || [ "$FORCE_MIGRATE" = "1" ]; then
-  php artisan migrate --force || true
+# Run migrations if FORCE_MIGRATE=1
+if [ "${FORCE_MIGRATE}" = "1" ]; then
+    php artisan migrate --force
 fi
 
-# Set permissions for Laravel
-chown -R www-data:www-data storage bootstrap/cache || true
-chmod -R 775 storage bootstrap/cache || true
+# Fix storage permissions
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 exec "$@"
-

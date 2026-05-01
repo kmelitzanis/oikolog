@@ -40,5 +40,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 9000
 
+# Mark public as a volume so nginx can share it
+VOLUME ["/var/www/html/public"]
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
