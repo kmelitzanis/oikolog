@@ -63,10 +63,11 @@
         <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
             @php
                 $navLinks = [
-                    ['route' => 'dashboard',    'icon' => 'dashboard',    'label' => __('messages.dashboard'), 'match' => 'dashboard'],
-                    ['route' => 'bills.index',  'icon' => 'receipt_long', 'label' => __('messages.bills'),     'match' => 'bills.*'],
-                    ['route' => 'income.index', 'icon' => 'trending_up',  'label' => __('messages.income'),    'match' => 'income.*'],
-                    ['route' => 'family.index', 'icon' => 'group',        'label' => __('messages.family'),    'match' => 'family.*'],
+                    ['route' => 'dashboard',         'icon' => 'dashboard',    'label' => __('messages.dashboard'),    'match' => 'dashboard'],
+                    ['route' => 'bills.index',       'icon' => 'receipt_long', 'label' => __('messages.bills'),        'match' => 'bills.*'],
+                    ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => 'income.*'],
+                    ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
+                    ['route' => 'shopping-list.index', 'icon' => 'shopping_cart', 'label' => __('messages.shopping_lists'), 'match' => 'shopping-list.*'],
                 ];
             @endphp
             @foreach($navLinks as $link)

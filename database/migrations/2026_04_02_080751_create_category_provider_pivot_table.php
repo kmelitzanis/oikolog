@@ -34,26 +34,41 @@ return new class extends Migration {
                     ]);
                 });
 
-            // ── 3. Drop category_id from providers ────────────────────────────
+        // ── 3. Drop category_id from providers ────────────────────────────
             // Drop all foreign keys on that column first (name may vary by driver).
-            Schema::table('providers', function (Blueprint $table) {
-                $fks = collect(
-                    DB::select("SELECT CONSTRAINT_NAME
-                                FROM information_schema.KEY_COLUMN_USAGE
-                                WHERE TABLE_SCHEMA = DATABASE()
-                                  AND TABLE_NAME = 'providers'
-                                  AND COLUMN_NAME = 'category_id'
-                                  AND REFERENCED_TABLE_NAME IS NOT NULL")
-                )->pluck('CONSTRAINT_NAME');
+            if (DB::getDriverName() !== 'sqlite') {
+                Schema::table('providers', function (Blueprint $table) {
+                    // SQLite doesn't support dropping foreign keys by name,
+                    // so we only do this for MySQL and PostgreSQL
+                    if (DB::getDriverName() === 'mysql') {
+                        $fks = collect(
+                            DB::select("SELECT CONSTRAINT_NAME
+                                        FROM information_schema.KEY_COLUMN_USAGE
+                                        WHERE TABLE_SCHEMA = DATABASE()
+                                          AND TABLE_NAME = 'providers'
+                                          AND COLUMN_NAME = 'category_id'
+                                          AND REFERENCED_TABLE_NAME IS NOT NULL")
+                        )->pluck('CONSTRAINT_NAME');
 
-                foreach ($fks as $fk) {
-                    $table->dropForeign($fk);
-                }
-            });
+                        foreach ($fks as $fk) {
+                            $table->dropForeign($fk);
+                        }
+                    } else {
+                        // For PostgreSQL, try the convention name
+                        try {
+                            $table->dropForeign('providers_category_id_foreign');
+                        } catch (\Exception $e) {
+                            // Ignore errors
+                        }
+                    }
+                });
+            }
 
-            Schema::table('providers', function (Blueprint $table) {
-                $table->dropColumn('category_id');
-            });
+            if (DB::getDriverName() !== 'sqlite') {
+                Schema::table('providers', function (Blueprint $table) {
+                    $table->dropColumn('category_id');
+                });
+            }
         }
     }
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\IncomeController;
+use App\Http\Controllers\Api\ShoppingListController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ────────────────────────────────────────────────────────────────────
@@ -60,4 +61,18 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::post('/regenerate-code',      [FamilyController::class, 'regenerateCode']);
         Route::delete('/members/{member}',   [FamilyController::class, 'removeMember']);
     });
+
+    Route::prefix('shopping-lists')->group(function () {
+        Route::get('/',                             [ShoppingListController::class, 'index']);
+        Route::post('/',                            [ShoppingListController::class, 'store']);
+        Route::get('/{list}',                       [ShoppingListController::class, 'show']);
+        Route::put('/{list}',                       [ShoppingListController::class, 'update']);
+        Route::delete('/{list}',                    [ShoppingListController::class, 'destroy']);
+        Route::post('/{list}/items',                [ShoppingListController::class, 'addItem']);
+        Route::put('/{list}/items/{item}',          [ShoppingListController::class, 'updateItem']);
+        Route::delete('/{list}/items/{item}',       [ShoppingListController::class, 'removeItem']);
+        Route::patch('/{list}/items/{item}/toggle', [ShoppingListController::class, 'toggleItem']);
+    });
+
+    Route::post('/shopping-lists/lookup-barcode', [ShoppingListController::class, 'lookupBarcode']);
 });
