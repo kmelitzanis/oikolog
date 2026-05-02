@@ -1,2 +1,0 @@
-@include('layouts.auth.register')
-

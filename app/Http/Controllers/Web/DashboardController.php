@@ -64,26 +64,6 @@ class DashboardController extends Controller
         return back()->withErrors(['email' => 'Invalid credentials.'])->withInput();
     }
 
-    public function register(Request $request)
-    {
-        $data = $request->validate([
-            'name'          => ['required', 'string', 'max:100'],
-            'email'         => ['required', 'email', 'unique:users'],
-            'password'      => ['required', 'confirmed', 'min:8'],
-            'currency_code' => ['nullable', 'string', 'size:3'],
-        ]);
-
-        $user = User::create([
-            'name'          => $data['name'],
-            'email'         => $data['email'],
-            'password'      => $data['password'],
-            'currency_code' => $data['currency_code'] ?? 'EUR',
-        ]);
-
-        Auth::login($user);
-        return redirect('/');
-    }
-
     // Show settings form
     public function settings()
     {

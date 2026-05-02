@@ -25,10 +25,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('providers', App\Http\Controllers\Admin\ProviderController::class);
 });
 
-Route::get('/login',    fn() => view('auth.login'))->name('login')->middleware('guest');
-Route::get('/register', fn() => view('auth.register'))->name('register')->middleware('guest');
-Route::post('/login',    [DashboardController::class, 'login'])->name('login.post');
-Route::post('/register', [DashboardController::class, 'register'])->name('register.post');
+Route::get('/login',  fn() => view('auth.login'))->name('login')->middleware('guest');
+Route::post('/login', [DashboardController::class, 'login'])->name('login.post');
 Route::post('/logout', function () {
     Auth::logout();
     return redirect('/login');
