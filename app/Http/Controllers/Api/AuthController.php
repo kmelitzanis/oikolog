@@ -11,29 +11,6 @@ use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
-    public function register(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'name'          => ['required', 'string', 'max:100'],
-            'email'         => ['required', 'email', 'unique:users,email'],
-            'password'      => ['required', Password::min(8)],
-            'currency_code' => ['nullable', 'string', 'size:3'],
-            'timezone'      => ['nullable', 'timezone:all'],
-        ]);
-
-        $user = User::create([
-            'name'          => $data['name'],
-            'email'         => $data['email'],
-            'password'      => Hash::make($data['password']),
-            'currency_code' => $data['currency_code'] ?? 'EUR',
-            'timezone'      => $data['timezone'] ?? 'Europe/Athens',
-        ]);
-
-        $token = $user->createToken('mobile', ['*'], now()->addYear())->plainTextToken;
-
-        return response()->json(['user' => $this->userResource($user), 'token' => $token], 201);
-    }
-
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([

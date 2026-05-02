@@ -10,8 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login',    [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login']);
 });
 
 Route::get('/health', fn() => response()->json(['status' => 'ok', 'version' => '1.0']));
