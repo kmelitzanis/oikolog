@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (avatarInput) {
         FilePond.create(avatarInput, {
             allowMultiple: false,
+            storeAsFile: true,
             acceptedFileTypes: ['image/*'],
             labelIdle: '<span class="material-icons-round text-2xl text-gray-400 block mb-1">photo_camera</span><span class="text-sm text-gray-500">Drag & drop or <span class="text-indigo-600 font-semibold">browse</span></span>',
             stylePanelLayout: 'compact',

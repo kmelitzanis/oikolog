@@ -29,21 +29,23 @@
 
                 {{-- Name --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Income Name *</label>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Income Name
+                        *</label>
                     <input type="text" name="name"
                            value="{{ old('name', $income->name ?? '') }}"
                            placeholder="e.g. Monthly Salary, Freelance Project, Rent Income" required
-                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:text-gray-100 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
                 </div>
 
                 {{-- Source --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Source / Category <span class="text-gray-400 dark:text-gray-400">(optional)</span></label>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Source / Category
+                        <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
                     <input type="text" name="source"
                            value="{{ old('source', $income->source ?? '') }}"
                            placeholder="e.g. Employer, Freelance, Rental, Dividends"
                            list="source-suggestions"
-                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:text-gray-100 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
                     <datalist id="source-suggestions">
                         @foreach(['Salary','Freelance','Rental','Business','Dividends','Pension','Side income','Other'] as $s)
                             <option value="{{ $s }}">
@@ -57,19 +59,19 @@
                         $symbols = ['EUR'=>'€','USD'=>'$','GBP'=>'£','CHF'=>'Fr','CAD'=>'CA$','AUD'=>'A$','JPY'=>'¥'];
                         $symbol  = $symbols[auth()->user()->currency_code] ?? auth()->user()->currency_code;
                     @endphp
-                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Amount *</label>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Amount *</label>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 font-semibold text-sm">{{ $symbol }}</span>
                         <input type="number" name="amount" step="0.01" min="0.01"
                                value="{{ old('amount', isset($income) ? $income->amount : '') }}"
                                placeholder="0.00" required
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:text-gray-100 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
                     </div>
                 </div>
 
                 {{-- Frequency --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Frequency *</label>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Frequency *</label>
                     <div class="flex flex-wrap gap-2">
                         @foreach(['once'=>'One-time','weekly'=>'Weekly','biweekly'=>'Bi-weekly','monthly'=>'Monthly','quarterly'=>'Quarterly','yearly'=>'Yearly'] as $val => $lbl)
                             <label class="cursor-pointer">
@@ -83,7 +85,7 @@
                             </label>
                         @endforeach
                     </div>
-                    <p class="text-xs text-gray-400 dark:text-gray-300 mt-2" x-show="!isRecurring()">
+                    <p class="text-xs text-gray-400 dark:text-slate-400 mt-2" x-show="!isRecurring()">
                         One-time income will be recorded as a single entry on the start date.
                     </p>
                 </div>
@@ -91,26 +93,28 @@
                 {{-- Dates --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5"
+                        <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5"
                                x-text="isRecurring() ? 'Start / First Date *' : 'Date *'"></label>
                         <input type="date" name="start_date"
                                value="{{ old('start_date', isset($income) ? $income->start_date->format('Y-m-d') : now()->format('Y-m-d')) }}"
                                required
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:text-gray-100 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
                     </div>
                     <div x-show="isRecurring()" x-cloak>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">End Date <span class="text-gray-400 dark:text-gray-400">(optional)</span></label>
+                        <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">End Date <span
+                                class="text-gray-400 dark:text-slate-500">(optional)</span></label>
                         <input type="date" name="end_date"
                                value="{{ old('end_date', (isset($income) && $income->end_date) ? $income->end_date->format('Y-m-d') : '') }}"
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:text-gray-100 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
                     </div>
                 </div>
 
                 {{-- Notes --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Notes <span class="text-gray-400 dark:text-gray-400">(optional)</span></label>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Notes <span
+                            class="text-gray-400 dark:text-slate-500">(optional)</span></label>
                     <textarea name="notes" rows="3" placeholder="Any additional notes…"
-                              class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:text-gray-100 transition resize-none">{{ old('notes', $income->notes ?? '') }}</textarea>
+                              class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition resize-none">{{ old('notes', $income->notes ?? '') }}</textarea>
                 </div>
 
                 {{-- Active toggle (edit only) --}}

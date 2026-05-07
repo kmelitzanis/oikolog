@@ -33,10 +33,7 @@
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
                     <td class="px-5 py-3">
                         <div class="flex items-center gap-2.5">
-                            <div
-                                class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs shrink-0">
-                                {{ strtoupper(substr($user->name, 0, 1)) }}
-                            </div>
+                            @include('partials.avatar', ['user' => $user, 'size' => 'w-8 h-8', 'rounded' => 'rounded-xl'])
                             <span class="font-medium text-gray-900 dark:text-white">{{ $user->name }}</span>
                         </div>
                     </td>

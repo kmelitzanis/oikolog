@@ -124,10 +124,7 @@
                 @foreach($family->members as $member)
                     <div
                         class="flex items-center gap-3 py-3 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }}">
-                        <div
-                            class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 rounded-full flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-400 shrink-0">
-                            {{ strtoupper(substr($member->name, 0, 1)) }}
-                        </div>
+                        @include('partials.avatar', ['user' => $member, 'rounded' => 'rounded-full'])
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-semibold text-gray-900 dark:text-white">
                                 {{ $member->name }}
