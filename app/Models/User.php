@@ -18,9 +18,10 @@ class User extends Authenticatable
         'name', 'email', 'password', 'avatar_url',
         'currency_code', 'timezone', 'notifications_enabled',
         'family_id', 'family_role', 'locale', 'is_admin',
+        'two_factor_secret', 'two_factor_enabled',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret'];
 
     protected function casts(): array
     {
@@ -28,6 +29,7 @@ class User extends Authenticatable
             'password'              => 'hashed',
             'notifications_enabled' => 'boolean',
             'is_admin' => 'boolean',
+            'two_factor_enabled' => 'boolean',
         ];
     }
 

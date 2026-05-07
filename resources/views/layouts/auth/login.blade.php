@@ -49,6 +49,11 @@
                    autocomplete="current-password"
                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
         </div>
+        <div class="flex items-center">
+            <input type="checkbox" name="remember" id="remember" value="1"
+                   class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+            <label for="remember" class="ml-2 text-sm text-gray-500 cursor-pointer select-none">Remember me</label>
+        </div>
         <button type="submit"
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3 text-sm transition">
             Sign In

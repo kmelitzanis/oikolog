@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\BillController;
 use App\Http\Controllers\Web\FamilyController;
 use App\Http\Controllers\Web\IncomeController;
 use App\Http\Controllers\Web\ShoppingListController;
+use App\Http\Controllers\Web\TwoFactorController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -32,9 +33,17 @@ Route::post('/logout', function () {
     return redirect('/login');
 })->name('logout');
 
+// 2FA challenge (between password success and full auth)
+Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('2fa.challenge')->middleware('guest');
+Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallenge'])->name('2fa.verify');
+
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/locale/{lang}', [\App\Http\Controllers\Web\DashboardController::class, 'setLocale'])->name('locale.set');
+
+    // Calendar events API (used by the inline calendar on the bills page)
+    // Must be defined BEFORE the bills resource routes to avoid /{bill} pattern matching
+    Route::get('/bills/events', [\App\Http\Controllers\Web\BillController::class, 'events'])->name('bills.events');
 
     // Bills
     Route::controller(BillController::class)
@@ -67,9 +76,6 @@ Route::middleware('auth')->group(function () {
             Route::post('/{income}/receive', 'markReceived')->name('receive');
         });
 
-    // Calendar events API (used by the inline calendar on the bills page)
-    Route::get('/bills/events', [\App\Http\Controllers\Web\BillController::class, 'events'])->name('bills.events');
-
     // Family
     Route::controller(FamilyController::class)
         ->prefix('family')
@@ -89,6 +95,11 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Web\DashboardController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Web\DashboardController::class, 'updateSettings'])->name('settings.update');
+
+    // 2FA setup
+    Route::get('/two-factor-setup', [TwoFactorController::class, 'setup'])->name('2fa.setup');
+    Route::post('/two-factor-enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
+    Route::post('/two-factor-disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
 
     // Translations management
     Route::prefix('translations')->name('translations.')->controller(\App\Http\Controllers\Web\TranslationController::class)->group(function () {

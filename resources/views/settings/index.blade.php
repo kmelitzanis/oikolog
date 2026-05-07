@@ -112,5 +112,31 @@
                 </div>
             </div>
         </form>
+
+        {{-- 2FA --}}
+        <div
+            class="mt-6 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl {{ $user->two_factor_enabled ? 'bg-green-50 dark:bg-green-900/30' : 'bg-amber-50 dark:bg-amber-900/30' }} flex items-center justify-center shrink-0">
+                        <span
+                            class="material-icons-round {{ $user->two_factor_enabled ? 'text-green-600 dark:text-green-400' : 'text-amber-500' }}">
+                            {{ $user->two_factor_enabled ? 'verified_user' : 'shield' }}
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800 dark:text-white">Two-Factor Authentication</p>
+                        <p class="text-xs text-gray-400 dark:text-slate-400">
+                            {{ $user->two_factor_enabled ? '2FA is active — your account is protected.' : '2FA is not enabled.' }}
+                        </p>
+                    </div>
+                </div>
+                <a href="{{ route('2fa.setup') }}"
+                   class="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition">
+                    {{ $user->two_factor_enabled ? 'Manage' : 'Set up' }}
+                </a>
+            </div>
+        </div>
     </div>
 @endsection
