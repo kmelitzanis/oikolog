@@ -190,7 +190,7 @@
     </div>
     {{-- ── Page content ──────────────────────────────────────────── --}}
     <div class="flex-1 lg:pl-64 min-w-0">
-        <main class="min-h-screen px-4 sm:px-6 lg:px-8 pt-20 lg:pt-8 pb-12 max-w-7xl mx-auto">
+        <main class="min-h-screen px-4 sm:px-6 lg:px-8 pt-20 lg:pt-8 pb-28 lg:pb-12 max-w-7xl mx-auto">
             @if(session('success'))
                 <div
                     class="flex items-center gap-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-2xl px-4 py-3 text-sm mb-6">
@@ -222,6 +222,30 @@
             @yield('content')
         </main>
     </div>
+    {{-- Mobile Bottom Navigation Bar --}}
+    <nav
+        class="lg:hidden fixed inset-x-0 bottom-0 z-30 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700">
+        <div class="flex items-center justify-around h-16">
+            @php
+                $bottomNavLinks = [
+                    ['route' => 'dashboard',         'icon' => 'dashboard',    'label' => __('messages.dashboard'),    'match' => 'dashboard'],
+                    ['route' => 'bills.index',       'icon' => 'receipt_long', 'label' => __('messages.bills'),        'match' => 'bills.*'],
+                    ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => 'income.*'],
+                    ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
+                ];
+            @endphp
+            @foreach($bottomNavLinks as $link)
+                <a href="{{ route($link['route']) }}"
+                   class="flex flex-col items-center justify-center w-full h-full gap-1 text-xs font-medium transition-colors
+                          {{ request()->routeIs($link['match'])
+                              ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20'
+                              : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white' }}">
+                    <span class="material-icons-round text-xl">{{ $link['icon'] }}</span>
+                    <span>{{ $link['label'] }}</span>
+                </a>
+            @endforeach
+        </div>
+    </nav>
 </div>
 @stack('scripts')
 </body>

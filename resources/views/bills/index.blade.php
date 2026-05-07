@@ -82,6 +82,33 @@
             text-overflow: ellipsis;
         }
 
+        /* Day cell indicators */
+        .fc-daygrid-day {
+            position: relative;
+        }
+
+        .day-indicator-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin: 0 1px;
+            vertical-align: baseline;
+        }
+
+        .day-indicators {
+            display: flex;
+            gap: 2px;
+            margin-top: 2px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Indicator styling for small dots on day cells */
+        #bills-calendar .fc-daygrid-day-frame::after {
+            content: attr(data-indicators);
+        }
+
         /* list view */
         #bills-calendar .fc-list-event-title a {
             text-decoration: none;
@@ -206,7 +233,13 @@
                         <span class="inline-block w-3 h-3 rounded-full bg-red-500"></span> Overdue
                     </div>
                     <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 font-medium">
-                        <span class="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> Income
+                        <span class="inline-block w-3 h-3 rounded-full bg-orange-500"></span> Upcoming
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 font-medium">
+                        <span class="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> Paid
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 font-medium">
+                        <span class="inline-block w-3 h-3 rounded-full bg-blue-500"></span> Income
                     </div>
                 </div>
                 <div id="bills-calendar"></div>
@@ -410,6 +443,7 @@
     <script>
         (function () {
             let cal = null;
+            let eventCache = [];
 
             window.initBillsCalendar = function () {
                 const el = document.getElementById('bills-calendar');
@@ -423,19 +457,26 @@
                 cal = new FullCalendar.Calendar(el, {
                     initialView: 'dayGridMonth',
                     height: 'auto',
-                    firstDay: 1,               // Monday first
+                    firstDay: 1,
                     headerToolbar: {
                         left: 'prev,next today',
                         center: 'title',
                         right: 'dayGridMonth,listMonth'
                     },
                     buttonText: {today: 'Today', month: 'Month', list: 'List'},
-                    events: {
-                        url: '{{ route('bills.events') }}',
-                        method: 'GET',
-                        failure: function () {
-                            console.error('Calendar events failed to load');
-                        }
+                    events: function (info, successCallback, failureCallback) {
+                        fetch('{{ route('bills.events') }}?start=' + info.startStr + '&end=' + info.endStr)
+                            .then(r => r.json())
+                            .then(events => {
+                                eventCache = events;
+                                console.log('Events loaded:', events.length);
+                                successCallback(events);
+                                setTimeout(() => addDayIndicators(), 100);
+                            })
+                            .catch(err => {
+                                console.error('Failed to load events:', err);
+                                failureCallback(err);
+                            });
                     },
                     // Custom event pill rendering
                     eventContent: function (arg) {
@@ -466,11 +507,95 @@
                             + ': ' + info.event.title
                             + (p.amount ? ' — ' + p.amount : '')
                             + (p.overdue ? ' (overdue)' : '');
+                    },
+                    datesSet: function () {
+                        // Redraw indicators when calendar view changes
+                        setTimeout(() => addDayIndicators(), 100);
                     }
                 });
 
                 cal.render();
+
+                // Add day indicators after calendar renders
+                addDayIndicators();
             };
+
+            function addDayIndicators() {
+                const dayCells = document.querySelectorAll('#bills-calendar .fc-daygrid-day');
+
+                // Remove any existing indicators first
+                document.querySelectorAll('.day-indicators').forEach(el => el.remove());
+
+                if (!dayCells.length) {
+                    console.log('No day cells found');
+                    return;
+                }
+
+                console.log('Found ' + dayCells.length + ' day cells');
+                console.log('Event cache:', eventCache.length);
+
+                const eventsByDate = {};
+
+                // Group events by date from cache
+                eventCache.forEach(event => {
+                    const date = event.start;
+                    if (!eventsByDate[date]) {
+                        eventsByDate[date] = {paid: 0, unpaid: 0, overdue: 0, income: 0};
+                    }
+                    const type = event.extendedProps.type;
+                    if (type === 'income') {
+                        eventsByDate[date].income++;
+                    } else {
+                        if (event.extendedProps.paid) eventsByDate[date].paid++;
+                        else if (event.extendedProps.overdue) eventsByDate[date].overdue++;
+                        else eventsByDate[date].unpaid++;
+                    }
+                });
+
+                console.log('Events by date:', eventsByDate);
+
+                // Add indicator dots to day cells
+                let addedCount = 0;
+                dayCells.forEach(cell => {
+                    const dateStr = cell.getAttribute('data-date');
+                    if (!dateStr || !eventsByDate[dateStr]) return;
+
+                    const stats = eventsByDate[dateStr];
+                    const indicatorDiv = document.createElement('div');
+                    indicatorDiv.className = 'day-indicators';
+                    indicatorDiv.style.cssText = 'display:flex;gap:2px;padding:0 2px;margin-top:2px;justify-content:center;flex-wrap:wrap;';
+
+                    // Add dots for each type using HTML
+                    let html = '';
+                    if (stats.overdue > 0) {
+                        html += `<span style="background-color:#ef4444;width:5px;height:5px;border-radius:50%;display:inline-block;" title="${stats.overdue} overdue"></span>`;
+                    }
+                    if (stats.unpaid > 0) {
+                        html += `<span style="background-color:#f97316;width:5px;height:5px;border-radius:50%;display:inline-block;" title="${stats.unpaid} unpaid"></span>`;
+                    }
+                    if (stats.paid > 0) {
+                        html += `<span style="background-color:#10b981;width:5px;height:5px;border-radius:50%;display:inline-block;" title="${stats.paid} paid"></span>`;
+                    }
+                    if (stats.income > 0) {
+                        html += `<span style="background-color:#3b82f6;width:5px;height:5px;border-radius:50%;display:inline-block;" title="${stats.income} income"></span>`;
+                    }
+
+                    if (html.length > 0) {
+                        indicatorDiv.innerHTML = html;
+                        // Try multiple selectors for different FullCalendar versions
+                        let container = cell.querySelector('.fc-daygrid-day-frame') ||
+                            cell.querySelector('.fc-daygrid-day-bg') ||
+                            cell.querySelector('.fc-daygrid-day-top') ||
+                            cell;
+                        if (container) {
+                            container.appendChild(indicatorDiv);
+                            addedCount++;
+                        }
+                    }
+                });
+
+                console.log('Added ' + addedCount + ' indicator divs');
+            }
         })();
     </script>
 @endpush

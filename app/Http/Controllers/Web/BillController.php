@@ -120,27 +120,69 @@ class BillController extends Controller
     {
         $user = $request->user();
 
+        // Parse dates - handle both RFC 3339 with timezone and ISO 8601 formats
+        $startStr = $request->get('start');
+        $endStr = $request->get('end');
+
+        // Remove space before timezone offset if present (URL encoding issue)
+        if ($startStr && strpos($startStr, ' ') !== false) {
+            $startStr = str_replace(' ', '+', $startStr);
+        }
+        if ($endStr && strpos($endStr, ' ') !== false) {
+            $endStr = str_replace(' ', '+', $endStr);
+        }
+
+        $start = $startStr ? \Carbon\Carbon::parse($startStr) : now()->startOfMonth();
+        $end = $endStr ? \Carbon\Carbon::parse($endStr) : now()->endOfMonth();
+
         // ── Bills ─────────────────────────────────────────────────────────────
-        $bills = Bill::forUser($user)->whereNotNull('next_due_date')->with('category')->get();
+        $bills = Bill::forUser($user)->whereNotNull('next_due_date')
+            ->with(['category', 'provider', 'payments' => function ($q) use ($start, $end) {
+                $q->whereBetween('paid_at', [$start->startOfDay(), $end->endOfDay()]);
+            }])->get();
 
-        $billEvents = $bills->map(function ($b) {
-            $isOverdue = $b->next_due_date && $b->next_due_date->isPast() && $b->is_active;
-            $color = $isOverdue ? '#ef4444' : ($b->category?->color_hex ?? '#6366f1');
+        $billEvents = collect();
 
-            return [
-                'id' => 'bill-' . $b->id,
-                'title' => $b->name,
-                'start' => $b->next_due_date?->toDateString(),
-                'allDay' => true,
-                'url' => route('bills.show', $b),
-                'color' => $color,
-                'extendedProps' => [
-                    'type' => 'bill',
-                    'amount' => $b->currency_code . ' ' . number_format($b->amount, 2),
-                    'overdue' => $isOverdue,
-                ],
-            ];
-        });
+        foreach ($bills as $b) {
+            // Get all occurrences between start and end
+            $occurrences = $b->occurrencesBetween($start, $end);
+
+            foreach ($occurrences as $date) {
+                // Check if this occurrence was paid
+                $isPaid = $b->payments->some(fn($p) => $p->paid_at->toDateString() === $date->toDateString());
+
+                $isOverdue = $date->isPast() && !$isPaid && $b->is_active;
+                $isSoon = !$isOverdue && !$isPaid && $date->diffInDays(now(), false) <= 7 && $date->isFuture() && $b->is_active;
+
+                // Determine color
+                if ($isPaid) {
+                    $color = '#10b981'; // Green for paid
+                } elseif ($isOverdue) {
+                    $color = '#ef4444'; // Red for overdue
+                } elseif ($isSoon) {
+                    $color = '#f97316'; // Orange for upcoming soon
+                } else {
+                    $color = $b->category?->color_hex ?? '#6366f1';
+                }
+
+                $billEvents->push([
+                    'id' => 'bill-' . $b->id . '-' . $date->timestamp,
+                    'title' => '• ' . $b->name,
+                    'start' => $date->toDateString(),
+                    'allDay' => true,
+                    'url' => route('bills.show', $b),
+                    'color' => $color,
+                    'extendedProps' => [
+                        'type' => 'bill',
+                        'amount' => $b->currency_code . ' ' . number_format($b->amount, 2),
+                        'overdue' => $isOverdue,
+                        'paid' => $isPaid,
+                        'soon' => $isSoon,
+                        'provider' => $b->provider?->name ?? '',
+                    ],
+                ]);
+            }
+        }
 
         // ── Incomes ───────────────────────────────────────────────────────────
         $incomes = \App\Models\Income::forUser($user)->active()->whereNotNull('next_date')->get();
@@ -148,7 +190,7 @@ class BillController extends Controller
         $incomeEvents = $incomes->map(function ($i) {
             return [
                 'id' => 'income-' . $i->id,
-                'title' => $i->name,
+                'title' => '• ' . $i->name,
                 'start' => $i->next_date?->toDateString(),
                 'allDay' => true,
                 'url' => route('income.show', $i),

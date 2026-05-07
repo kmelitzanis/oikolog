@@ -104,6 +104,7 @@
             @php
                 $details = [
                     'Category'  => $bill->category?->name ?? '—',
+                    'Provider'  => $bill->provider?->name ?? '—',
                     'Frequency' => ucfirst($bill->frequency),
                     'Start Date'=> $bill->start_date->format('d M Y'),
                     'End Date'  => $bill->end_date ? $bill->end_date->format('d M Y') : '—',

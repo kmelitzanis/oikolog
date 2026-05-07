@@ -56,8 +56,24 @@ class DashboardController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt($credentials, false)) {
+            $user = Auth::user();
+
+            if ($user->two_factor_enabled) {
+                Auth::logout();
+                session([
+                    '2fa_user_id' => $user->id,
+                    '2fa_remember' => $request->boolean('remember'),
+                ]);
+                return redirect()->route('2fa.challenge');
+            }
+
             $request->session()->regenerate();
+
+            if ($request->boolean('remember')) {
+                Auth::login($user, true);
+            }
+
             return redirect()->intended('/');
         }
 
