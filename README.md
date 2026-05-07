@@ -7,10 +7,62 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-# Oikolog — Family bills & spending tracker
+# Oikolog
 
-A lightweight Laravel application for families to track recurring bills, payments, and shared expenses, with analytics,
-multilingual support, and image upload for receipts.
+Oikolog is a modern Laravel application for families to track recurring bills, payments, shared expenses, and income. It
+features a calendar view with bill indicators, analytics, multilingual support, and receipt uploads.
+
+## Features
+
+- 📅 Calendar with bill/income indicators
+- 💸 Track recurring and one-time bills
+- 📊 Spending analytics and summaries
+- 👨‍👩‍👧‍👦 Family member management
+- 🧾 Upload and store receipts
+- 🌍 Multilingual UI
+- 🔒 Role-based access control
+
+## Quick Start
+
+1. Clone the repo and install dependencies:
+   ```bash
+   git clone https://github.com/kmelitzanis/oikolog.git
+   cd oikolog
+   composer install
+   npm install
+   ```
+2. Copy `.env.example` to `.env` and set DB credentials. Generate app key:
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+3. Run migrations and seed translations:
+   ```bash
+   php artisan migrate
+   php artisan db:seed --class="Database\\Seeders\\TranslationSeeder"
+   ```
+4. Build frontend assets:
+   ```bash
+   npm run build
+   ```
+5. Start the server:
+   ```bash
+   php artisan serve
+   ```
+
+## Development
+
+- Run tests: `php artisan test`
+- Manage translations at `/translations` (admin only)
+- Storage link: `php artisan storage:link`
+
+## License
+
+This project is licensed under the GNU GPL v3.0. See LICENSE for details.
+
+---
+
+Built with Laravel, Tailwind CSS, Alpine.js, and FullCalendar.
 
 ## About Laravel
 
