@@ -163,13 +163,72 @@
                     <textarea name="notes" rows="3" placeholder="{{ __('messages.notes') }}…"
                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none">{{ old('notes', isset($bill) ? $bill->notes : '') }}</textarea>
                 </div>
-                {{-- Receipts — FilePond --}}
+                {{-- Receipts — Drag & Drop --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
                         {{ __('messages.receipts') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
                     </label>
-                    <input type="file" name="receipts[]" data-filepond="receipts" accept="image/*,application/pdf"
-                           multiple>
+                    <div id="receipts-drop-area"
+                         class="w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-4 bg-gray-50 dark:bg-slate-700 cursor-pointer transition hover:border-indigo-400 mb-2">
+                        <span id="receipts-drop-text" class="text-gray-400 dark:text-slate-500 text-sm mb-2">Drag & drop receipts here or click to select (images or PDFs, multiple allowed)</span>
+                        <input id="receipts-input" type="file" name="receipts[]" accept="image/*,application/pdf"
+                               class="hidden" multiple>
+                        <div id="receipts-preview" class="flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+                    <script>
+                        const receiptsDropArea = document.getElementById('receipts-drop-area');
+                        const receiptsInput = document.getElementById('receipts-input');
+                        const receiptsPreview = document.getElementById('receipts-preview');
+                        const receiptsDropText = document.getElementById('receipts-drop-text');
+                        receiptsDropArea.addEventListener('click', () => receiptsInput.click());
+                        receiptsDropArea.addEventListener('dragover', e => {
+                            e.preventDefault();
+                            receiptsDropArea.classList.add('border-indigo-400');
+                        });
+                        receiptsDropArea.addEventListener('dragleave', e => {
+                            e.preventDefault();
+                            receiptsDropArea.classList.remove('border-indigo-400');
+                        });
+                        receiptsDropArea.addEventListener('drop', e => {
+                            e.preventDefault();
+                            receiptsDropArea.classList.remove('border-indigo-400');
+                            if (e.dataTransfer.files.length) {
+                                receiptsInput.files = e.dataTransfer.files;
+                                showReceiptsPreview();
+                            }
+                        });
+                        receiptsInput.addEventListener('change', showReceiptsPreview);
+
+                        function showReceiptsPreview() {
+                            receiptsPreview.innerHTML = '';
+                            if (receiptsInput.files && receiptsInput.files.length) {
+                                receiptsDropText.classList.add('hidden');
+                                Array.from(receiptsInput.files).forEach(file => {
+                                    const wrapper = document.createElement('div');
+                                    wrapper.className = 'w-20 h-20 overflow-hidden rounded-lg border border-gray-100 dark:border-slate-600 flex items-center justify-center bg-white dark:bg-slate-700';
+                                    if (file.type.startsWith('image/')) {
+                                        const img = document.createElement('img');
+                                        img.className = 'w-full h-full object-cover';
+                                        img.alt = file.name;
+                                        const reader = new FileReader();
+                                        reader.onload = e => img.src = e.target.result;
+                                        reader.readAsDataURL(file);
+                                        wrapper.appendChild(img);
+                                    } else if (file.type === 'application/pdf') {
+                                        const icon = document.createElement('span');
+                                        icon.className = 'material-icons-round text-4xl text-gray-400';
+                                        icon.textContent = 'picture_as_pdf';
+                                        wrapper.appendChild(icon);
+                                    } else {
+                                        wrapper.textContent = file.name;
+                                    }
+                                    receiptsPreview.appendChild(wrapper);
+                                });
+                            } else {
+                                receiptsDropText.classList.remove('hidden');
+                            }
+                        }
+                    </script>
                     @if(isset($bill) && method_exists($bill, 'receiptUrls'))
                         <div class="mt-3 flex gap-2 flex-wrap">
                             @foreach($bill->receiptUrls() as $url)

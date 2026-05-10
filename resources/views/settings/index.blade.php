@@ -9,26 +9,57 @@
             @csrf
             <div
                 class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 space-y-5">
-                {{-- Avatar via FilePond --}}
+                {{-- Avatar --}}
                 <div>
                     <label
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">{{ __('messages.avatar') }}</label>
-                    <div class="flex items-center gap-4 mb-3">
-                        <div
-                            class="w-14 h-14 rounded-2xl overflow-hidden bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                        @php $avatar = method_exists($user, 'avatarUrl') ? $user->avatarUrl() : $user->avatar_url; @endphp
-                        @if($avatar)
-                            <img src="{{ $avatar }}" alt="avatar" class="w-full h-full object-cover">
-                        @else
-                                <span
-                                    class="text-xl font-extrabold text-indigo-600 dark:text-indigo-400">{{ strtoupper(substr($user->name,0,1)) }}</span>
-                        @endif
+                    <div id="avatar-drop-area"
+                         class="w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-4 bg-gray-50 dark:bg-slate-700 cursor-pointer transition hover:border-indigo-400 mb-2">
+                        <span id="avatar-drop-text"
+                              class="text-gray-400 dark:text-slate-500 text-sm mb-2">{{ __('messages.drag_and_drop_avatar') }}</span>
+                        <input id="avatar-input" type="file" name="avatar" accept="image/*" class="hidden">
+                        <img id="avatar-preview" src="{{ $avatar ?? '' }}" alt="Avatar preview"
+                             class="{{ $avatar ? '' : 'hidden' }} w-14 h-14 object-cover rounded-2xl border border-gray-100 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 mt-2">
                     </div>
-                        <div class="text-xs text-gray-400 dark:text-slate-500">{{ __('messages.avatar') }} — JPG, PNG,
-                            WebP, max 2 MB
-                        </div>
+                    <script>
+                        const avatarDropArea = document.getElementById('avatar-drop-area');
+                        const avatarInput = document.getElementById('avatar-input');
+                        const avatarPreview = document.getElementById('avatar-preview');
+                        const avatarDropText = document.getElementById('avatar-drop-text');
+                        avatarDropArea.addEventListener('click', () => avatarInput.click());
+                        avatarDropArea.addEventListener('dragover', e => {
+                            e.preventDefault();
+                            avatarDropArea.classList.add('border-indigo-400');
+                        });
+                        avatarDropArea.addEventListener('dragleave', e => {
+                            e.preventDefault();
+                            avatarDropArea.classList.remove('border-indigo-400');
+                        });
+                        avatarDropArea.addEventListener('drop', e => {
+                            e.preventDefault();
+                            avatarDropArea.classList.remove('border-indigo-400');
+                            if (e.dataTransfer.files.length) {
+                                avatarInput.files = e.dataTransfer.files;
+                                showAvatarPreview();
+                            }
+                        });
+                        avatarInput.addEventListener('change', showAvatarPreview);
+
+                        function showAvatarPreview() {
+                            if (avatarInput.files && avatarInput.files[0]) {
+                                const reader = new FileReader();
+                                reader.onload = e => {
+                                    avatarPreview.src = e.target.result;
+                                    avatarPreview.classList.remove('hidden');
+                                    avatarDropText.classList.add('hidden');
+                                };
+                                reader.readAsDataURL(avatarInput.files[0]);
+                            }
+                        }
+                    </script>
+                    <div class="text-xs text-gray-400 dark:text-slate-500">{{ __('messages.avatar') }} — JPG, PNG,
+                        WebP, max 2 MB
                     </div>
-                    <input type="file" name="avatar" data-filepond="avatar" accept="image/*">
                 </div>
                 <hr class="border-gray-100 dark:border-slate-700">
                 {{-- Name --}}

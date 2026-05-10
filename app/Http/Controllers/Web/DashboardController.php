@@ -118,7 +118,8 @@ class DashboardController extends Controller
     public function settings()
     {
         $user = Auth::user();
-        return view('settings.index', compact('user'));
+        $avatar = $user->avatar_url ?? null;
+        return view('settings.index', compact('user', 'avatar'));
     }
 
     // Update settings
