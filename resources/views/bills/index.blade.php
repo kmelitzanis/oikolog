@@ -383,13 +383,17 @@
                 <div class="flex items-center gap-1.5 shrink-0" @click.stop>
 
                     {{-- Pay --}}
-                    <form method="POST" action="{{ route('bills.pay', $bill) }}" x-show="!paid">
-                        @csrf
-                        <button type="submit" title="{{ __('messages.mark_paid') }}"
-                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition">
-                            <span class="material-icons-round text-base">check_circle</span>
-                        </button>
-                    </form>
+                    <button type="button" x-show="!paid"
+                            title="{{ __('messages.mark_paid') }}"
+                            @click="$dispatch('open-pay-modal', {
+                                billName: '{{ addslashes($bill->name) }}',
+                                amount:   '{{ number_format($bill->amount, 2) }}',
+                                currency: '{{ $bill->currency_code }}',
+                                payRoute: '{{ route('bills.pay', $bill) }}'
+                            })"
+                            class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition">
+                        <span class="material-icons-round text-base">check_circle</span>
+                    </button>
 
                     {{-- Unpay --}}
                     <form method="POST" action="{{ route('bills.unpay', $bill) }}" x-show="paid" x-cloak>

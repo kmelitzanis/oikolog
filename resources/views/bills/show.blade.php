@@ -88,13 +88,18 @@
             </div>
 
             @if($bill->is_active)
-                <form method="POST" action="{{ route('bills.pay', $bill) }}" class="mt-4">
-                    @csrf
-                    <button type="submit"
+                <div class="mt-4" x-data>
+                    <button type="button"
+                            @click="$dispatch('open-pay-modal', {
+                                billName: '{{ addslashes($bill->name) }}',
+                                amount:   '{{ number_format($bill->amount, 2) }}',
+                                currency: '{{ $bill->currency_code }}',
+                                payRoute: '{{ route('bills.pay', $bill) }}'
+                            })"
                             class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl py-3 text-sm transition">
                         <span class="material-icons-round text-lg">check_circle</span> Mark as Paid
                     </button>
-                </form>
+                </div>
             @endif
         </div>
 
@@ -147,6 +152,9 @@
                         </div>
                         <div class="text-xs text-gray-400 mt-0.5">
                             {{ $payment->paid_at->format('d M Y, H:i') }} · {{ $payment->paidBy?->name ?? '—' }}
+                            @if($payment->income)
+                                · <span class="text-indigo-500 dark:text-indigo-400">{{ $payment->income->name }}</span>
+                            @endif
                     </div>
                     @if($payment->notes)
                             <div class="text-xs text-gray-400">{{ $payment->notes }}</div>

@@ -247,6 +247,9 @@
         </div>
     </nav>
 </div>
+@auth
+    @include('partials.pay-modal')
+@endauth
 @stack('scripts')
 </body>
 </html>

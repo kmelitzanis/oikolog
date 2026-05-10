@@ -103,8 +103,8 @@ class BillController extends Controller
     public function show(Bill $bill)
     {
         $this->authorizeView($bill);
-        $bill->load(['category', 'provider', 'payments.paidBy']);
-        $payments = $bill->payments()->with('paidBy')->orderByDesc('paid_at')->get();
+        $bill->load(['category', 'provider', 'payments.paidBy', 'payments.income']);
+        $payments = $bill->payments()->with(['paidBy', 'income'])->orderByDesc('paid_at')->get();
 
         return view('bills.show', compact('bill', 'payments'));
     }

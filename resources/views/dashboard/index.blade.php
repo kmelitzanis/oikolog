@@ -124,13 +124,16 @@
                     <div class="text-right shrink-0">
                         <div
                             class="text-sm font-bold {{ $amountClass }}">{{ auth()->user()->currency_code }} {{ number_format($bill->amount, 2) }}</div>
-                        <form method="POST" action="{{ route('bills.pay', $bill) }}" class="mt-1">
-                            @csrf
-                            <button type="submit"
-                                    class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline bg-transparent border-0 cursor-pointer p-0">
-                                ✓ Pay
-                            </button>
-                        </form>
+                        <button type="button" x-data
+                                @click="$dispatch('open-pay-modal', {
+                                    billName: '{{ addslashes($bill->name) }}',
+                                    amount:   '{{ number_format($bill->amount, 2) }}',
+                                    currency: '{{ auth()->user()->currency_code }}',
+                                    payRoute: '{{ route('bills.pay', $bill) }}'
+                                })"
+                                class="mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline bg-transparent border-0 cursor-pointer p-0">
+                            ✓ Pay
+                        </button>
                     </div>
                 </div>
             @empty

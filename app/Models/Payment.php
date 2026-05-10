@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Income;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,11 @@ class Payment extends Model
     public function bill(): BelongsTo
     {
         return $this->belongsTo(Bill::class);
+    }
+
+    public function income(): BelongsTo
+    {
+        return $this->belongsTo(Income::class);
     }
 
     public function paidBy(): BelongsTo
