@@ -107,12 +107,14 @@
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
             <h2 class="text-sm font-bold text-gray-900 mb-4">Details</h2>
             @php
+                $lastPayment = $payments->first();
                 $details = [
                     'Category'  => $bill->category?->name ?? '—',
                     'Provider'  => $bill->provider?->name ?? '—',
                     'Frequency' => ucfirst($bill->frequency),
                     'Start Date'=> $bill->start_date->format('d M Y'),
                     'End Date'  => $bill->end_date ? $bill->end_date->format('d M Y') : '—',
+                    'Last Paid by' => $lastPayment?->paidBy?->name ?? '—',
                     'Shared'    => $bill->is_shared ? 'Yes, with family' : 'No',
                     'Reminder'  => $bill->notify_enabled ? $bill->notify_days_before.' days before' : 'Off',
                 ];

@@ -12,7 +12,7 @@ class Payment extends Model
     use HasUlids;
 
     protected $fillable = [
-        'bill_id', 'paid_by', 'amount', 'currency_code',
+        'bill_id', 'paid_by', 'income_id', 'amount', 'currency_code',
         'exchange_rate', 'paid_at', 'notes',
     ];
 

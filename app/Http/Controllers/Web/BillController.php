@@ -274,10 +274,14 @@ class BillController extends Controller
     {
         $this->authorizeView($bill);
 
-        DB::transaction(function () use ($bill, $request) {
+        $paidByUserId = $request->input('paid_by_user_id', $request->user()->id);
+        $incomeId = $request->input('income_id') ?: null;
+
+        DB::transaction(function () use ($bill, $request, $paidByUserId, $incomeId) {
             Payment::create([
                 'bill_id'       => $bill->id,
-                'paid_by'       => $request->user()->id,
+                'paid_by' => $paidByUserId,
+                'income_id' => $incomeId,
                 'amount'        => $bill->amount,
                 'currency_code' => $bill->currency_code,
                 'paid_at'       => now(),
