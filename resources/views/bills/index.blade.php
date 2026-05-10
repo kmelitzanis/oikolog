@@ -316,8 +316,13 @@
                 {{-- Category icon --}}
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                      style="background:{{ $color }}1a;" @click="window.location='{{ route('bills.show', $bill) }}'">
-                    <span class="material-icons-round text-xl"
-                          style="color:{{ $color }}">{{ $bill->category?->icon ?? 'receipt' }}</span>
+                    @if($bill->provider && $bill->provider->logo_url)
+                        <img src="{{ $bill->provider->logo_url }}" alt="{{ $bill->provider->name }}"
+                             class="w-8 h-8 object-contain rounded-lg bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600">
+                    @else
+                        <span class="material-icons-round text-xl"
+                              style="color:{{ $color }}">{{ $bill->category?->icon ?? 'receipt' }}</span>
+                    @endif
                 </div>
 
                 {{-- Info --}}

@@ -282,32 +282,21 @@
 
 @push('scripts')
     <script>
-        (async function () {
-            const csrf = document.querySelector('meta[name="csrf-token"]').content;
-            const headers = {'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json'};
-
-            const xsrf = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-            if (xsrf) headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrf[1]);
+        (function () {
+            const chartData = @json($chartData);
+            const cur = chartData.currency ?? 'EUR';
+            const fmt = v => `${cur} ${Number(v).toFixed(2)}`;
 
             try {
-                const [sRes, rRes] = await Promise.all([
-                    fetch('/api/bills/stats', {credentials: 'same-origin', headers}),
-                    fetch('/api/bills/series?months=12', {credentials: 'same-origin', headers}),
-                ]);
-                if (!sRes.ok || !rRes.ok) throw new Error('API error');
-                const stats = await sRes.json();
-                const series = await rRes.json();
-                const cur = stats.currency_code ?? 'EUR';
-                const fmt = v => `${cur} ${Number(v).toFixed(2)}`;
-
                 const monthlyCtx = document.getElementById('chart-monthly')?.getContext('2d');
                 if (monthlyCtx) new Chart(monthlyCtx, {
                     type: 'line',
                     data: {
-                        labels: series.months, datasets: [
+                        labels: chartData.months,
+                        datasets: [
                             {
                                 label: 'Spending',
-                                data: series.spending,
+                                data: chartData.spending,
                                 borderColor: '#ef4444',
                                 backgroundColor: 'rgba(239,68,68,.07)',
                                 tension: .35,
@@ -316,7 +305,7 @@
                             },
                             {
                                 label: 'Income',
-                                data: series.income,
+                                data: chartData.income,
                                 borderColor: '#10b981',
                                 backgroundColor: 'rgba(16,185,129,.07)',
                                 tension: .35,
@@ -334,8 +323,8 @@
 
                 const isCtx = document.getElementById('chart-income-spend')?.getContext('2d');
                 if (isCtx) {
-                    const ts = series.spending.reduce((a, b) => a + b, 0);
-                    const ti = series.income.reduce((a, b) => a + b, 0);
+                    const ts = chartData.spending.reduce((a, b) => a + b, 0);
+                    const ti = chartData.income.reduce((a, b) => a + b, 0);
                     new Chart(isCtx, {
                         type: 'doughnut',
                         data: {
@@ -352,8 +341,8 @@
                 }
 
                 const catCtx = document.getElementById('chart-category')?.getContext('2d');
-                if (catCtx && stats.by_category) {
-                    const entries = Object.entries(stats.by_category).slice(0, 8);
+                if (catCtx && chartData.by_category && Object.keys(chartData.by_category).length > 0) {
+                    const entries = Object.entries(chartData.by_category).slice(0, 8);
                     const palette = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#f97316', '#ec4899'];
                     new Chart(catCtx, {
                         type: 'doughnut',

@@ -12,11 +12,9 @@
             </h1>
         </div>
         {{-- Move providers JSON outside x-data to avoid HTML attribute quote conflict --}}
-        <script>window.__providers = {echo "done:$?" json_encode($providers ?? [], JSON_HEX_QUOT | JSON_HEX_APOS
-            )
-            !!
-            }
-            ;</script>
+        <script>
+            window.__providers = @json($providers ?? []);
+        </script>
         <form method="POST" enctype="multipart/form-data"
               action="{{ isset($bill) ? route('bills.update', $bill) : route('bills.store') }}"
               x-data="{
@@ -26,7 +24,7 @@
               categoryId: '{{ old('category_id', isset($bill) ? $bill->category_id : '') }}',
               providerId: '{{ old('provider_id', isset($bill) ? $bill->provider_id : '') }}',
               allProviders: window.__providers || [],
-              get providers() { return this.allProviders.filter(p => Array.isArray(p.category_ids) && p.category_ids.includes(this.categoryId)); }
+              get providers() { return this.categoryId ? this.allProviders.filter(p => !Array.isArray(p.category_ids) || p.category_ids.length === 0 || p.category_ids.includes(this.categoryId)) : this.allProviders; }
           }">
             @csrf
             @if(isset($bill))
@@ -42,7 +40,7 @@
                     <input type="text" name="name"
                            value="{{ old('name', isset($bill) ? $bill->name : '') }}"
                            placeholder="{{ __('messages.bill_name_ph') }}" required
-                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                 </div>
                 {{-- Amount --}}
                 <div>
@@ -60,7 +58,7 @@
                         <input type="number" name="amount" step="0.01" min="0.01"
                                value="{{ old('amount', isset($bill) ? $bill->amount : '') }}"
                                placeholder="0.00" required
-                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                     </div>
                 </div>
                 {{-- Category --}}
@@ -69,7 +67,7 @@
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.category') }}
                         *</label>
                     <select name="category_id" required x-model="categoryId" @change="providerId = ''"
-                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                         <option value="">{{ __('messages.select_category') }}</option>
                         @foreach($categories as $cat)
                             <option
@@ -78,17 +76,27 @@
                     </select>
                 </div>
                 {{-- Provider --}}
-                <div x-show="providers.length > 0" x-cloak>
+                <div x-show="allProviders.length > 0" x-cloak>
                     <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
                         {{ __('messages.provider') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
                     </label>
                     <select name="provider_id" x-model="providerId"
-                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                         <option value="">{{ __('messages.no_provider') }}</option>
                         <template x-for="p in providers" :key="p.id">
                             <option :value="p.id" :selected="p.id === providerId" x-text="p.name"></option>
                         </template>
                     </select>
+                    {{-- Logo preview for selected provider --}}
+                    <template x-if="providerId">
+                        <div class="mt-2 flex items-center gap-2"
+                             x-show="allProviders.find(p => p.id === providerId)?.logo_url">
+                            <img :src="allProviders.find(p => p.id === providerId)?.logo_url" alt=""
+                                 class="w-8 h-8 object-contain rounded-lg border border-gray-100 dark:border-slate-600 bg-white dark:bg-slate-700 p-0.5">
+                            <span class="text-xs text-gray-400 dark:text-slate-500"
+                                  x-text="allProviders.find(p => p.id === providerId)?.name"></span>
+                        </div>
+                    </template>
                 </div>
                 {{-- Frequency --}}
                 <div>
@@ -126,7 +134,7 @@
                         <input type="date" name="start_date"
                                value="{{ old('start_date', isset($bill) ? $bill->start_date->format('Y-m-d') : now()->format('Y-m-d')) }}"
                                required
-                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
@@ -134,7 +142,7 @@
                         </label>
                         <input type="date" name="end_date"
                                value="{{ old('end_date', (isset($bill) && $bill->end_date) ? $bill->end_date->format('Y-m-d') : '') }}"
-                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                     </div>
                 </div>
                 {{-- URL --}}
@@ -145,7 +153,7 @@
                     <input type="url" name="url"
                            value="{{ old('url', isset($bill) ? $bill->url : '') }}"
                            placeholder="https://example.com"
-                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                 </div>
                 {{-- Notes --}}
                 <div>
@@ -153,7 +161,7 @@
                         {{ __('messages.notes') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
                     </label>
                     <textarea name="notes" rows="3" placeholder="{{ __('messages.notes') }}…"
-                              class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none">{{ old('notes', isset($bill) ? $bill->notes : '') }}</textarea>
+                              class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none">{{ old('notes', isset($bill) ? $bill->notes : '') }}</textarea>
                 </div>
                 {{-- Receipts — FilePond --}}
                 <div>
@@ -183,9 +191,15 @@
                                 class="text-xs text-gray-400 dark:text-slate-400 mt-0.5">{{ __('messages.share_family_hint') }}</div>
                         </div>
                         <input type="hidden" name="is_shared" value="0">
-                        <input type="checkbox" name="is_shared" value="1"
-                               {{ old('is_shared', isset($bill) ? $bill->is_shared : false) ? 'checked' : '' }}
-                               class="w-5 h-5 rounded accent-indigo-600">
+                        <label class="relative inline-flex items-center cursor-pointer"
+                               x-data="{ checked: {{ old('is_shared', isset($bill) ? ($bill->is_shared ? 'true' : 'false') : 'false') }} }">
+                            <input type="checkbox" name="is_shared" value="1" x-model="checked" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer
+                                        peer-checked:after:translate-x-full peer-checked:after:border-white
+                                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                                        peer-checked:bg-emerald-500"></div>
+                        </label>
                     </div>
                 @endif
                 {{-- Notifications --}}
@@ -194,8 +208,15 @@
                         <div
                             class="text-sm font-semibold text-gray-900 dark:text-white">{{ __('messages.due_reminder') }}</div>
                         <input type="hidden" name="notify_enabled" value="0">
-                        <input type="checkbox" name="notify_enabled" value="1" x-model="notify"
-                               class="w-5 h-5 rounded accent-indigo-600">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="notify_enabled" value="1" x-model="notify"
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer
+                                        peer-checked:after:translate-x-full peer-checked:after:border-white
+                                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                                        peer-checked:bg-emerald-500"></div>
+                        </label>
                     </div>
                     <div x-show="notify" x-collapse>
                         <label

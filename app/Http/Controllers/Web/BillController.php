@@ -52,6 +52,7 @@ class BillController extends Controller
             ->map(fn($p) => [
                 'id' => $p->id,
                 'name' => $p->name,
+                'logo_url' => $p->logo_url,
                 'category_ids' => $p->categories->pluck('id')->all(),
             ]);
 
@@ -213,6 +214,7 @@ class BillController extends Controller
             ->map(fn($p) => [
                 'id' => $p->id,
                 'name' => $p->name,
+                'logo_url' => $p->logo_url,
                 'category_ids' => $p->categories->pluck('id')->all(),
             ]);
 

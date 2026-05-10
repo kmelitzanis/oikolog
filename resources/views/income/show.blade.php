@@ -6,13 +6,14 @@
 
         {{-- Back --}}
         <div class="flex items-center gap-3 mb-6">
-            <a href="{{ route('income.index') }}" class="text-gray-400 hover:text-gray-600 transition shrink-0">
+            <a href="{{ route('income.index') }}"
+               class="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition shrink-0">
                 <span class="material-icons-round">arrow_back</span>
             </a>
-            <h1 class="text-xl font-extrabold text-gray-900 truncate">{{ $income->name }}</h1>
+            <h1 class="text-xl font-extrabold text-gray-900 dark:text-white truncate">{{ $income->name }}</h1>
             @if(!$income->is_active)
                 <span
-                    class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">Inactive</span>
+                    class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400">Inactive</span>
             @endif
         </div>
 
@@ -60,26 +61,28 @@
         </div>
 
         {{-- Details card --}}
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 mb-6">
+        <div
+            class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm divide-y divide-gray-50 dark:divide-slate-700 mb-6">
 
             @foreach([
-                ['label'=>'Frequency',      'value'=> $income->frequencyLabel()],
-                ['label'=>'Start Date',     'value'=> $income->start_date->format('d M Y')],
-                ['label'=>'End Date',       'value'=> $income->end_date ? $income->end_date->format('d M Y') : '—'],
-                ['label'=>'Last Received',  'value'=> $income->last_received_date ? $income->last_received_date->format('d M Y') : 'Never'],
-                ['label'=>'Status',         'value'=> $income->is_active ? 'Active' : 'Inactive'],
-                ['label'=>'Shared',         'value'=> $income->is_shared ? 'Yes (Family)' : 'No'],
+                ['label'=>'Frequency',     'value'=> $income->frequencyLabel()],
+                ['label'=>'Start Date',    'value'=> $income->start_date->format('d M Y')],
+                ['label'=>'End Date',      'value'=> $income->end_date ? $income->end_date->format('d M Y') : '—'],
+                ['label'=>'Last Received', 'value'=> $income->last_received_date ? $income->last_received_date->format('d M Y') : 'Never'],
+                ['label'=>'Status',        'value'=> $income->is_active ? 'Active' : 'Inactive'],
+                ['label'=>'Shared',        'value'=> $income->is_shared ? 'Yes (Family)' : 'No'],
             ] as $row)
                 <div class="flex items-center px-5 py-3.5 gap-4">
-                    <span class="text-sm text-gray-400 w-32 shrink-0">{{ $row['label'] }}</span>
-                    <span class="text-sm font-medium text-gray-900">{{ $row['value'] }}</span>
+                    <span class="text-sm text-gray-400 dark:text-slate-500 w-32 shrink-0">{{ $row['label'] }}</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $row['value'] }}</span>
                 </div>
             @endforeach
 
             @if($income->notes)
                 <div class="px-5 py-3.5">
-                    <div class="text-sm text-gray-400 mb-1">Notes</div>
-                    <div class="text-sm text-gray-700 whitespace-pre-line">{{ $income->notes }}</div>
+                    <div class="text-sm text-gray-400 dark:text-slate-500 mb-1">Notes</div>
+                    <div
+                        class="text-sm text-gray-700 dark:text-slate-300 whitespace-pre-line">{{ $income->notes }}</div>
                 </div>
             @endif
         </div>
@@ -97,7 +100,7 @@
             @endif
 
             <a href="{{ route('income.edit', $income) }}"
-               class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+               class="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
                 <span class="material-icons-round text-base">edit</span> Edit
             </a>
 
@@ -105,7 +108,7 @@
                 @csrf @method('DELETE')
                 <button type="submit"
                         @click="if(!confirm('Delete {{ addslashes($income->name) }}?')) $event.preventDefault()"
-                        class="inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+                        class="inline-flex items-center gap-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
                     <span class="material-icons-round text-base">delete</span> Delete
                 </button>
             </form>

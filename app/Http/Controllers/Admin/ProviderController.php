@@ -41,13 +41,21 @@ class ProviderController extends Controller
             'website' => ['nullable', 'url', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'notes' => ['nullable', 'string'],
+            'logo' => ['nullable', 'image', 'max:2048'],
         ]);
+
+        $logoUrl = null;
+        if ($request->hasFile('logo')) {
+            $logoUrl = $request->file('logo')->store('provider_logos', 'public');
+            $logoUrl = '/storage/' . $logoUrl;
+        }
 
         $provider = Provider::create([
             'name' => $data['name'],
             'website' => $data['website'] ?? null,
             'phone' => $data['phone'] ?? null,
             'notes' => $data['notes'] ?? null,
+            'logo_url' => $logoUrl,
         ]);
 
         $provider->categories()->sync($data['category_ids']);
@@ -74,15 +82,22 @@ class ProviderController extends Controller
             'website' => ['nullable', 'url', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'notes' => ['nullable', 'string'],
+            'logo' => ['nullable', 'image', 'max:2048'],
         ]);
 
-        $provider->update([
+        $updateData = [
             'name' => $data['name'],
             'website' => $data['website'] ?? null,
             'phone' => $data['phone'] ?? null,
             'notes' => $data['notes'] ?? null,
-        ]);
+        ];
 
+        if ($request->hasFile('logo')) {
+            $logoUrl = $request->file('logo')->store('provider_logos', 'public');
+            $updateData['logo_url'] = '/storage/' . $logoUrl;
+        }
+
+        $provider->update($updateData);
         $provider->categories()->sync($data['category_ids']);
 
         return redirect()

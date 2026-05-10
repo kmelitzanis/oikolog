@@ -11,7 +11,7 @@ class Provider extends Model
 {
     use HasUlids;
 
-    protected $fillable = ['name', 'website', 'phone', 'notes'];
+    protected $fillable = ['name', 'website', 'phone', 'notes', 'logo_url'];
 
     public function categories(): BelongsToMany
     {

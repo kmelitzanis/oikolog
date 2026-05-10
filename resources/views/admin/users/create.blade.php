@@ -56,10 +56,19 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <input type="checkbox" name="is_admin" id="is_admin" value="1"
-                   class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                {{ old('is_admin') ? 'checked' : '' }}>
-            <label for="is_admin" class="text-sm font-medium text-gray-700">Admin user</label>
+            <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 rounded-xl px-4 py-3">
+                <label for="is_admin" class="text-sm font-medium text-gray-700 dark:text-slate-300">Admin user</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="is_admin" id="is_admin" value="1"
+                           class="sr-only peer"
+                        {{ old('is_admin') ? 'checked' : '' }}>
+                    <div class="w-11 h-6 bg-gray-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer
+                                peer-checked:after:translate-x-full peer-checked:after:border-white
+                                after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                                 peer-checked:bg-emerald-500"></div>
+                </label>
+            </div>
         </div>
         <div class="flex items-center gap-3 pt-2">
             <button type="submit"

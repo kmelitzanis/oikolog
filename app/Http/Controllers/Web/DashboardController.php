@@ -46,7 +46,41 @@ class DashboardController extends Controller
             ->map(fn($g) => round($g->sum(fn($b) => $b->monthlyEquivalent()), 2))
             ->sortDesc();
 
-        return view('dashboard.index', compact('user', 'stats', 'upcoming', 'upcomingIncomes', 'byCategory'));
+        // ── Chart data (last 12 months) ───────────────────────────────────────
+        $chartMonths = [];
+        $chartSpending = [];
+        $chartIncome = [];
+
+        // Build spending per month using actual payment records
+        $userBillIds = Bill::forUser($user)->pluck('id');
+        $payments12 = \App\Models\Payment::whereIn('bill_id', $userBillIds)
+            ->where('paid_at', '>=', now()->subMonths(11)->startOfMonth())
+            ->selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as ym, SUM(amount) as total")
+            ->groupBy('ym')
+            ->orderBy('ym')
+            ->pluck('total', 'ym');
+
+        // Build income per month using monthly equivalents (projected flat)
+        $allIncomes = Income::forUser($user)->active()->get();
+        $monthlyIncomeAmt = round($allIncomes->sum(fn($i) => $i->monthlyEquivalent()), 2);
+
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $ym = $month->format('Y-m');
+            $chartMonths[] = $month->format('M y');
+            $chartSpending[] = (float)($payments12[$ym] ?? 0);
+            $chartIncome[] = $monthlyIncomeAmt;
+        }
+
+        $chartData = [
+            'currency' => $user->currency_code ?? 'EUR',
+            'months' => $chartMonths,
+            'spending' => $chartSpending,
+            'income' => $chartIncome,
+            'by_category' => $byCategory->toArray(),
+        ];
+
+        return view('dashboard.index', compact('user', 'stats', 'upcoming', 'upcomingIncomes', 'byCategory', 'chartData'));
     }
 
     public function login(Request $request)
