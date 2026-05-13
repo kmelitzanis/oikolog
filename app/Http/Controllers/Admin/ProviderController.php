@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Provider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProviderController extends Controller
 {
@@ -47,7 +48,7 @@ class ProviderController extends Controller
         $logoUrl = null;
         if ($request->hasFile('logo')) {
             $logoUrl = $request->file('logo')->store('provider_logos', 'public');
-            $logoUrl = '/storage/' . $logoUrl;
+            $logoUrl = Storage::disk('public')->url($logoUrl);
         }
 
         $provider = Provider::create([
@@ -94,7 +95,7 @@ class ProviderController extends Controller
 
         if ($request->hasFile('logo')) {
             $logoUrl = $request->file('logo')->store('provider_logos', 'public');
-            $updateData['logo_url'] = '/storage/' . $logoUrl;
+            $updateData['logo_url'] = Storage::disk('public')->url($logoUrl);
         }
 
         $provider->update($updateData);

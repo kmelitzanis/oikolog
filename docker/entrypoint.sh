@@ -19,6 +19,8 @@ if [ "${FORCE_MIGRATE}" = "1" ]; then
     php artisan migrate --force
 fi
 
+php artisan storage:link --force 2>/dev/null || true
+
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 exec "$@"

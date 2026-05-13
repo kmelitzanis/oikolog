@@ -176,11 +176,11 @@ class DashboardController extends Controller
                     })->encode('jpg', 85);
                     $filename = 'avatars/' . uniqid() . '.jpg';
                     Storage::disk('public')->put($filename, (string)$img);
-                    $update['avatar_url'] = Storage::url($filename);
+                    $update['avatar_url'] = Storage::disk('public')->url($filename);
                 } else {
                     // Fallback: store original file if imagemagick/gd not available
                     $path = $file->store('avatars', 'public');
-                    $update['avatar_url'] = Storage::url($path);
+                    $update['avatar_url'] = Storage::disk('public')->url($path);
                 }
             }
         }
