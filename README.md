@@ -64,6 +64,9 @@ This project is licensed under the GNU GPL v3.0. See LICENSE for details.
 
 Built with Laravel, Tailwind CSS, Alpine.js, and FullCalendar.
 
+<!-- Buy Me a Beer Button -->
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="kostasmel" data-color="#5F7FFF" data-emoji="🍺"  data-font="Inter" data-text="Buy me a beer" data-outline-color="#000000" data-font-color="#ffffff" data-coffee-color="#FFDD00" ></script>
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
