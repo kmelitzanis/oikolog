@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\IncomeController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ShoppingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -74,4 +75,13 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     });
 
     Route::post('/shopping-lists/lookup-barcode', [ShoppingListController::class, 'lookupBarcode']);
+
+    Route::prefix('products')->group(function () {
+        Route::get('/categories', [ProductController::class, 'categories']);
+        Route::get('/', [ProductController::class, 'index']);
+        Route::post('/', [ProductController::class, 'store']);
+        Route::get('/{product}', [ProductController::class, 'show']);
+        Route::put('/{product}', [ProductController::class, 'update']);
+        Route::delete('/{product}', [ProductController::class, 'destroy']);
+    });
 });

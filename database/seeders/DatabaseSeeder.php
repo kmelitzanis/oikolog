@@ -71,7 +71,6 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Cosmote', 'categories' => ['Internet', 'Phone'], 'website' => 'https://www.cosmote.gr', 'phone' => '13888'],
             ['name' => 'Vodafone', 'categories' => ['Internet', 'Phone'], 'website' => 'https://www.vodafone.gr', 'phone' => '1305'],
             ['name' => 'Nova', 'categories' => ['Internet', 'Phone'], 'website' => 'https://www.nova.gr', 'phone' => '13831'],
-            ['name' => 'Forthnet', 'categories' => ['Internet'], 'website' => 'https://www.forthnet.gr', 'phone' => '13838'],
             ['name' => 'Cyta', 'categories' => ['Internet', 'Phone'], 'website' => 'https://www.cyta.gr', 'phone' => '13838'],
 
             // Streaming

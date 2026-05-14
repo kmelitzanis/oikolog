@@ -512,7 +512,7 @@
                     // Tooltip on hover via title attr
                     eventDidMount: function (info) {
                         const p = info.event.extendedProps;
-                        info.el.title = (p.type === 'bill' ? '📄 Bill' : '💰 Income')
+                        info.el.title = (p.type === 'bill' ? ' Bill' : ' Income')
                             + ': ' + info.event.title
                             + (p.amount ? ' — ' + p.amount : '')
                             + (p.overdue ? ' (overdue)' : '');

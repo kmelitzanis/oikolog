@@ -4,6 +4,7 @@ use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\BillController;
 use App\Http\Controllers\Web\FamilyController;
 use App\Http\Controllers\Web\IncomeController;
+use App\Http\Controllers\Web\ProductController;
 use App\Http\Controllers\Web\ShoppingListController;
 use App\Http\Controllers\Web\TwoFactorController;
 use Illuminate\Support\Facades\Auth;
@@ -119,4 +120,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/{list}', 'show')->name('show');
         });
+
+    // Products catalog
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 });

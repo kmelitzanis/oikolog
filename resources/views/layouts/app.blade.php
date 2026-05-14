@@ -68,6 +68,7 @@
                     ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => 'income.*'],
                     ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
                     ['route' => 'shopping-list.index', 'icon' => 'shopping_cart', 'label' => __('messages.shopping_lists'), 'match' => 'shopping-list.*'],
+                    ['route' => 'products.index',      'icon' => 'inventory_2',   'label' => __('messages.products'),       'match' => 'products.*'],
                 ];
             @endphp
             @foreach($navLinks as $link)
