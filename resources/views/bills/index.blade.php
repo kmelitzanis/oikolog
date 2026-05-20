@@ -31,83 +31,82 @@
              x-transition:leave-end="opacity-0 -translate-y-2"
              class="w-full mt-2">
             <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-4 sm:p-5">
                 {{-- Calendar toolbar --}}
                 <div
-                    class="flex items-center justify-between px-4 pt-3 pb-3 border-b border-gray-100 dark:border-slate-700 gap-3 flex-wrap">
+                    class="flex flex-col gap-3 border-b border-gray-100 dark:border-slate-700 pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-2">
                         <button @click="prevMonth()"
-                                class="w-7 h-7 flex items-center justify-center rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition">
+                                class="w-8 h-8 flex items-center justify-center rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white transition">
                             <span class="material-icons-round text-sm">chevron_left</span>
                         </button>
                         <button @click="nextMonth()"
-                                class="w-7 h-7 flex items-center justify-center rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition">
+                                class="w-8 h-8 flex items-center justify-center rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white transition">
                             <span class="material-icons-round text-sm">chevron_right</span>
                         </button>
-                        <button @click="goToday()"
-                                class="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-700 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition">
-                            Today
-                        </button>
-                        <span class="text-sm font-bold text-gray-800 dark:text-white"
+                        <span class="ml-1 text-sm font-bold text-gray-800 dark:text-white"
                               x-text="monthName + ' ' + year"></span>
                     </div>
-                    {{-- Legend --}}
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500 font-medium">
-                            <span class="inline-block w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span> Bills
+                    <div class="flex items-center justify-between gap-3 sm:justify-end">
+                        <div
+                            class="hidden lg:flex items-center gap-3 flex-wrap text-xs font-medium text-gray-400 dark:text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0"></span> Overdue
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-block w-2 h-2 rounded-full bg-orange-500 shrink-0"></span> Soon
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span> Paid
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-block w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span> Upcoming
+                            </div>
                         </div>
-                        <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500 font-medium">
-                            <span class="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0"></span> Overdue
-                        </div>
-                        <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500 font-medium">
-                            <span class="inline-block w-2 h-2 rounded-full bg-orange-500 shrink-0"></span> Soon
-                        </div>
-                        <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500 font-medium">
-                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span> Paid
-                        </div>
+                        <button @click="goToday()"
+                                class="px-3 py-1.5 rounded-2xl bg-gray-100 dark:bg-slate-700 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition">
+                            Today
+                        </button>
                     </div>
                 </div>
-                <div class="p-3">
+                <div class="pt-4">
                     {{-- Day headers --}}
-                    <div class="grid grid-cols-7 mb-1">
+                    <div class="grid grid-cols-7 gap-1 mb-1">
                         <template x-for="d in ['M','T','W','T','F','S','S']" :key="d">
                             <div
-                                class="text-center text-[10px] font-bold text-gray-400 dark:text-slate-500 py-1.5 uppercase tracking-wide"
+                                class="text-center text-[10px] font-bold text-gray-400 dark:text-slate-500 py-1 uppercase tracking-[0.24em]"
                                 x-text="d"></div>
                         </template>
                     </div>
                     {{-- Grid --}}
-                    <div class="grid grid-cols-7">
+                    <div class="grid grid-cols-7 gap-1">
                         <template x-for="(cell, i) in calendarCells" :key="i">
                             <div
                                 :class="{
-                                    'opacity-40': !cell.currentMonth,
-                                    'border-t border-gray-100 dark:border-slate-700': i >= 7
+                                    'opacity-25': !cell.currentMonth
                                 }"
-                                class="relative min-h-[52px] p-1 border-r border-gray-100 dark:border-slate-700 [&:nth-child(7n)]:border-r-0"
+                                class="relative min-h-[60px] rounded-2xl py-2 px-1 flex flex-col items-center transition hover:bg-gray-50 dark:hover:bg-slate-700/40"
                             >
-                                <div class="flex justify-center mb-0.5">
+                                <div class="flex justify-center">
                                     <span
                                         :class="{
                                             'bg-indigo-500 text-white shadow-sm': cell.isToday,
                                             'text-gray-700 dark:text-slate-300': !cell.isToday
                                         }"
-                                        class="w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-bold"
+                                        class="w-7 h-7 flex items-center justify-center rounded-full text-[11px] font-bold"
                                         x-text="cell.day"
                                     ></span>
                                 </div>
-                                <div class="space-y-px">
-                                    <template x-for="(ev, ei) in cell.events.slice(0, 2)" :key="ei">
+                                <div class="mt-1.5 flex items-center justify-center gap-1 min-h-[12px]">
+                                    <template x-for="(ev, ei) in cell.events.slice(0, 3)" :key="ei">
                                         <a :href="ev.url"
-                                           class="flex items-center gap-0.5 rounded px-1 py-px text-white text-[9px] font-semibold truncate leading-tight hover:opacity-90 transition"
-                                           :style="'background:' + ev.color">
-                                            <span class="w-1 h-1 rounded-full bg-white/50 shrink-0"></span>
-                                            <span class="truncate" x-text="ev.title.replace('• ','')"></span>
-                                        </a>
+                                           :title="ev.title.replace('• ','')"
+                                           class="block w-1.5 h-1.5 rounded-full transition hover:scale-110"
+                                           :style="'background:' + ev.color"></a>
                                     </template>
-                                    <template x-if="cell.events.length > 2">
-                                        <div class="text-[9px] font-semibold text-gray-400 dark:text-slate-500 pl-0.5"
-                                             x-text="'+' + (cell.events.length - 2)"></div>
+                                    <template x-if="cell.events.length > 3">
+                                        <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500"
+                                             x-text="'+' + (cell.events.length - 3)"></div>
                                     </template>
                                 </div>
                             </div>
@@ -115,7 +114,7 @@
                     </div>
                 </div>
                 <template x-if="loading">
-                    <div class="flex items-center justify-center py-4 border-t border-gray-100 dark:border-slate-700">
+                    <div class="flex items-center justify-center pt-4">
                         <span class="material-icons-round text-indigo-400 animate-spin text-xl">refresh</span>
                     </div>
                 </template>

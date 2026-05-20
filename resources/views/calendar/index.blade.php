@@ -5,92 +5,124 @@
     <div
         x-data="calendarApp()"
         x-init="init()"
-        class="max-w-2xl mx-auto space-y-4"
+        class="max-w-5xl mx-auto space-y-4"
     >
         {{-- ── Header ────────────────────────────────────────────────────────── --}}
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <button @click="prevMonth()"
-                        class="w-9 h-9 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white transition">
-                    <span class="material-icons-round text-lg">chevron_left</span>
-                </button>
-                <button @click="nextMonth()"
-                        class="w-9 h-9 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white transition">
-                    <span class="material-icons-round text-lg">chevron_right</span>
-                </button>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div class="flex items-center gap-2">
+                    <button @click="prevMonth()"
+                            class="w-10 h-10 flex items-center justify-center rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm transition">
+                        <span class="material-icons-round text-lg">chevron_left</span>
+                    </button>
+                    <button @click="nextMonth()"
+                            class="w-10 h-10 flex items-center justify-center rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm transition">
+                        <span class="material-icons-round text-lg">chevron_right</span>
+                    </button>
+                </div>
                 <button @click="goToday()"
-                        class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                        class="px-3 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                     Today
                 </button>
+                <div class="min-w-0">
+                    <div class="text-xl font-extrabold text-gray-900 dark:text-white">
+                        <span x-text="monthName"></span>
+                        <span class="text-gray-400 dark:text-slate-400 ml-2" x-text="year"></span>
+                    </div>
+                </div>
             </div>
-            <div class="text-center">
-                <span class="text-xl font-extrabold text-gray-900 dark:text-white" x-text="monthName"></span>
-                <span class="text-xl font-extrabold text-gray-400 dark:text-slate-400 ml-2" x-text="year"></span>
-            </div>
-            <div class="flex items-center gap-1.5">
-                <button @click="view='month'"
-                        :class="view==='month' ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'"
-                        class="px-3 py-1.5 rounded-xl text-xs font-semibold transition">
-                    Month
-                </button>
-                <button @click="view='list'"
-                        :class="view==='list' ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'"
-                        class="px-3 py-1.5 rounded-xl text-xs font-semibold transition">
-                    List
-                </button>
+            <div class="flex flex-col gap-3 lg:items-end">
+                <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-gray-500 dark:text-slate-400">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        <span>Overdue</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                        <span>Soon</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Paid</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        <span>Upcoming</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 self-start lg:self-auto">
+                    <button @click="view='month'"
+                            :class="view==='month' ? 'bg-indigo-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition">
+                        Month
+                    </button>
+                    <button @click="view='list'"
+                            :class="view==='list' ? 'bg-indigo-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition">
+                        List
+                    </button>
+                </div>
             </div>
         </div>
 
         {{-- ── Month View ─────────────────────────────────────────────────────── --}}
-        <div x-show="view==='month'" x-cloak>
+        <div x-show="view==='month'" x-cloak class="space-y-3">
             {{-- Day headers --}}
-            <div class="grid grid-cols-7 mb-1">
+            <div class="grid grid-cols-7 gap-2 px-1">
                 <template x-for="d in ['MON','TUE','WED','THU','FRI','SAT','SUN']">
-                    <div class="text-center text-xs font-semibold text-gray-400 dark:text-slate-500 py-2"
+                    <div
+                        class="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 dark:text-slate-500 py-2"
                          x-text="d"></div>
                 </template>
             </div>
 
             {{-- Calendar grid --}}
             <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-                <div class="grid grid-cols-7">
+                class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-2 md:p-3">
+                <div class="grid grid-cols-7 gap-1.5 md:gap-2">
                     <template x-for="(cell, i) in calendarCells" :key="i">
                         <div
                             :class="{
-                            'bg-gray-50/60 dark:bg-slate-700/20': !cell.currentMonth,
-                            'border-t border-gray-100 dark:border-slate-700': i >= 7
+                            'opacity-25': !cell.currentMonth
                         }"
-                            class="relative min-h-[72px] p-1.5 border-r border-gray-100 dark:border-slate-700 last:border-r-0 [&:nth-child(7n)]:border-r-0"
+                            class="relative min-h-[80px] md:min-h-[100px] rounded-2xl p-2 md:p-2.5 transition hover:bg-gray-50 dark:hover:bg-slate-700/40 flex flex-col"
                         >
-                            {{-- Day number --}}
-                            <div class="flex justify-center mb-1">
+                            <div class="flex justify-center md:justify-start">
                             <span
                                 :class="{
-                                    'bg-indigo-500 text-white': cell.isToday,
-                                    'text-gray-300 dark:text-slate-600': !cell.currentMonth && !cell.isToday,
-                                    'text-gray-800 dark:text-white font-semibold': cell.currentMonth && !cell.isToday
+                                    'bg-indigo-500 text-white shadow-sm': cell.isToday,
+                                    'text-gray-800 dark:text-white font-semibold': !cell.isToday
                                 }"
-                                class="w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition"
+                                class="w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition"
                                 x-text="cell.day"
                             ></span>
                             </div>
 
-                            {{-- Events (max 2 + overflow) --}}
-                            <div class="space-y-0.5">
+                            <div
+                                class="mt-2 flex flex-wrap items-center justify-center md:justify-start gap-1 min-h-[12px]">
+                                <template x-for="(ev, ei) in cell.events.slice(0, 4)" :key="ei">
+                                    <a :href="ev.url"
+                                       :title="ev.title.replace('• ','')"
+                                       class="block w-2 h-2 rounded-full transition hover:scale-110"
+                                       :style="'background:' + ev.color"
+                                    ></a>
+                                </template>
+                                <template x-if="cell.events.length > 4">
+                                    <span class="text-[10px] font-semibold text-gray-400 dark:text-slate-500"
+                                          x-text="'+' + (cell.events.length - 4)"></span>
+                                </template>
+                            </div>
+
+                            <div class="hidden md:flex mt-2 flex-col gap-1.5">
                                 <template x-for="(ev, ei) in cell.events.slice(0, 2)" :key="ei">
                                     <a :href="ev.url"
-                                       class="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-white text-[10px] font-semibold truncate leading-tight cursor-pointer hover:opacity-90 transition"
-                                       :style="'background:' + ev.color"
                                        :title="ev.title.replace('• ','')"
-                                    >
-                                        <span class="w-1.5 h-1.5 rounded-full bg-white/50 shrink-0"></span>
-                                        <span class="truncate" x-text="ev.title.replace('• ','')"></span>
+                                       class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-gray-50 dark:bg-slate-700/70 px-2 py-1 text-[11px] font-medium leading-none hover:bg-gray-100 dark:hover:bg-slate-700 transition">
+                                        <span class="w-1.5 h-1.5 rounded-full shrink-0"
+                                              :style="'background:' + ev.color"></span>
+                                        <span class="truncate" :style="'color:' + ev.color"
+                                              x-text="ev.title.replace('• ','')"></span>
                                     </a>
-                                </template>
-                                <template x-if="cell.events.length > 2">
-                                    <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 pl-1"
-                                         x-text="'+' + (cell.events.length - 2) + ' more'"></div>
                                 </template>
                             </div>
                         </div>
