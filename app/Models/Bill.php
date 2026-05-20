@@ -14,7 +14,7 @@ class Bill extends Model
     use HasUlids, HasFactory;
 
     protected $fillable = [
-        'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'currency_code',
+        'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'cost_varies', 'currency_code',
         'frequency', 'frequency_interval', 'start_date', 'end_date', 'next_due_date',
         'last_paid_date', 'is_active', 'is_shared', 'notify_enabled', 'notify_days_before',
         'url', 'notes', 'created_by', 'family_id', 'created_at', 'updated_at', 'created_by'
@@ -24,6 +24,7 @@ class Bill extends Model
     {
         return [
             'amount'             => 'decimal:2',
+            'cost_varies' => 'boolean',
             'start_date'         => 'date',
             'end_date'           => 'date',
             'next_due_date'      => 'date',

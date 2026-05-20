@@ -36,14 +36,21 @@
         amount: '',
         currency: '',
         payRoute: '',
+        costVaries: false,
+        customAmount: '',
         paidByUserId: '{{ auth()->id() }}',
         incomeId: '',
 
+        currencySymbols: {'EUR':'€','USD':'$','GBP':'£','CHF':'Fr','CAD':'CA$','AUD':'A$','JPY':'¥'},
+        get currencySymbol() { return this.currencySymbols[this.currency] ?? this.currency; },
+
         openModal(data) {
-            this.billName     = data.billName  ?? '';
-            this.amount       = data.amount    ?? '';
-            this.currency     = data.currency  ?? '';
-            this.payRoute     = data.payRoute  ?? '';
+            this.billName     = data.billName        ?? '';
+            this.amount       = data.amount          ?? '';
+            this.currency     = data.currency        ?? '';
+            this.payRoute     = data.payRoute        ?? '';
+            this.costVaries   = data.costVaries      ?? false;
+            this.customAmount = data.lastPaidAmount  ?? '';
             this.paidByUserId = '{{ auth()->id() }}';
             this.incomeId     = '';
             this.open         = true;
@@ -51,6 +58,10 @@
 
         submit() {
             if (!this.payRoute) return;
+            if (this.costVaries && (!this.customAmount || parseFloat(this.customAmount) <= 0)) {
+                alert('Παρακαλώ εισάγετε το ποσό πληρωμής.');
+                return;
+            }
             this.$refs.payForm.action = this.payRoute;
             this.$refs.payForm.submit();
         }
@@ -72,7 +83,7 @@
     >
         {{-- Modal Panel --}}
         <div
-            x-show="open"
+            x-show="open" x-cloak
             x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -109,13 +120,37 @@
                         </div>
                         <div class="text-sm font-semibold text-gray-900 dark:text-white" x-text="billName"></div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right" x-show="!costVaries">
                         <div
                             class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">
                             Amount
                         </div>
                         <div class="text-base font-extrabold text-emerald-600 dark:text-emerald-400"
                              x-text="currency + ' ' + amount"></div>
+                    </div>
+                    <div x-show="costVaries" x-cloak>
+                        <span
+                            class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-lg">
+                            <span class="material-icons-round text-sm">sync_alt</span> Cost varies
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Custom amount when cost varies --}}
+                <div x-show="costVaries" x-cloak>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
+                        <span
+                            class="material-icons-round text-base align-middle text-gray-400 dark:text-slate-400 mr-0.5">payments</span>
+                        Ποσό πληρωμής *
+                    </label>
+                    <div class="relative">
+                        <span
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm"
+                            x-text="currencySymbol"></span>
+                        <input type="number" step="0.01" min="0.01" x-model="customAmount"
+                               :required="costVaries"
+                               placeholder="0.00"
+                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-900 dark:text-white rounded-xl pl-6 pr-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                     </div>
                 </div>
 
@@ -185,6 +220,7 @@
         @csrf
         <input type="hidden" name="paid_by_user_id" :value="paidByUserId">
         <input type="hidden" name="income_id" :value="incomeId">
+        <input type="hidden" name="custom_amount" :value="customAmount">
     </form>
 </div>
 

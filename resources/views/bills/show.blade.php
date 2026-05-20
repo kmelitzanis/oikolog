@@ -98,10 +98,12 @@
                 <div class="mt-4" x-data>
                     <button type="button"
                             @click="$dispatch('open-pay-modal', {
-                                billName: '{{ addslashes($bill->name) }}',
-                                amount:   '{{ number_format($bill->amount, 2) }}',
-                                currency: '{{ $bill->currency_code }}',
-                                payRoute: '{{ route('bills.pay', $bill) }}'
+                                billName:       '{{ addslashes($bill->name) }}',
+                                amount:         '{{ number_format($bill->amount, 2) }}',
+                                currency:       '{{ $bill->currency_code }}',
+                                payRoute:       '{{ route('bills.pay', $bill) }}',
+                                costVaries:     {{ $bill->cost_varies ? 'true' : 'false' }},
+                                lastPaidAmount: '{{ $bill->cost_varies && $payments->first() ? number_format((float)$payments->first()->amount, 2, '.', '') : '' }}'
                             })"
                             class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl py-3 text-sm transition">
                         <span class="material-icons-round text-lg">check_circle</span> Mark as Paid

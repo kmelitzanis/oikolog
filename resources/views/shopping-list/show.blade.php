@@ -95,7 +95,7 @@
                     <p class="text-sm">{{ __('messages.no_items') }}</p>
                 </div>
             </template>
-            <table x-show="items.length > 0" class="w-full text-sm">
+            <table x-show="items.length > 0" x-cloak class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700">
                     <tr>
                         <th class="px-5 py-3 text-left"><input type="checkbox" @change="toggleAllItems()" :checked="allChecked"></th>

@@ -85,7 +85,7 @@
                             </label>
                         @endforeach
                     </div>
-                    <p class="text-xs text-gray-400 dark:text-slate-400 mt-2" x-show="!isRecurring()">
+                    <p class="text-xs text-gray-400 dark:text-slate-400 mt-2" x-show="!isRecurring()" x-cloak>
                         One-time income will be recorded as a single entry on the start date.
                     </p>
                 </div>

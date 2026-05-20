@@ -13,12 +13,12 @@
         </div>
         <div class="flex gap-2 flex-wrap">
             <a href="{{ route('income.create') }}"
-               class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+               class="inline-flex flex-1 items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
                 <span class="material-icons-round text-lg">add</span>
                 {{ __('messages.add_income') }}
             </a>
             <a href="{{ route('bills.create') }}"
-               class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+               class="inline-flex flex-1 items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
                 <span class="material-icons-round text-lg">add</span>
                 {{ __('messages.add_bill') }}
             </a>
@@ -126,10 +126,11 @@
                             class="text-sm font-bold {{ $amountClass }}">{{ auth()->user()->currency_code }} {{ number_format($bill->amount, 2) }}</div>
                         <button type="button" x-data
                                 @click="$dispatch('open-pay-modal', {
-                                    billName: '{{ addslashes($bill->name) }}',
-                                    amount:   '{{ number_format($bill->amount, 2) }}',
-                                    currency: '{{ auth()->user()->currency_code }}',
-                                    payRoute: '{{ route('bills.pay', $bill) }}'
+                                    billName:   '{{ addslashes($bill->name) }}',
+                                    amount:     '{{ number_format($bill->amount, 2) }}',
+                                    currency:   '{{ auth()->user()->currency_code }}',
+                                    payRoute:   '{{ route('bills.pay', $bill) }}',
+                                    costVaries: {{ $bill->cost_varies ? 'true' : 'false' }}
                                 })"
                                 class="mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline bg-transparent border-0 cursor-pointer p-0">
                             ✓ Pay

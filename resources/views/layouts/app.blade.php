@@ -49,8 +49,8 @@
     <div x-show="sidebarOpen" @click="sidebarOpen=false" x-cloak
          class="fixed inset-0 bg-black/40 z-30 lg:hidden"></div>
     {{-- ── Sidebar ───────────────────────────────────────────────── --}}
-    <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-           class="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col transform transition-transform duration-200 ease-in-out lg:translate-x-0">
+    <aside :class="sidebarOpen ? 'translate-x-0' : ''"
+           class="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col transform transition-transform duration-200 ease-in-out -translate-x-full lg:translate-x-0">
         {{-- Brand --}}
         <div class="flex items-center gap-3 px-5 py-5 border-b border-gray-100 dark:border-slate-700">
             <div
@@ -87,6 +87,7 @@
                     @foreach([
                         ['route'=>'admin.categories.index','icon'=>'category',        'label'=>__('messages.categories'),'match'=>'admin.categories.*'],
                         ['route'=>'admin.providers.index', 'icon'=>'business',        'label'=>__('messages.providers'),  'match'=>'admin.providers.*'],
+                        ['route'=>'admin.products.index',  'icon'=>'inventory_2',    'label'=>__('messages.products'),   'match'=>'admin.products.*'],
                         ['route'=>'admin.users.index',     'icon'=>'manage_accounts', 'label'=>__('messages.users'),      'match'=>'admin.users.*'],
                     ] as $al)
                         <a href="{{ route($al['route']) }}" @click="sidebarOpen=false"
@@ -105,7 +106,7 @@
         <div class="px-3 py-4 border-t border-gray-100 dark:border-slate-700">
             <div
                 class="relative flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition cursor-pointer"
-                 @click="userMenuOpen=!userMenuOpen">
+                @click="userMenuOpen=!userMenuOpen">
                 <div
                     class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold text-sm shrink-0 overflow-hidden">
                     @if(auth()->user()?->avatar_url)
@@ -177,16 +178,16 @@
                 </button>
                 <span class="font-extrabold text-gray-900 dark:text-white">Oikolog</span>
             </div>
-            <div class="flex items-center gap-1">
-                <button @click="toggleTheme()"
-                        class="p-2 rounded-xl text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition">
-                    <span class="material-icons-round text-xl" x-text="isDark ? 'light_mode' : 'dark_mode'"></span>
-                </button>
-                <a href="{{ route('bills.create') }}"
-                   class="p-2 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
-                    <span class="material-icons-round">add_circle</span>
-                </a>
-            </div>
+            {{--            <div class="flex items-center gap-1">--}}
+            {{--                <button @click="toggleTheme()"--}}
+            {{--                        class="p-2 rounded-xl text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition">--}}
+            {{--                    <span class="material-icons-round text-xl" x-text="isDark ? 'light_mode' : 'dark_mode'"></span>--}}
+            {{--                </button>--}}
+            {{--                <a href="{{ route('bills.create') }}"--}}
+            {{--                   class="p-2 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">--}}
+            {{--                    <span class="material-icons-round">add_circle</span>--}}
+            {{--                </a>--}}
+            {{--            </div>--}}
         </div>
     </div>
     {{-- ── Page content ──────────────────────────────────────────── --}}
@@ -223,29 +224,60 @@
             @yield('content')
         </main>
     </div>
-    {{-- Mobile Bottom Navigation Bar --}}
-    <nav
-        class="lg:hidden fixed inset-x-0 bottom-0 z-30 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700">
-        <div class="flex items-center justify-around h-16">
-            @php
-                $bottomNavLinks = [
-                    ['route' => 'dashboard',         'icon' => 'dashboard',    'label' => __('messages.dashboard'),    'match' => 'dashboard'],
-                    ['route' => 'bills.index',       'icon' => 'receipt_long', 'label' => __('messages.bills'),        'match' => 'bills.*'],
-                    ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => 'income.*'],
-                    ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
-                ];
-            @endphp
-            @foreach($bottomNavLinks as $link)
-                <a href="{{ route($link['route']) }}"
-                   class="flex flex-col items-center justify-center w-full h-full gap-1 text-xs font-medium transition-colors
-                          {{ request()->routeIs($link['match'])
-                              ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20'
-                              : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white' }}">
-                    <span class="material-icons-round text-xl">{{ $link['icon'] }}</span>
-                    <span>{{ $link['label'] }}</span>
-                </a>
-            @endforeach
+    {{-- Mobile Bottom Navigation Bar — floating pill with gradient FAB --}}
+    <nav class="lg:hidden fixed inset-x-0 bottom-0 z-40" aria-label="Mobile primary navigation">
+
+        @php
+            $bottomNavLinks = [
+                ['route' => 'dashboard',    'icon' => 'dashboard',    'match' => 'dashboard'],
+                ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*'],
+                ['route' => 'income.index', 'icon' => 'trending_up',  'match' => 'income.*'],
+                ['route' => 'family.index', 'icon' => 'group',        'match' => 'family.*'],
+            ];
+        @endphp
+
+        {{-- Flex column: items-center naturally centers the FAB; -mb-7 pulls the bar up underneath it --}}
+        <div class="flex flex-col items-center">
+
+            {{-- Gradient FAB — rendered first so flex centres it, then bar slides under via -mb-7 --}}
+            <a href="{{ route('bills.create') }}"
+               class="absolute z-10 -mb-7 flex items-center justify-center w-14 h-14 rounded-full border-4 border-white dark:border-slate-800"
+               style="background: linear-gradient(135deg, #f857a6 0%, #a855f7 100%); box-shadow: 0 4px 24px rgba(168,85,247,0.45);">
+                <span class="material-icons-round text-white text-2xl">add</span>
+            </a>
+
+            {{-- Floating bottom bar --}}
+            <div class="w-full bg-white dark:bg-slate-800 h-16 flex items-center justify-between px-6"
+                 style="box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);">
+
+                @foreach(array_slice($bottomNavLinks, 0, 2) as $link)
+                    <a href="{{ route($link['route']) }}"
+                       class="flex flex-col items-center justify-center gap-1 w-12
+                                  {{ request()->routeIs($link['match']) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-slate-500' }}">
+                        <span class="material-icons-round" style="font-size:22px;">{{ $link['icon'] }}</span>
+                        <span
+                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs($link['match']) ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-transparent' }}"></span>
+                    </a>
+                @endforeach
+
+                {{-- Spacer keeps icons away from center where FAB overlaps --}}
+                <div class="w-14 shrink-0"></div>
+
+                @foreach(array_slice($bottomNavLinks, 2, 2) as $link)
+                    <a href="{{ route($link['route']) }}"
+                       class="flex flex-col items-center justify-center gap-1 w-12
+                                  {{ request()->routeIs($link['match']) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-slate-500' }}">
+                        <span class="material-icons-round" style="font-size:22px;">{{ $link['icon'] }}</span>
+                        <span
+                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs($link['match']) ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-transparent' }}"></span>
+                    </a>
+                @endforeach
+            </div>
+
         </div>
+        {{-- Safe-area spacer for notched iPhones --}}
+        <div style="height: env(safe-area-inset-bottom);"></div>
+
     </nav>
 </div>
 @auth

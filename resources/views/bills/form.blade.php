@@ -23,6 +23,7 @@
               notifyDays: {{ (int) old('notify_days_before', isset($bill) ? $bill->notify_days_before : 3) }},
               categoryId: '{{ old('category_id', isset($bill) ? $bill->category_id : '') }}',
               providerId: '{{ old('provider_id', isset($bill) ? $bill->provider_id : '') }}',
+              costVaries: {{ old('cost_varies', isset($bill) ? ($bill->cost_varies ? '1' : '0') : '0') ? 'true' : 'false' }},
               allProviders: window.__providers || [],
               get providers() { return this.categoryId ? this.allProviders.filter(p => !Array.isArray(p.category_ids) || p.category_ids.length === 0 || p.category_ids.includes(this.categoryId)) : this.allProviders; }
           }">
@@ -49,17 +50,38 @@
                         $symbols = ['EUR'=>'€','USD'=>'$','GBP'=>'£','CHF'=>'Fr','CAD'=>'CA$','AUD'=>'A$','JPY'=>'¥'];
                         $symbol  = $symbols[$curCode] ?? $curCode;
                     @endphp
-                    <label
-                        class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.amount') }}
-                        *</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-sm font-medium text-gray-600 dark:text-slate-300">
+                            {{ __('messages.amount') }}
+                            <span x-show="!costVaries">*</span>
+                        </label>
+                        {{-- Cost varies toggle --}}
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input type="hidden" name="cost_varies" value="0">
+                            <input type="checkbox" name="cost_varies" value="1" x-model="costVaries"
+                                   class="sr-only peer">
+                            <div class="relative w-9 h-5 bg-gray-200 dark:bg-slate-600 peer-focus:outline-none rounded-full
+                                        peer-checked:bg-indigo-500
+                                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                        after:bg-white after:border-white after:rounded-full after:h-4 after:w-4 after:transition-all
+                                        peer-checked:after:translate-x-full"></div>
+                            <span class="text-xs font-medium text-gray-500 dark:text-slate-400">Cost varies</span>
+                        </label>
+                    </div>
                     <div class="relative">
                         <span
                             class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm">{{ $symbol }}</span>
-                        <input type="number" name="amount" step="0.01" min="0.01"
+                        <input type="number" name="amount" step="0.01" min="0"
                                value="{{ old('amount', isset($bill) ? $bill->amount : '') }}"
-                               placeholder="0.00" required
+                               :placeholder="costVaries ? 'Estimated (optional)' : '0.00'"
+                               :required="!costVaries"
                                class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                     </div>
+                    <p x-show="costVaries" x-cloak
+                       class="mt-1.5 text-xs text-indigo-500 dark:text-indigo-400 flex items-center gap-1">
+                        <span class="material-icons-round text-sm">info</span>
+                        Το ποσό θα σου ζητηθεί κάθε φορά που καταχωρείς πληρωμή.
+                    </p>
                 </div>
                 {{-- Category --}}
                 <div>
@@ -90,7 +112,7 @@
                     {{-- Logo preview for selected provider --}}
                     <template x-if="providerId">
                         <div class="mt-2 flex items-center gap-2"
-                             x-show="allProviders.find(p => p.id === providerId)?.logo_url">
+                             x-show="allProviders.find(p => p.id === providerId)?.logo_url" x-cloak>
                             <img :src="allProviders.find(p => p.id === providerId)?.logo_url" alt=""
                                  class="w-8 h-8 object-contain rounded-lg border border-gray-100 dark:border-slate-600 bg-white dark:bg-slate-700 p-0.5">
                             <span class="text-xs text-gray-400 dark:text-slate-500"
@@ -277,7 +299,7 @@
                                         peer-checked:bg-emerald-500"></div>
                         </label>
                     </div>
-                    <div x-show="notify" x-collapse>
+                    <div x-show="notify" x-collapse x-cloak>
                         <label
                             class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">{{ __('messages.remind_before') }}</label>
                         <div class="flex gap-2 flex-wrap">

@@ -66,7 +66,8 @@ class BillController extends Controller
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
             'provider_id' => ['nullable', 'exists:providers,id'],
-            'amount'             => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'cost_varies' => ['nullable', 'boolean'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],
             'end_date'           => ['nullable', 'date', 'after:start_date'],
@@ -80,6 +81,7 @@ class BillController extends Controller
         $bill = Bill::create([
             ...$data,
             'currency_code' => $request->user()->currency_code,
+            'cost_varies' => (bool)($data['cost_varies'] ?? false),
             'is_shared'      => (bool) ($data['is_shared'] ?? false),
             'notify_enabled' => (bool) ($data['notify_enabled'] ?? false),
             'created_by'     => $request->user()->id,
@@ -230,7 +232,8 @@ class BillController extends Controller
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
             'provider_id' => ['nullable', 'exists:providers,id'],
-            'amount'             => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'cost_varies' => ['nullable', 'boolean'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],
             'end_date'           => ['nullable', 'date'],
@@ -241,6 +244,7 @@ class BillController extends Controller
             'notes'              => ['nullable', 'string'],
         ]);
 
+        $data['cost_varies'] = (bool)($data['cost_varies'] ?? false);
         $data['is_shared']      = (bool) ($data['is_shared'] ?? false);
         $data['notify_enabled'] = (bool) ($data['notify_enabled'] ?? false);
 
@@ -279,12 +283,17 @@ class BillController extends Controller
         $paidByUserId = $request->input('paid_by_user_id', $request->user()->id);
         $incomeId = $request->input('income_id') ?: null;
 
-        DB::transaction(function () use ($bill, $request, $paidByUserId, $incomeId) {
+        // Use custom amount when cost_varies is enabled, otherwise use bill's default amount
+        $amount = $bill->cost_varies && $request->filled('custom_amount')
+            ? (float)$request->input('custom_amount')
+            : (float)$bill->amount;
+
+        DB::transaction(function () use ($bill, $request, $paidByUserId, $incomeId, $amount) {
             Payment::create([
                 'bill_id'       => $bill->id,
                 'paid_by' => $paidByUserId,
                 'income_id' => $incomeId,
-                'amount'        => $bill->amount,
+                'amount' => $amount,
                 'currency_code' => $bill->currency_code,
                 'paid_at'       => now(),
             ]);

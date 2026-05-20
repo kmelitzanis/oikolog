@@ -1,202 +1,11 @@
 @extends('layouts.app')
 @section('title', __('messages.bills'))
 
-@push('head')
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.4/main.min.css' rel='stylesheet'/>
-    <style>
-        /* ── FullCalendar — project theme overrides ────────────────────────── */
-        #bills-calendar {
-            --fc-border-color: #e5e7eb;
-            --fc-button-bg-color: #6366f1;
-            --fc-button-active-bg-color: #4f46e5;
-            --fc-button-hover-bg-color: #4f46e5;
-            --fc-button-border-color: transparent;
-            --fc-button-active-border-color: transparent;
-            --fc-today-bg-color: rgba(99, 102, 241, .07);
-            --fc-page-bg-color: transparent;
-            --fc-event-border-color: transparent;
-            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-        }
-
-        /* toolbar */
-        #bills-calendar .fc-toolbar-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #111827;
-        }
-
-        #bills-calendar .fc-button {
-            border-radius: .6rem !important;
-            font-size: .72rem;
-            font-weight: 600;
-            padding: .3rem .75rem;
-            text-transform: capitalize;
-            box-shadow: none !important;
-        }
-
-        #bills-calendar .fc-button-group {
-            gap: 3px;
-        }
-
-        /* day-header row */
-        #bills-calendar .fc-col-header-cell-cushion {
-            font-size: .65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            color: #6b7280;
-            text-decoration: none;
-        }
-
-        /* day numbers */
-        #bills-calendar .fc-daygrid-day-number {
-            font-size: .75rem;
-            font-weight: 600;
-            color: #374151;
-            text-decoration: none;
-        }
-
-        #bills-calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-            background: #6366f1;
-            color: #fff;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* events */
-        #bills-calendar .fc-daygrid-event {
-            border-radius: .45rem;
-            font-size: .7rem;
-            font-weight: 600;
-            padding: 1px 5px;
-            margin-bottom: 2px;
-            border: none;
-        }
-
-        #bills-calendar .fc-event-title {
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Day cell indicators */
-        .fc-daygrid-day {
-            position: relative;
-        }
-
-        .day-indicator-dot {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            margin: 0 1px;
-            vertical-align: baseline;
-        }
-
-        .day-indicators {
-            display: flex;
-            gap: 2px;
-            margin-top: 2px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        /* Indicator styling for small dots on day cells */
-        #bills-calendar .fc-daygrid-day-frame::after {
-            content: attr(data-indicators);
-        }
-
-        /* list view */
-        #bills-calendar .fc-list-event-title a {
-            text-decoration: none;
-            font-weight: 600;
-            font-size: .82rem;
-        }
-
-        #bills-calendar .fc-list-day-cushion {
-            font-size: .72rem;
-            font-weight: 700;
-            background: #f1f5f9;
-        }
-
-        #bills-calendar .fc-list-event:hover td {
-            background: #f8fafc;
-        }
-
-        /* ── Dark mode ─────────────────────────────────────────────────────── */
-        .dark #bills-calendar {
-            --fc-border-color: #334155;
-            --fc-today-bg-color: rgba(99, 102, 241, .12);
-            --fc-neutral-bg-color: #1e293b;
-        }
-
-        .dark #bills-calendar .fc-toolbar-title {
-            color: #f1f5f9;
-        }
-
-        .dark #bills-calendar .fc-col-header-cell-cushion {
-            color: #94a3b8;
-        }
-
-        .dark #bills-calendar .fc-daygrid-day-number {
-            color: #cbd5e1;
-        }
-
-        .dark #bills-calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-            background: #6366f1;
-            color: #fff;
-        }
-
-        .dark #bills-calendar .fc-daygrid-day {
-            background: transparent;
-        }
-
-        .dark #bills-calendar .fc-scrollgrid {
-            border-color: #334155;
-        }
-
-        .dark #bills-calendar .fc-scrollgrid td,
-        .dark #bills-calendar .fc-scrollgrid th {
-            border-color: #334155;
-        }
-
-        .dark #bills-calendar .fc-list-day-cushion {
-            background: #1e293b;
-            color: #94a3b8;
-        }
-
-        .dark #bills-calendar .fc-list-event:hover td {
-            background: #1e293b;
-        }
-
-        .dark #bills-calendar .fc-list-event-title a {
-            color: #e2e8f0;
-        }
-
-        .dark #bills-calendar .fc-list-event-dot {
-            border-color: currentColor;
-        }
-
-        .dark #bills-calendar .fc-list-empty {
-            color: #94a3b8;
-            background: transparent;
-        }
-
-        .dark #bills-calendar .fc-theme-standard td,
-        .dark #bills-calendar .fc-theme-standard th {
-            border-color: #334155;
-        }
-    </style>
-@endpush
-
 @section('content')
 
-    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap"
-         x-data="{ calOpen: false }"
-         x-effect="if (calOpen) $nextTick(() => window.initBillsCalendar && window.initBillsCalendar())">
+    <div class="flex items-center justify-between mb-4 gap-4 flex-wrap"
+         x-data="billsPageCal()"
+         x-init="init()">
         <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ __('messages.bills') }}</h1>
         <div class="flex items-center gap-2">
             <button type="button"
@@ -213,36 +22,103 @@
         </div>
 
         {{-- Inline Calendar Panel --}}
-        <div x-show="calOpen"
+        <div x-show="calOpen" x-cloak
              x-transition:enter="transition duration-200"
              x-transition:enter-start="opacity-0 -translate-y-2"
              x-transition:enter-end="opacity-100 translate-y-0"
              x-transition:leave="transition duration-150"
              x-transition:leave-start="opacity-100 translate-y-0"
              x-transition:leave-end="opacity-0 -translate-y-2"
-             x-cloak
              class="w-full mt-2">
             <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
-                {{-- Legend --}}
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 font-medium">
-                        <span class="inline-block w-3 h-3 rounded-full bg-indigo-500"></span> Bills
+                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                {{-- Calendar toolbar --}}
+                <div
+                    class="flex items-center justify-between px-4 pt-3 pb-3 border-b border-gray-100 dark:border-slate-700 gap-3 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <button @click="prevMonth()"
+                                class="w-7 h-7 flex items-center justify-center rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition">
+                            <span class="material-icons-round text-sm">chevron_left</span>
+                        </button>
+                        <button @click="nextMonth()"
+                                class="w-7 h-7 flex items-center justify-center rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition">
+                            <span class="material-icons-round text-sm">chevron_right</span>
+                        </button>
+                        <button @click="goToday()"
+                                class="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-700 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition">
+                            Today
+                        </button>
+                        <span class="text-sm font-bold text-gray-800 dark:text-white"
+                              x-text="monthName + ' ' + year"></span>
                     </div>
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 font-medium">
-                        <span class="inline-block w-3 h-3 rounded-full bg-red-500"></span> Overdue
-                    </div>
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 font-medium">
-                        <span class="inline-block w-3 h-3 rounded-full bg-orange-500"></span> Upcoming
-                    </div>
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 font-medium">
-                        <span class="inline-block w-3 h-3 rounded-full bg-emerald-500"></span> Paid
-                    </div>
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 font-medium">
-                        <span class="inline-block w-3 h-3 rounded-full bg-blue-500"></span> Income
+                    {{-- Legend --}}
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500 font-medium">
+                            <span class="inline-block w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span> Bills
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500 font-medium">
+                            <span class="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0"></span> Overdue
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500 font-medium">
+                            <span class="inline-block w-2 h-2 rounded-full bg-orange-500 shrink-0"></span> Soon
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500 font-medium">
+                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span> Paid
+                        </div>
                     </div>
                 </div>
-                <div id="bills-calendar"></div>
+                <div class="p-3">
+                    {{-- Day headers --}}
+                    <div class="grid grid-cols-7 mb-1">
+                        <template x-for="d in ['M','T','W','T','F','S','S']" :key="d">
+                            <div
+                                class="text-center text-[10px] font-bold text-gray-400 dark:text-slate-500 py-1.5 uppercase tracking-wide"
+                                x-text="d"></div>
+                        </template>
+                    </div>
+                    {{-- Grid --}}
+                    <div class="grid grid-cols-7">
+                        <template x-for="(cell, i) in calendarCells" :key="i">
+                            <div
+                                :class="{
+                                    'opacity-40': !cell.currentMonth,
+                                    'border-t border-gray-100 dark:border-slate-700': i >= 7
+                                }"
+                                class="relative min-h-[52px] p-1 border-r border-gray-100 dark:border-slate-700 [&:nth-child(7n)]:border-r-0"
+                            >
+                                <div class="flex justify-center mb-0.5">
+                                    <span
+                                        :class="{
+                                            'bg-indigo-500 text-white shadow-sm': cell.isToday,
+                                            'text-gray-700 dark:text-slate-300': !cell.isToday
+                                        }"
+                                        class="w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-bold"
+                                        x-text="cell.day"
+                                    ></span>
+                                </div>
+                                <div class="space-y-px">
+                                    <template x-for="(ev, ei) in cell.events.slice(0, 2)" :key="ei">
+                                        <a :href="ev.url"
+                                           class="flex items-center gap-0.5 rounded px-1 py-px text-white text-[9px] font-semibold truncate leading-tight hover:opacity-90 transition"
+                                           :style="'background:' + ev.color">
+                                            <span class="w-1 h-1 rounded-full bg-white/50 shrink-0"></span>
+                                            <span class="truncate" x-text="ev.title.replace('• ','')"></span>
+                                        </a>
+                                    </template>
+                                    <template x-if="cell.events.length > 2">
+                                        <div class="text-[9px] font-semibold text-gray-400 dark:text-slate-500 pl-0.5"
+                                             x-text="'+' + (cell.events.length - 2)"></div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <template x-if="loading">
+                    <div class="flex items-center justify-center py-4 border-t border-gray-100 dark:border-slate-700">
+                        <span class="material-icons-round text-indigo-400 animate-spin text-xl">refresh</span>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
@@ -300,14 +176,15 @@
         class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
         @forelse($bills as $bill)
             @php
-                $isOverdue  = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
-                $daysUntil  = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : null;
-                $isSoon     = !$isOverdue && $daysUntil !== null && $daysUntil <= 7 && $bill->is_active;
-                $lastPayment = $bill->payments->first();
-                $isPaid     = (bool)$bill->last_paid_date;
-                $color      = $bill->category?->color_hex ?? '#6366F1';
-                $rowClass   = $isOverdue ? 'bg-red-50 dark:bg-red-900/10' : ($isSoon ? 'bg-orange-50 dark:bg-orange-900/10' : ($isPaid ? 'bg-green-50 dark:bg-green-900/10' : 'bg-white dark:bg-slate-800'));
-                $amountClass = $isOverdue ? 'text-red-600 font-bold' : ($isSoon ? 'text-orange-600 font-bold' : ($isPaid ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-gray-900 dark:text-white font-bold'));
+                $isOverdue    = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
+                $daysUntil    = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : null;
+                $isSoon       = !$isOverdue && $daysUntil !== null && $daysUntil <= 7 && $bill->is_active;
+                $isUpcoming   = !$isOverdue && !$isSoon && $daysUntil !== null && $daysUntil > 7 && $daysUntil <= 60 && $bill->is_active;
+                $lastPayment  = $bill->payments->first();
+                $isPaid       = (bool)$bill->last_paid_date;
+                $color        = $bill->category?->color_hex ?? '#6366F1';
+                $rowClass     = $isOverdue ? 'bg-red-50 dark:bg-red-900/10' : ($isSoon ? 'bg-orange-50 dark:bg-orange-900/10' : ($isUpcoming ? 'bg-blue-50/40 dark:bg-blue-900/5' : ($isPaid ? 'bg-green-50 dark:bg-green-900/10' : 'bg-white dark:bg-slate-800')));
+                $amountClass  = $isOverdue ? 'text-red-600 font-bold' : ($isSoon ? 'text-orange-600 font-bold' : ($isUpcoming ? 'text-blue-600 dark:text-blue-400 font-bold' : ($isPaid ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-gray-900 dark:text-white font-bold')));
             @endphp
             <div x-data="{ paid: {{ $lastPayment ? 'true' : 'false' }} }"
                  class="flex items-center gap-3 sm:gap-4 px-4 py-4 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }} {{ $rowClass }} hover:brightness-95 transition cursor-pointer"
@@ -335,7 +212,7 @@
                         @endif
                     </div>
                     <div
-                        class="text-xs mt-0.5 {{ $isOverdue ? 'text-red-500' : ($isSoon ? 'text-orange-500' : 'text-gray-400 dark:text-slate-500') }}">
+                        class="text-xs mt-0.5 {{ $isOverdue ? 'text-red-500' : ($isSoon ? 'text-orange-500' : ($isUpcoming ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500')) }}">
                         {{ $bill->category?->name ?? '—' }}
                         @if($bill->provider)
                             · <span
@@ -366,6 +243,12 @@
                 @elseif($isSoon)
                     <span
                         class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">Soon</span>
+                @elseif($isUpcoming)
+                    <span
+                        class="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                        <span class="material-icons-round" style="font-size:11px">schedule</span>
+                        In {{ $daysUntil }}d
+                    </span>
                 @elseif($isPaid)
                     <span
                         class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">{{ __('messages.paid') }}</span>
@@ -376,25 +259,31 @@
 
                 {{-- Amount --}}
                 <div class="text-right shrink-0" @click="window.location='{{ route('bills.show', $bill) }}'">
-                    <div
-                        class="text-sm {{ $amountClass }}">{{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}</div>
-                    <div
-                        class="text-xs text-gray-400 dark:text-slate-500">{{ number_format($bill->monthlyEquivalent(), 2) }}
-                        /mo
-                    </div>
+                    @if($bill->cost_varies)
+                        <div class="text-sm text-gray-400 dark:text-slate-500 font-medium italic">varies</div>
+                    @else
+                        <div
+                            class="text-sm {{ $amountClass }}">{{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}</div>
+                        <div
+                            class="text-xs text-gray-400 dark:text-slate-500">{{ number_format($bill->monthlyEquivalent(), 2) }}
+                            /mo
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Actions --}}
                 <div class="flex items-center gap-1.5 shrink-0" @click.stop>
 
                     {{-- Pay --}}
-                    <button type="button" x-show="!paid"
+                    <button type="button" x-show="!paid" x-cloak
                             title="{{ __('messages.mark_paid') }}"
                             @click="$dispatch('open-pay-modal', {
-                                billName: '{{ addslashes($bill->name) }}',
-                                amount:   '{{ number_format($bill->amount, 2) }}',
-                                currency: '{{ $bill->currency_code }}',
-                                payRoute: '{{ route('bills.pay', $bill) }}'
+                                billName:       '{{ addslashes($bill->name) }}',
+                                amount:         '{{ number_format($bill->amount, 2) }}',
+                                currency:       '{{ $bill->currency_code }}',
+                                payRoute:       '{{ route('bills.pay', $bill) }}',
+                                costVaries:     {{ $bill->cost_varies ? 'true' : 'false' }},
+                                lastPaidAmount: '{{ $bill->cost_varies && $bill->payments->first() ? number_format((float)$bill->payments->first()->amount, 2, '.', '') : '' }}'
                             })"
                             class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition">
                         <span class="material-icons-round text-base">check_circle</span>
@@ -448,163 +337,105 @@
 @endsection
 
 @push('scripts')
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.4/index.global.min.js'></script>
     <script>
-        (function () {
-            let cal = null;
-            let eventCache = [];
+        function billsPageCal() {
+            return {
+                calOpen: true,
+                today: new Date(),
+                current: new Date(),
+                events: [],
+                loading: false,
 
-            window.initBillsCalendar = function () {
-                const el = document.getElementById('bills-calendar');
-                if (!el) return;
+                get year() {
+                    return this.current.getFullYear();
+                },
+                get month() {
+                    return this.current.getMonth();
+                },
+                get monthName() {
+                    return this.current.toLocaleString('default', {month: 'long'});
+                },
 
-                if (cal) {
-                    cal.updateSize();
-                    return;
-                }
+                init() {
+                    this.current = new Date(this.today.getFullYear(), this.today.getMonth(), 1);
+                    this.fetchEvents();
+                },
 
-                cal = new FullCalendar.Calendar(el, {
-                    initialView: 'dayGridMonth',
-                    height: 'auto',
-                    firstDay: 1,
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,listMonth'
-                    },
-                    buttonText: {today: 'Today', month: 'Month', list: 'List'},
-                    events: function (info, successCallback, failureCallback) {
-                        fetch('{{ route('bills.events') }}?start=' + info.startStr + '&end=' + info.endStr)
-                            .then(r => r.json())
-                            .then(events => {
-                                eventCache = events;
-                                console.log('Events loaded:', events.length);
-                                successCallback(events);
-                                setTimeout(() => addDayIndicators(), 100);
-                            })
-                            .catch(err => {
-                                console.error('Failed to load events:', err);
-                                failureCallback(err);
-                            });
-                    },
-                    // Custom event pill rendering
-                    eventContent: function (arg) {
-                        const type = arg.event.extendedProps.type;      // 'bill' | 'income'
-                        const amount = arg.event.extendedProps.amount ?? '';
-                        const dot = type === 'income'
-                            ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.85;margin-right:4px;flex-shrink:0;vertical-align:middle"></span>'
-                            : '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.85;margin-right:4px;flex-shrink:0;vertical-align:middle"></span>';
+                prevMonth() {
+                    this.current = new Date(this.year, this.month - 1, 1);
+                    this.fetchEvents();
+                },
+                nextMonth() {
+                    this.current = new Date(this.year, this.month + 1, 1);
+                    this.fetchEvents();
+                },
+                goToday() {
+                    this.current = new Date(this.today.getFullYear(), this.today.getMonth(), 1);
+                    this.fetchEvents();
+                },
 
-                        return {
-                            html: `<div style="display:flex;align-items:center;gap:2px;padding:1px 4px;overflow:hidden">
-                                       ${dot}
-                                       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${arg.event.title}</span>
-                                       <span style="opacity:.7;font-size:.65rem;flex-shrink:0;margin-left:3px">${amount}</span>
-                                   </div>`
-                        };
-                    },
-                    eventClick: function (info) {
-                        if (info.event.url) {
-                            info.jsEvent.preventDefault();
-                            window.location = info.event.url;
-                        }
-                    },
-                    // Tooltip on hover via title attr
-                    eventDidMount: function (info) {
-                        const p = info.event.extendedProps;
-                        info.el.title = (p.type === 'bill' ? ' Bill' : ' Income')
-                            + ': ' + info.event.title
-                            + (p.amount ? ' — ' + p.amount : '')
-                            + (p.overdue ? ' (overdue)' : '');
-                    },
-                    datesSet: function () {
-                        // Redraw indicators when calendar view changes
-                        setTimeout(() => addDayIndicators(), 100);
+                async fetchEvents() {
+                    this.loading = true;
+                    const start = new Date(this.year, this.month, 1);
+                    const end = new Date(this.year, this.month + 1, 0);
+                    const fmt = d => d.toISOString().split('T')[0];
+                    try {
+                        const r = await fetch(`/bills/events?start=${fmt(start)}&end=${fmt(end)}`);
+                        this.events = await r.json();
+                    } catch (e) {
+                        this.events = [];
                     }
-                });
+                    this.loading = false;
+                },
 
-                cal.render();
+                get calendarCells() {
+                    const year = this.year, month = this.month;
+                    const firstDay = new Date(year, month, 1);
+                    const lastDay = new Date(year, month + 1, 0);
+                    let startDow = firstDay.getDay();
+                    startDow = startDow === 0 ? 6 : startDow - 1;
+                    const cells = [];
+                    for (let i = startDow - 1; i >= 0; i--) {
+                        const d = new Date(year, month, -i);
+                        cells.push({
+                            day: d.getDate(),
+                            date: this.dateStr(d),
+                            currentMonth: false,
+                            isToday: false,
+                            events: []
+                        });
+                    }
+                    for (let d = 1; d <= lastDay.getDate(); d++) {
+                        const date = new Date(year, month, d);
+                        const ds = this.dateStr(date);
+                        cells.push({
+                            day: d,
+                            date: ds,
+                            currentMonth: true,
+                            isToday: ds === this.dateStr(this.today),
+                            events: this.events.filter(e => e.start === ds)
+                        });
+                    }
+                    const rem = 7 - (cells.length % 7);
+                    if (rem < 7) for (let i = 1; i <= rem; i++) {
+                        const d = new Date(year, month + 1, i);
+                        cells.push({
+                            day: d.getDate(),
+                            date: this.dateStr(d),
+                            currentMonth: false,
+                            isToday: false,
+                            events: []
+                        });
+                    }
+                    return cells;
+                },
 
-                // Add day indicators after calendar renders
-                addDayIndicators();
+                dateStr(d) {
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                },
             };
-
-            function addDayIndicators() {
-                const dayCells = document.querySelectorAll('#bills-calendar .fc-daygrid-day');
-
-                // Remove any existing indicators first
-                document.querySelectorAll('.day-indicators').forEach(el => el.remove());
-
-                if (!dayCells.length) {
-                    console.log('No day cells found');
-                    return;
-                }
-
-                console.log('Found ' + dayCells.length + ' day cells');
-                console.log('Event cache:', eventCache.length);
-
-                const eventsByDate = {};
-
-                // Group events by date from cache
-                eventCache.forEach(event => {
-                    const date = event.start;
-                    if (!eventsByDate[date]) {
-                        eventsByDate[date] = {paid: 0, unpaid: 0, overdue: 0, income: 0};
-                    }
-                    const type = event.extendedProps.type;
-                    if (type === 'income') {
-                        eventsByDate[date].income++;
-                    } else {
-                        if (event.extendedProps.paid) eventsByDate[date].paid++;
-                        else if (event.extendedProps.overdue) eventsByDate[date].overdue++;
-                        else eventsByDate[date].unpaid++;
-                    }
-                });
-
-                console.log('Events by date:', eventsByDate);
-
-                // Add indicator dots to day cells
-                let addedCount = 0;
-                dayCells.forEach(cell => {
-                    const dateStr = cell.getAttribute('data-date');
-                    if (!dateStr || !eventsByDate[dateStr]) return;
-
-                    const stats = eventsByDate[dateStr];
-                    const indicatorDiv = document.createElement('div');
-                    indicatorDiv.className = 'day-indicators';
-                    indicatorDiv.style.cssText = 'display:flex;gap:2px;padding:0 2px;margin-top:2px;justify-content:center;flex-wrap:wrap;';
-
-                    // Add dots for each type using HTML
-                    let html = '';
-                    if (stats.overdue > 0) {
-                        html += `<span style="background-color:#ef4444;width:5px;height:5px;border-radius:50%;display:inline-block;" title="${stats.overdue} overdue"></span>`;
-                    }
-                    if (stats.unpaid > 0) {
-                        html += `<span style="background-color:#f97316;width:5px;height:5px;border-radius:50%;display:inline-block;" title="${stats.unpaid} unpaid"></span>`;
-                    }
-                    if (stats.paid > 0) {
-                        html += `<span style="background-color:#10b981;width:5px;height:5px;border-radius:50%;display:inline-block;" title="${stats.paid} paid"></span>`;
-                    }
-                    if (stats.income > 0) {
-                        html += `<span style="background-color:#3b82f6;width:5px;height:5px;border-radius:50%;display:inline-block;" title="${stats.income} income"></span>`;
-                    }
-
-                    if (html.length > 0) {
-                        indicatorDiv.innerHTML = html;
-                        // Try multiple selectors for different FullCalendar versions
-                        let container = cell.querySelector('.fc-daygrid-day-frame') ||
-                            cell.querySelector('.fc-daygrid-day-bg') ||
-                            cell.querySelector('.fc-daygrid-day-top') ||
-                            cell;
-                        if (container) {
-                            container.appendChild(indicatorDiv);
-                            addedCount++;
-                        }
-                    }
-                });
-
-                console.log('Added ' + addedCount + ' indicator divs');
-            }
-        })();
+        }
     </script>
 @endpush
+
+
