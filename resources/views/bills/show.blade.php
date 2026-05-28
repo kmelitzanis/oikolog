@@ -55,6 +55,12 @@
                         class="text-2xl font-extrabold {{ $isOverdue ? 'text-red-600 dark:text-red-400' : ($isSoon ? 'text-orange-600 dark:text-orange-400' : 'text-indigo-600 dark:text-indigo-400') }}">
                         {{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}
                     </div>
+                    @if($bill->hasPartialPayment())
+                        <div class="mt-1.5 inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-lg px-2 py-0.5">
+                            <span class="material-icons-round text-xs">account_balance_wallet</span>
+                            Υπόλοιπο: {{ $bill->currency_code }} {{ number_format($bill->remaining_balance, 2) }}
+                        </div>
+                    @endif
                 </div>
                 <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4">
                     <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-1">Monthly Equiv.
@@ -98,12 +104,13 @@
                 <div class="mt-4" x-data>
                     <button type="button"
                             @click="$dispatch('open-pay-modal', {
-                                billName:       '{{ addslashes($bill->name) }}',
-                                amount:         '{{ number_format($bill->amount, 2) }}',
-                                currency:       '{{ $bill->currency_code }}',
-                                payRoute:       '{{ route('bills.pay', $bill) }}',
-                                costVaries:     {{ $bill->cost_varies ? 'true' : 'false' }},
-                                lastPaidAmount: '{{ $bill->cost_varies && $payments->first() ? number_format((float)$payments->first()->amount, 2, '.', '') : '' }}'
+                                billName:         '{{ addslashes($bill->name) }}',
+                                amount:           '{{ number_format($bill->amount, 2) }}',
+                                currency:         '{{ $bill->currency_code }}',
+                                payRoute:         '{{ route('bills.pay', $bill) }}',
+                                costVaries:       {{ $bill->cost_varies ? 'true' : 'false' }},
+                                lastPaidAmount:   '{{ $bill->cost_varies && $payments->first() ? number_format((float)$payments->first()->amount, 2, '.', '') : '' }}',
+                                remainingBalance: {{ $bill->hasPartialPayment() ? number_format($bill->remaining_balance, 2, '.', '') : 'null' }}
                             })"
                             class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl py-3 text-sm transition">
                         <span class="material-icons-round text-lg">check_circle</span> Mark as Paid
@@ -160,12 +167,19 @@
                 <div
                     class="flex items-center gap-3 py-3 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }}">
                     <div
-                        class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center shrink-0">
-                        <span class="material-icons-round text-emerald-600 dark:text-emerald-400 text-base">check</span>
+                            class="w-8 h-8 {{ $payment->is_partial ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30' }} rounded-full flex items-center justify-center shrink-0">
+                        <span class="material-icons-round {{ $payment->is_partial ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }} text-base">
+                            {{ $payment->is_partial ? 'payments' : 'check' }}
+                        </span>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                            {{ $payment->currency_code }} {{ number_format($payment->amount, 2) }}
+                        <div class="flex items-center gap-2">
+                            <div class="text-sm font-semibold {{ $payment->is_partial ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                {{ $payment->currency_code }} {{ number_format($payment->amount, 2) }}
+                            </div>
+                            @if($payment->is_partial)
+                                <span class="inline-flex items-center text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md">Μερική</span>
+                            @endif
                         </div>
                         <div class="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                             {{ $payment->paid_at->format('d M Y, H:i') }} · {{ $payment->paidBy?->name ?? '—' }}

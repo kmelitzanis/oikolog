@@ -61,6 +61,11 @@ function makeDoughnutChart(ctx, labels, data, colors) {
 
 async function renderCharts() {
     try {
+        // If dashboard page already provides preloaded chart data and a dedicated
+        // initializer is present, avoid fetching and double-initializing the same
+        // canvases. The new dashboard page module places JSON into
+        // `#dashboard-chart-data` and initializes charts itself.
+        if (document.getElementById('dashboard-chart-data')) return;
         const [statsResp, seriesResp] = await Promise.all([fetchStats(), fetchSeries()]);
         const currency = statsResp.currency_code ?? seriesResp.currency_code ?? 'EUR';
 

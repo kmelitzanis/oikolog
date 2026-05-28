@@ -71,3 +71,11 @@ body {
 *, *::before, *::after {
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.1s ease;
 }
+
+/* Ensure Chart.js canvases fill their parent and don't leave extra space */
+.chartjs-render-monitor {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+

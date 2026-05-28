@@ -282,40 +282,82 @@ class BillController extends Controller
 
         $paidByUserId = $request->input('paid_by_user_id', $request->user()->id);
         $incomeId = $request->input('income_id') ?: null;
+        $paymentMode = $request->input('payment_mode', 'full'); // 'partial' or 'full'
+        $isPartial = $paymentMode === 'partial';
 
-        // Use custom amount when cost_varies is enabled, otherwise use bill's default amount
-        $amount = $bill->cost_varies && $request->filled('custom_amount')
-            ? (float)$request->input('custom_amount')
-            : (float)$bill->amount;
+        // Determine the total amount for this billing cycle
+        if ($bill->cost_varies && $request->filled('custom_amount')) {
+            $periodAmount = (float)$request->input('custom_amount');
+        } else {
+            $periodAmount = (float)$bill->amount;
+        }
 
-        DB::transaction(function () use ($bill, $request, $paidByUserId, $incomeId, $amount) {
+        // Calculate how much is being paid now and what the new remaining balance will be
+        if ($isPartial) {
+            $partialAmount = (float)$request->input('partial_amount', 0);
+            $currentRemaining = $bill->remaining_balance !== null
+                ? (float)$bill->remaining_balance
+                : $periodAmount;
+
+            $newRemaining = round($currentRemaining - $partialAmount, 2);
+
+            // If partial payment covers the full remaining amount, treat as full
+            if ($newRemaining <= 0) {
+                $isPartial = false;
+                $payAmount = $currentRemaining;
+                $newRemaining = null;
+            } else {
+                $payAmount = $partialAmount;
+            }
+        } else {
+            // Full payment: pay whatever is still remaining
+            $payAmount = $bill->remaining_balance !== null
+                ? (float)$bill->remaining_balance
+                : $periodAmount;
+            $newRemaining = null;
+        }
+
+        DB::transaction(function () use ($bill, $request, $paidByUserId, $incomeId, $payAmount, $isPartial, $newRemaining) {
             Payment::create([
                 'bill_id'       => $bill->id,
                 'paid_by' => $paidByUserId,
                 'income_id' => $incomeId,
-                'amount' => $amount,
+                'amount' => $payAmount,
+                'is_partial' => $isPartial,
                 'currency_code' => $bill->currency_code,
                 'paid_at'       => now(),
+                'notes' => $request->input('notes'),
             ]);
 
-            $nextDue = $bill->calculateNextDueDate();
-            $bill->update([
-                'last_paid_date' => now()->toDateString(),
-                'next_due_date'  => $nextDue?->toDateString() ?? $bill->next_due_date,
-            ]);
+            if ($isPartial) {
+                // Partial: update remaining balance, do NOT advance the due date
+                $bill->update([
+                    'remaining_balance' => $newRemaining,
+                    'last_paid_date' => now()->toDateString(),
+                ]);
+            } else {
+                // Full: clear remaining balance and advance to next period
+                $nextDue = $bill->calculateNextDueDate();
+                $bill->update([
+                    'remaining_balance' => null,
+                    'last_paid_date' => now()->toDateString(),
+                    'next_due_date' => $nextDue?->toDateString() ?? $bill->next_due_date,
+                ]);
+            }
         });
 
         if ($request->wantsJson() || $request->ajax()) {
             $bill->refresh();
             return response()->json([
-                'status' => 'paid',
+                'status' => $isPartial ? 'partial' : 'paid',
+                'remaining_balance' => $bill->remaining_balance,
                 'last_paid_date' => $bill->last_paid_date?->toDateString(),
                 'next_due_date' => $bill->next_due_date?->toDateString(),
-                'message' => 'Payment recorded.',
+                'message' => $isPartial ? 'Μερική πληρωμή καταγράφηκε.' : 'Πληρωμή καταγράφηκε.',
             ]);
         }
 
-        return back()->with('success', 'Payment recorded.');
+        return back()->with('success', $isPartial ? 'Μερική πληρωμή καταγράφηκε.' : 'Πληρωμή καταγράφηκε.');
     }
 
     public function undoLastPayment(Bill $bill)
@@ -332,15 +374,38 @@ class BillController extends Controller
         }
 
         DB::transaction(function () use ($bill, $lastPayment) {
-            $paidAt = $lastPayment->paid_at; // store
+            $paidAt = $lastPayment->paid_at;
+            $wasPartial = $lastPayment->is_partial;
+            $undoneAmount = (float)$lastPayment->amount;
             $lastPayment->delete();
 
             // Previous payment becomes last_paid_date
             $prevPayment = $bill->payments()->latest('paid_at')->first();
-            $bill->update([
-                'last_paid_date' => $prevPayment?->paid_at?->toDateString(),
-                'next_due_date' => $paidAt?->toDateString(),
-            ]);
+
+            if ($wasPartial) {
+                // Restore remaining balance by adding back the undone amount
+                $currentRemaining = $bill->remaining_balance !== null
+                    ? (float)$bill->remaining_balance
+                    : 0;
+                $restoredRemaining = round($currentRemaining + $undoneAmount, 2);
+
+                // If remaining equals the full bill amount, clear it (no partial state)
+                if ($restoredRemaining >= (float)$bill->amount) {
+                    $restoredRemaining = null;
+                }
+
+                $bill->update([
+                    'remaining_balance' => $restoredRemaining,
+                    'last_paid_date' => $prevPayment?->paid_at?->toDateString(),
+                ]);
+            } else {
+                // Undoing a full payment: restore previous due date and clear remaining balance
+                $bill->update([
+                    'remaining_balance' => null,
+                    'last_paid_date' => $prevPayment?->paid_at?->toDateString(),
+                    'next_due_date' => $paidAt?->toDateString(),
+                ]);
+            }
         });
 
         $bill->refresh();
@@ -348,6 +413,7 @@ class BillController extends Controller
         if (request()->wantsJson() || request()->ajax()) {
             return response()->json([
                 'status' => 'undone',
+                'remaining_balance' => $bill->remaining_balance,
                 'last_paid_date' => $bill->last_paid_date?->toDateString(),
                 'next_due_date' => $bill->next_due_date?->toDateString(),
                 'message' => 'Payment undone successfully.',

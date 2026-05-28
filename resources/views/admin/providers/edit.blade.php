@@ -32,40 +32,7 @@
                      class="hidden w-14 h-14 object-contain rounded-xl border border-gray-100 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 mt-2">
             </div>
             <script>
-                const dropArea = document.getElementById('logo-drop-area');
-                const input = document.getElementById('logo-input');
-                const preview = document.getElementById('logo-preview');
-                const dropText = document.getElementById('logo-drop-text');
-                dropArea.addEventListener('click', () => input.click());
-                dropArea.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    dropArea.classList.add('border-indigo-400');
-                });
-                dropArea.addEventListener('dragleave', e => {
-                    e.preventDefault();
-                    dropArea.classList.remove('border-indigo-400');
-                });
-                dropArea.addEventListener('drop', e => {
-                    e.preventDefault();
-                    dropArea.classList.remove('border-indigo-400');
-                    if (e.dataTransfer.files.length) {
-                        input.files = e.dataTransfer.files;
-                        showPreview();
-                    }
-                });
-                input.addEventListener('change', showPreview);
-
-                function showPreview() {
-                    if (input.files && input.files[0]) {
-                        const reader = new FileReader();
-                        reader.onload = e => {
-                            preview.src = e.target.result;
-                            preview.classList.remove('hidden');
-                            dropText.classList.add('hidden');
-                        };
-                        reader.readAsDataURL(input.files[0]);
-                    }
-                }
+                // Logo drag/drop and preview handled by resources/js/pages/file-previews.js
             </script>
             @error('logo')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
         </div>

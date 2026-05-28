@@ -90,6 +90,16 @@ class DashboardController extends Controller
             'password' => ['required'],
         ]);
 
+        // If the user requested "remember me", extend the session lifetime for
+        // this request so the session cookie will be issued with a longer TTL.
+        if ($request->boolean('remember')) {
+            // Compute desired remember lifetime but cap it using max_lifetime
+            $desired = config('session.remember_lifetime', 60 * 24 * 30);
+            $max = config('session.max_lifetime', 60 * 24 * 30);
+            $use = min($desired, $max);
+            config(['session.lifetime' => $use]);
+        }
+
         if (Auth::attempt($credentials, false)) {
             $user = Auth::user();
 
@@ -102,9 +112,12 @@ class DashboardController extends Controller
                 return redirect()->route('2fa.challenge');
             }
 
+            // Regenerate session after login (uses the lifetime potentially
+            // adjusted above when remember was selected).
             $request->session()->regenerate();
 
             if ($request->boolean('remember')) {
+                // Set the persistent remember cookie as well.
                 Auth::login($user, true);
             }
 

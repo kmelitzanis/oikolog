@@ -38,3 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Page-specific modules
+import './pages/dashboard';
+import './pages/bills';
+import './pages/shopping-lists';
+import './pages/shopping-list';
+import './pages/file-previews';
+import './pages/calendar';
+

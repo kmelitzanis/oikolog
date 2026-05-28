@@ -6,7 +6,9 @@
         billName: '...',
         amount:   '123.00',
         currency: 'EUR',
-        payRoute: '/bills/{id}/pay'
+        payRoute: '/bills/{id}/pay',
+        costVaries: false,
+        remainingBalance: null   // pass if there's an outstanding partial balance
     })
 --}}
 @php
@@ -38,30 +40,57 @@
         payRoute: '',
         costVaries: false,
         customAmount: '',
+        partialAmount: '',
         paidByUserId: '{{ auth()->id() }}',
         incomeId: '',
+        paymentMode: 'full',
+        remainingBalance: null,
 
         currencySymbols: {'EUR':'€','USD':'$','GBP':'£','CHF':'Fr','CAD':'CA$','AUD':'A$','JPY':'¥'},
         get currencySymbol() { return this.currencySymbols[this.currency] ?? this.currency; },
 
+        get displayAmount() {
+            if (this.remainingBalance !== null) return parseFloat(this.remainingBalance).toFixed(2);
+            if (!this.costVaries) return this.amount;
+            return this.customAmount || '—';
+        },
+
         openModal(data) {
-            this.billName     = data.billName        ?? '';
-            this.amount       = data.amount          ?? '';
-            this.currency     = data.currency        ?? '';
-            this.payRoute     = data.payRoute        ?? '';
-            this.costVaries   = data.costVaries      ?? false;
-            this.customAmount = data.lastPaidAmount  ?? '';
-            this.paidByUserId = '{{ auth()->id() }}';
-            this.incomeId     = '';
-            this.open         = true;
+            this.billName        = data.billName         ?? '';
+            this.amount          = data.amount           ?? '';
+            this.currency        = data.currency         ?? '';
+            this.payRoute        = data.payRoute         ?? '';
+            this.costVaries      = data.costVaries       ?? false;
+            this.customAmount    = data.lastPaidAmount   ?? '';
+            this.remainingBalance = data.remainingBalance ?? null;
+            this.partialAmount   = '';
+            this.paidByUserId    = '{{ auth()->id() }}';
+            this.incomeId        = '';
+            this.paymentMode     = 'full';
+            this.open            = true;
         },
 
         submit() {
             if (!this.payRoute) return;
-            if (this.costVaries && (!this.customAmount || parseFloat(this.customAmount) <= 0)) {
-                alert('Παρακαλώ εισάγετε το ποσό πληρωμής.');
+
+            if (this.costVaries && !this.remainingBalance && (!this.customAmount || parseFloat(this.customAmount) <= 0)) {
+                alert('Παρακαλώ εισάγετε το συνολικό ποσό.');
                 return;
             }
+            if (this.paymentMode === 'partial') {
+                if (!this.partialAmount || parseFloat(this.partialAmount) <= 0) {
+                    alert('Παρακαλώ εισάγετε το ποσό που πληρώνετε τώρα.');
+                    return;
+                }
+                const max = this.remainingBalance !== null
+                    ? parseFloat(this.remainingBalance)
+                    : (this.costVaries ? parseFloat(this.customAmount) : parseFloat(this.amount));
+                if (parseFloat(this.partialAmount) > max) {
+                    alert('Το ποσό δεν μπορεί να υπερβαίνει το υπόλοιπο (' + this.currency + ' ' + max.toFixed(2) + ').');
+                    return;
+                }
+            }
+
             this.$refs.payForm.action = this.payRoute;
             this.$refs.payForm.submit();
         }
@@ -120,38 +149,101 @@
                         </div>
                         <div class="text-sm font-semibold text-gray-900 dark:text-white" x-text="billName"></div>
                     </div>
-                    <div class="text-right" x-show="!costVaries">
-                        <div
-                            class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">
-                            Amount
-                        </div>
-                        <div class="text-base font-extrabold text-emerald-600 dark:text-emerald-400"
-                             x-text="currency + ' ' + amount"></div>
-                    </div>
-                    <div x-show="costVaries" x-cloak>
-                        <span
-                            class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-lg">
-                            <span class="material-icons-round text-sm">sync_alt</span> Cost varies
-                        </span>
+                    <div class="text-right">
+                        <template x-if="remainingBalance !== null">
+                            <div>
+                                <div class="text-xs font-semibold text-amber-500 uppercase tracking-wide mb-0.5">
+                                    Υπόλοιπο
+                                </div>
+                                <div class="text-base font-extrabold text-amber-600 dark:text-amber-400"
+                                     x-text="currency + ' ' + parseFloat(remainingBalance).toFixed(2)"></div>
+                            </div>
+                        </template>
+                        <template x-if="remainingBalance === null && !costVaries">
+                            <div>
+                                <div class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">
+                                    Amount
+                                </div>
+                                <div class="text-base font-extrabold text-emerald-600 dark:text-emerald-400"
+                                     x-text="currency + ' ' + amount"></div>
+                            </div>
+                        </template>
+                        <template x-if="remainingBalance === null && costVaries">
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-lg">
+                                <span class="material-icons-round text-sm">sync_alt</span> Cost varies
+                            </span>
+                        </template>
                     </div>
                 </div>
 
-                {{-- Custom amount when cost varies --}}
-                <div x-show="costVaries" x-cloak>
+                {{-- Custom amount when cost varies (and no prior partial) --}}
+                <div x-show="costVaries && remainingBalance === null" x-cloak>
                     <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
-                        <span
-                            class="material-icons-round text-base align-middle text-gray-400 dark:text-slate-400 mr-0.5">payments</span>
-                        Ποσό πληρωμής *
+                        <span class="material-icons-round text-base align-middle text-gray-400 dark:text-slate-400 mr-0.5">payments</span>
+                        Συνολικό ποσό περιόδου *
                     </label>
                     <div class="relative">
-                        <span
-                            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm"
-                            x-text="currencySymbol"></span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm"
+                              x-text="currencySymbol"></span>
                         <input type="number" step="0.01" min="0.01" x-model="customAmount"
-                               :required="costVaries"
                                placeholder="0.00"
                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-900 dark:text-white rounded-xl pl-6 pr-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
                     </div>
+                </div>
+
+                {{-- Payment mode toggle --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Τύπος
+                        πληρωμής</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button"
+                                @click="paymentMode = 'full'"
+                                :class="paymentMode === 'full'
+                                    ? 'bg-emerald-600 text-white border-emerald-600'
+                                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600'"
+                                class="flex items-center justify-center gap-1.5 border rounded-xl px-3 py-2.5 text-sm font-semibold transition">
+                            <span class="material-icons-round text-base">check_circle</span>
+                            Ολοκληρωτική
+                        </button>
+                        <button type="button"
+                                @click="paymentMode = 'partial'"
+                                :class="paymentMode === 'partial'
+                                    ? 'bg-amber-500 text-white border-amber-500'
+                                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600'"
+                                class="flex items-center justify-center gap-1.5 border rounded-xl px-3 py-2.5 text-sm font-semibold transition">
+                            <span class="material-icons-round text-base">payments</span>
+                            Μερική
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Full payment info --}}
+                <div x-show="paymentMode === 'full'" x-cloak
+                     class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                    <span class="material-icons-round text-base shrink-0">info</span>
+                    <span>
+                        Θα καταγραφεί πληρωμή
+                        <strong x-text="currency + ' ' + displayAmount"></strong>
+                        και η επόμενη λήξη θα ενημερωθεί.
+                    </span>
+                </div>
+
+                {{-- Partial payment amount --}}
+                <div x-show="paymentMode === 'partial'" x-cloak>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
+                        <span class="material-icons-round text-base align-middle text-amber-500 mr-0.5">payments</span>
+                        Ποσό που πληρώνετε τώρα *
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm"
+                              x-text="currencySymbol"></span>
+                        <input type="number" step="0.01" min="0.01" x-model="partialAmount"
+                               placeholder="0.00"
+                               class="w-full bg-gray-50 dark:bg-slate-700 border border-amber-300 dark:border-amber-600 text-gray-900 dark:text-white rounded-xl pl-6 pr-4 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900 transition">
+                    </div>
+                    <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                        Η ημερομηνία λήξης <strong>δεν</strong> θα αλλάξει — απλά θα μειωθεί το υπόλοιπο.
+                    </p>
                 </div>
 
                 {{-- Who Pays (only if family with multiple members) --}}
@@ -203,9 +295,13 @@
             <div
                 class="px-5 py-4 bg-gray-50 dark:bg-slate-700/30 border-t border-gray-100 dark:border-slate-700 flex items-center gap-3">
                 <button type="button" @click="submit()"
-                        class="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
-                    <span class="material-icons-round text-lg">check_circle</span>
-                    Επιβεβαίωση Πληρωμής
+                        :class="paymentMode === 'partial'
+                            ? 'bg-amber-500 hover:bg-amber-600'
+                            : 'bg-emerald-600 hover:bg-emerald-700'"
+                        class="flex-1 inline-flex items-center justify-center gap-2 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+                    <span class="material-icons-round text-lg"
+                          x-text="paymentMode === 'partial' ? 'payments' : 'check_circle'"></span>
+                    <span x-text="paymentMode === 'partial' ? 'Μερική Πληρωμή' : 'Επιβεβαίωση Πληρωμής'"></span>
                 </button>
                 <button type="button" @click="open = false"
                         class="inline-flex items-center gap-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 text-sm font-medium rounded-xl px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-600 transition">
@@ -218,9 +314,10 @@
     {{-- Hidden form submitted programmatically --}}
     <form method="POST" x-ref="payForm" style="display:none">
         @csrf
+        <input type="hidden" name="payment_mode" :value="paymentMode">
         <input type="hidden" name="paid_by_user_id" :value="paidByUserId">
         <input type="hidden" name="income_id" :value="incomeId">
         <input type="hidden" name="custom_amount" :value="customAmount">
+        <input type="hidden" name="partial_amount" :value="partialAmount">
     </form>
 </div>
-

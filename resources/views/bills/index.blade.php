@@ -98,12 +98,26 @@
                                     ></span>
                                 </div>
                                 <div class="mt-1.5 flex items-center justify-center gap-1 min-h-[12px]">
-                                    <template x-for="(ev, ei) in cell.events.slice(0, 3)" :key="ei">
-                                        <a :href="ev.url"
-                                           :title="ev.title.replace('• ','')"
-                                           class="block w-1.5 h-1.5 rounded-full transition hover:scale-110"
-                                           :style="'background:' + ev.color"></a>
+                                    {{-- Show aggregated status indicators (overdue / soon / paid / upcoming) like the full calendar --}}
+                                    <template x-if="cell.events.some(e => e.extendedProps?.overdue)">
+                                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0"
+                                              title="Overdue"></span>
                                     </template>
+                                    <template
+                                            x-if="cell.events.some(e => e.extendedProps?.soon && !e.extendedProps?.paid)">
+                                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"
+                                              title="Due soon"></span>
+                                    </template>
+                                    <template x-if="cell.events.some(e => e.extendedProps?.paid)">
+                                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"
+                                              title="Paid"></span>
+                                    </template>
+                                    <template
+                                            x-if="cell.events.some(e => !e.extendedProps?.paid && !e.extendedProps?.overdue && !e.extendedProps?.soon)">
+                                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"
+                                              title="Upcoming"></span>
+                                    </template>
+                                    {{-- Fallback: show count when many events --}}
                                     <template x-if="cell.events.length > 3">
                                         <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500"
                                              x-text="'+' + (cell.events.length - 3)"></div>
@@ -336,105 +350,7 @@
 @endsection
 
 @push('scripts')
-    <script>
-        function billsPageCal() {
-            return {
-                calOpen: true,
-                today: new Date(),
-                current: new Date(),
-                events: [],
-                loading: false,
-
-                get year() {
-                    return this.current.getFullYear();
-                },
-                get month() {
-                    return this.current.getMonth();
-                },
-                get monthName() {
-                    return this.current.toLocaleString('default', {month: 'long'});
-                },
-
-                init() {
-                    this.current = new Date(this.today.getFullYear(), this.today.getMonth(), 1);
-                    this.fetchEvents();
-                },
-
-                prevMonth() {
-                    this.current = new Date(this.year, this.month - 1, 1);
-                    this.fetchEvents();
-                },
-                nextMonth() {
-                    this.current = new Date(this.year, this.month + 1, 1);
-                    this.fetchEvents();
-                },
-                goToday() {
-                    this.current = new Date(this.today.getFullYear(), this.today.getMonth(), 1);
-                    this.fetchEvents();
-                },
-
-                async fetchEvents() {
-                    this.loading = true;
-                    const start = new Date(this.year, this.month, 1);
-                    const end = new Date(this.year, this.month + 1, 0);
-                    const fmt = d => d.toISOString().split('T')[0];
-                    try {
-                        const r = await fetch(`/bills/events?start=${fmt(start)}&end=${fmt(end)}`);
-                        this.events = await r.json();
-                    } catch (e) {
-                        this.events = [];
-                    }
-                    this.loading = false;
-                },
-
-                get calendarCells() {
-                    const year = this.year, month = this.month;
-                    const firstDay = new Date(year, month, 1);
-                    const lastDay = new Date(year, month + 1, 0);
-                    let startDow = firstDay.getDay();
-                    startDow = startDow === 0 ? 6 : startDow - 1;
-                    const cells = [];
-                    for (let i = startDow - 1; i >= 0; i--) {
-                        const d = new Date(year, month, -i);
-                        cells.push({
-                            day: d.getDate(),
-                            date: this.dateStr(d),
-                            currentMonth: false,
-                            isToday: false,
-                            events: []
-                        });
-                    }
-                    for (let d = 1; d <= lastDay.getDate(); d++) {
-                        const date = new Date(year, month, d);
-                        const ds = this.dateStr(date);
-                        cells.push({
-                            day: d,
-                            date: ds,
-                            currentMonth: true,
-                            isToday: ds === this.dateStr(this.today),
-                            events: this.events.filter(e => e.start === ds)
-                        });
-                    }
-                    const rem = 7 - (cells.length % 7);
-                    if (rem < 7) for (let i = 1; i <= rem; i++) {
-                        const d = new Date(year, month + 1, i);
-                        cells.push({
-                            day: d.getDate(),
-                            date: this.dateStr(d),
-                            currentMonth: false,
-                            isToday: false,
-                            events: []
-                        });
-                    }
-                    return cells;
-                },
-
-                dateStr(d) {
-                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                },
-            };
-        }
-    </script>
+    {{-- Bills page scripts moved to resources/js/pages/bills.js --}}
 @endpush
 
 

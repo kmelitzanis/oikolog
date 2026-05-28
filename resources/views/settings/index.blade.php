@@ -22,40 +22,7 @@
                              class="{{ $avatar ? '' : 'hidden' }} w-14 h-14 object-cover rounded-2xl border border-gray-100 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 mt-2">
                     </div>
                     <script>
-                        const avatarDropArea = document.getElementById('avatar-drop-area');
-                        const avatarInput = document.getElementById('avatar-input');
-                        const avatarPreview = document.getElementById('avatar-preview');
-                        const avatarDropText = document.getElementById('avatar-drop-text');
-                        avatarDropArea.addEventListener('click', () => avatarInput.click());
-                        avatarDropArea.addEventListener('dragover', e => {
-                            e.preventDefault();
-                            avatarDropArea.classList.add('border-indigo-400');
-                        });
-                        avatarDropArea.addEventListener('dragleave', e => {
-                            e.preventDefault();
-                            avatarDropArea.classList.remove('border-indigo-400');
-                        });
-                        avatarDropArea.addEventListener('drop', e => {
-                            e.preventDefault();
-                            avatarDropArea.classList.remove('border-indigo-400');
-                            if (e.dataTransfer.files.length) {
-                                avatarInput.files = e.dataTransfer.files;
-                                showAvatarPreview();
-                            }
-                        });
-                        avatarInput.addEventListener('change', showAvatarPreview);
-
-                        function showAvatarPreview() {
-                            if (avatarInput.files && avatarInput.files[0]) {
-                                const reader = new FileReader();
-                                reader.onload = e => {
-                                    avatarPreview.src = e.target.result;
-                                    avatarPreview.classList.remove('hidden');
-                                    avatarDropText.classList.add('hidden');
-                                };
-                                reader.readAsDataURL(avatarInput.files[0]);
-                            }
-                        }
+                        // Avatar drag/drop and preview are handled by resources/js/pages/file-previews.js
                     </script>
                     <div class="text-xs text-gray-400 dark:text-slate-500">{{ __('messages.avatar') }} — JPG, PNG,
                         WebP, max 2 MB

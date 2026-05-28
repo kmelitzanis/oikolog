@@ -53,6 +53,13 @@ class TwoFactorController extends Controller
         session()->forget('2fa_user_id');
         $remember = session()->pull('2fa_remember', false);
 
+        if ($remember) {
+            $desired = config('session.remember_lifetime', 60 * 24 * 30);
+            $max = config('session.max_lifetime', 60 * 24 * 30);
+            $use = min($desired, $max);
+            config(['session.lifetime' => $use]);
+        }
+
         Auth::login($user, $remember);
         $request->session()->regenerate();
 

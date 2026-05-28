@@ -198,58 +198,7 @@
                         <div id="receipts-preview" class="flex flex-wrap gap-2 mt-2"></div>
                     </div>
                     <script>
-                        const receiptsDropArea = document.getElementById('receipts-drop-area');
-                        const receiptsInput = document.getElementById('receipts-input');
-                        const receiptsPreview = document.getElementById('receipts-preview');
-                        const receiptsDropText = document.getElementById('receipts-drop-text');
-                        receiptsDropArea.addEventListener('click', () => receiptsInput.click());
-                        receiptsDropArea.addEventListener('dragover', e => {
-                            e.preventDefault();
-                            receiptsDropArea.classList.add('border-indigo-400');
-                        });
-                        receiptsDropArea.addEventListener('dragleave', e => {
-                            e.preventDefault();
-                            receiptsDropArea.classList.remove('border-indigo-400');
-                        });
-                        receiptsDropArea.addEventListener('drop', e => {
-                            e.preventDefault();
-                            receiptsDropArea.classList.remove('border-indigo-400');
-                            if (e.dataTransfer.files.length) {
-                                receiptsInput.files = e.dataTransfer.files;
-                                showReceiptsPreview();
-                            }
-                        });
-                        receiptsInput.addEventListener('change', showReceiptsPreview);
-
-                        function showReceiptsPreview() {
-                            receiptsPreview.innerHTML = '';
-                            if (receiptsInput.files && receiptsInput.files.length) {
-                                receiptsDropText.classList.add('hidden');
-                                Array.from(receiptsInput.files).forEach(file => {
-                                    const wrapper = document.createElement('div');
-                                    wrapper.className = 'w-20 h-20 overflow-hidden rounded-lg border border-gray-100 dark:border-slate-600 flex items-center justify-center bg-white dark:bg-slate-700';
-                                    if (file.type.startsWith('image/')) {
-                                        const img = document.createElement('img');
-                                        img.className = 'w-full h-full object-cover';
-                                        img.alt = file.name;
-                                        const reader = new FileReader();
-                                        reader.onload = e => img.src = e.target.result;
-                                        reader.readAsDataURL(file);
-                                        wrapper.appendChild(img);
-                                    } else if (file.type === 'application/pdf') {
-                                        const icon = document.createElement('span');
-                                        icon.className = 'material-icons-round text-4xl text-gray-400';
-                                        icon.textContent = 'picture_as_pdf';
-                                        wrapper.appendChild(icon);
-                                    } else {
-                                        wrapper.textContent = file.name;
-                                    }
-                                    receiptsPreview.appendChild(wrapper);
-                                });
-                            } else {
-                                receiptsDropText.classList.remove('hidden');
-                            }
-                        }
+                        // Receipts drag/drop and preview handled by resources/js/pages/file-previews.js
                     </script>
                     @if(isset($bill) && method_exists($bill, 'receiptUrls'))
                         <div class="mt-3 flex gap-2 flex-wrap">

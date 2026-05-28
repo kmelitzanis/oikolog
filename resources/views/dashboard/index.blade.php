@@ -257,23 +257,26 @@
                 <h3 class="text-base font-bold text-gray-900 dark:text-white">Monthly Overview</h3>
                 <span class="text-xs text-gray-400 dark:text-slate-500">Last 12 months</span>
             </div>
-            <div class="relative h-48">
-                <canvas id="chart-monthly"></canvas>
+            <div class="relative h-48 overflow-hidden">
+                <canvas id="chart-monthly" class="w-full h-full"
+                        style="display:block;width:100% !important;height:100% !important;"></canvas>
             </div>
         </div>
         <div class="flex flex-col gap-4">
             <div
                 class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Spending vs Income</h3>
-                <div class="relative h-32">
-                    <canvas id="chart-income-spend"></canvas>
+                <div class="relative h-32 overflow-hidden">
+                    <canvas id="chart-income-spend" class="w-full h-full"
+                            style="display:block;width:100% !important;height:100% !important;"></canvas>
                 </div>
             </div>
             <div
                 class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">{{ __('messages.by_category') }}</h3>
-                <div class="relative h-32">
-                    <canvas id="chart-category"></canvas>
+                <div class="relative h-32 overflow-hidden">
+                    <canvas id="chart-category" class="w-full h-full"
+                            style="display:block;width:100% !important;height:100% !important;"></canvas>
                 </div>
             </div>
         </div>
@@ -281,88 +284,5 @@
 
 @endsection
 
-@push('scripts')
-    <script>
-        (function () {
-            const chartData = @json($chartData);
-            const cur = chartData.currency ?? 'EUR';
-            const fmt = v => `${cur} ${Number(v).toFixed(2)}`;
-
-            try {
-                const monthlyCtx = document.getElementById('chart-monthly')?.getContext('2d');
-                if (monthlyCtx) new Chart(monthlyCtx, {
-                    type: 'line',
-                    data: {
-                        labels: chartData.months,
-                        datasets: [
-                            {
-                                label: 'Spending',
-                                data: chartData.spending,
-                                borderColor: '#ef4444',
-                                backgroundColor: 'rgba(239,68,68,.07)',
-                                tension: .35,
-                                fill: true,
-                                pointRadius: 3
-                            },
-                            {
-                                label: 'Income',
-                                data: chartData.income,
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16,185,129,.07)',
-                                tension: .35,
-                                fill: true,
-                                pointRadius: 3
-                            },
-                        ]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: {tooltip: {callbacks: {label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}`}}},
-                        scales: {y: {beginAtZero: true, ticks: {callback: v => fmt(v)}}}
-                    }
-                });
-
-                const isCtx = document.getElementById('chart-income-spend')?.getContext('2d');
-                if (isCtx) {
-                    const ts = chartData.spending.reduce((a, b) => a + b, 0);
-                    const ti = chartData.income.reduce((a, b) => a + b, 0);
-                    new Chart(isCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Spending', 'Income'],
-                            datasets: [{data: [ts, ti], backgroundColor: ['#ef4444', '#10b981'], borderWidth: 0}]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '65%',
-                            plugins: {tooltip: {callbacks: {label: c => `${c.label}: ${fmt(c.parsed)}`}}}
-                        }
-                    });
-                }
-
-                const catCtx = document.getElementById('chart-category')?.getContext('2d');
-                if (catCtx && chartData.by_category && Object.keys(chartData.by_category).length > 0) {
-                    const entries = Object.entries(chartData.by_category).slice(0, 8);
-                    const palette = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#f97316', '#ec4899'];
-                    new Chart(catCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: entries.map(e => e[0]),
-                            datasets: [{data: entries.map(e => e[1]), backgroundColor: palette, borderWidth: 0}]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '55%',
-                            plugins: {tooltip: {callbacks: {label: c => `${c.label}: ${fmt(c.parsed)}`}}}
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn('Charts unavailable:', e.message);
-            }
-        })();
-    </script>
-@endpush
+<div id="dashboard-chart-data" data-chart='@json($chartData)'></div>
 

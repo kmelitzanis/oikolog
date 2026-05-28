@@ -12,7 +12,7 @@ class Payment extends Model
     use HasUlids;
 
     protected $fillable = [
-        'bill_id', 'paid_by', 'income_id', 'amount', 'currency_code',
+        'bill_id', 'paid_by', 'income_id', 'amount', 'is_partial', 'currency_code',
         'exchange_rate', 'paid_at', 'notes',
     ];
 
@@ -20,6 +20,7 @@ class Payment extends Model
     {
         return [
             'amount'        => 'decimal:2',
+            'is_partial' => 'boolean',
             'exchange_rate' => 'decimal:6',
             'paid_at'       => 'datetime',
         ];

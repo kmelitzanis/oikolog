@@ -14,7 +14,8 @@ class Bill extends Model
     use HasUlids, HasFactory;
 
     protected $fillable = [
-        'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'cost_varies', 'currency_code',
+        'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'cost_varies',
+        'remaining_balance', 'currency_code',
         'frequency', 'frequency_interval', 'start_date', 'end_date', 'next_due_date',
         'last_paid_date', 'is_active', 'is_shared', 'notify_enabled', 'notify_days_before',
         'url', 'notes', 'created_by', 'family_id', 'created_at', 'updated_at', 'created_by'
@@ -24,6 +25,7 @@ class Bill extends Model
     {
         return [
             'amount'             => 'decimal:2',
+            'remaining_balance' => 'decimal:2',
             'cost_varies' => 'boolean',
             'start_date'         => 'date',
             'end_date'           => 'date',
@@ -224,6 +226,20 @@ class Bill extends Model
             'yearly' => $date->copy()->addYears(1 * $interval),
             default => $date->copy()->addMonths(1 * $interval),
         };
+    }
+
+    /** Returns true if there is an outstanding partial balance for the current cycle. */
+    public function hasPartialPayment(): bool
+    {
+        return $this->remaining_balance !== null;
+    }
+
+    /** Returns the amount still owed for the current billing cycle. */
+    public function getEffectiveRemainingBalance(): float
+    {
+        return $this->remaining_balance !== null
+            ? (float)$this->remaining_balance
+            : (float)$this->amount;
     }
 
     // Helper to get receipt urls (if medialibrary installed)

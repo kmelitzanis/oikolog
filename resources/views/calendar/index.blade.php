@@ -83,46 +83,68 @@
                     <template x-for="(cell, i) in calendarCells" :key="i">
                         <div
                             :class="{
-                            'opacity-25': !cell.currentMonth
-                        }"
-                            class="relative min-h-[80px] md:min-h-[100px] rounded-2xl p-2 md:p-2.5 transition hover:bg-gray-50 dark:hover:bg-slate-700/40 flex flex-col"
+                                'opacity-30': !cell.currentMonth,
+                                'ring-2 ring-indigo-400 ring-offset-1 dark:ring-offset-slate-800': cell.isToday,
+                                'bg-red-50/60 dark:bg-red-900/10': cell.hasOverdue && cell.currentMonth,
+                            }"
+                            class="relative min-h-[72px] md:min-h-[96px] rounded-2xl p-1.5 md:p-2.5 transition hover:bg-gray-50 dark:hover:bg-slate-700/40 flex flex-col"
                         >
+                            {{-- Day number --}}
                             <div class="flex justify-center md:justify-start">
-                            <span
-                                :class="{
-                                    'bg-indigo-500 text-white shadow-sm': cell.isToday,
-                                    'text-gray-800 dark:text-white font-semibold': !cell.isToday
-                                }"
-                                class="w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition"
-                                x-text="cell.day"
-                            ></span>
+                                <span
+                                        :class="{
+                                        'bg-indigo-500 text-white shadow-sm': cell.isToday,
+                                        'text-gray-800 dark:text-white font-semibold': !cell.isToday
+                                    }"
+                                        class="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full text-xs font-bold transition"
+                                        x-text="cell.day"
+                                ></span>
                             </div>
 
-                            <div
-                                class="mt-2 flex flex-wrap items-center justify-center md:justify-start gap-1 min-h-[12px]">
-                                <template x-for="(ev, ei) in cell.events.slice(0, 4)" :key="ei">
-                                    <a :href="ev.url"
-                                       :title="ev.title.replace('• ','')"
-                                       class="block w-2 h-2 rounded-full transition hover:scale-110"
-                                       :style="'background:' + ev.color"
-                                    ></a>
+                            {{-- Status indicator dots (always shown when events exist) --}}
+                            <div class="mt-1.5 flex items-center justify-center md:justify-start gap-1 flex-wrap">
+                                {{-- Overdue dot --}}
+                                <template x-if="cell.hasOverdue">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-200 dark:shadow-red-900 shrink-0"
+                                          title="Overdue"></span>
                                 </template>
-                                <template x-if="cell.events.length > 4">
-                                    <span class="text-[10px] font-semibold text-gray-400 dark:text-slate-500"
-                                          x-text="'+' + (cell.events.length - 4)"></span>
+                                {{-- Soon dot --}}
+                                <template x-if="cell.hasSoon">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-orange-400 shadow-sm shadow-orange-200 dark:shadow-orange-900 shrink-0"
+                                          title="Due soon"></span>
+                                </template>
+                                {{-- Paid dot --}}
+                                <template x-if="cell.hasPaid">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200 dark:shadow-emerald-900 shrink-0"
+                                          title="Paid"></span>
+                                </template>
+                                {{-- Upcoming dot --}}
+                                <template x-if="cell.hasUpcoming">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-200 dark:shadow-indigo-900 shrink-0"
+                                          title="Upcoming"></span>
+                                </template>
+                                {{-- Count badge when more than 3 events --}}
+                                <template x-if="cell.count > 3">
+                                    <span class="text-[9px] font-bold text-gray-400 dark:text-slate-500 leading-none ml-0.5"
+                                          x-text="'+' + (cell.count - 3)"></span>
                                 </template>
                             </div>
 
-                            <div class="hidden md:flex mt-2 flex-col gap-1.5">
+                            {{-- Event labels — desktop only (md+) --}}
+                            <div class="hidden md:flex mt-1.5 flex-col gap-1">
                                 <template x-for="(ev, ei) in cell.events.slice(0, 2)" :key="ei">
                                     <a :href="ev.url"
                                        :title="ev.title.replace('• ','')"
-                                       class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-gray-50 dark:bg-slate-700/70 px-2 py-1 text-[11px] font-medium leading-none hover:bg-gray-100 dark:hover:bg-slate-700 transition">
+                                       class="inline-flex max-w-full items-center gap-1 rounded-lg px-1.5 py-0.5 text-[10px] font-semibold leading-none hover:opacity-80 transition truncate"
+                                       :style="'background:' + ev.color + '22; color:' + ev.color">
                                         <span class="w-1.5 h-1.5 rounded-full shrink-0"
                                               :style="'background:' + ev.color"></span>
-                                        <span class="truncate" :style="'color:' + ev.color"
-                                              x-text="ev.title.replace('• ','')"></span>
+                                        <span class="truncate" x-text="ev.title.replace('• ','')"></span>
                                     </a>
+                                </template>
+                                <template x-if="cell.events.length > 2">
+                                    <span class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 pl-1"
+                                          x-text="'+ ' + (cell.events.length - 2) + ' more'"></span>
                                 </template>
                             </div>
                         </div>
@@ -313,12 +335,25 @@
                         const date = new Date(year, month, d);
                         const ds = this.dateStr(date);
                         const td = this.dateStr(this.today);
+                        const dayEvents = this.events.filter(e => e.start === ds);
+
+                        // Aggregate status flags for the day
+                        const hasPaid = dayEvents.some(e => e.extendedProps?.paid);
+                        const hasOverdue = dayEvents.some(e => e.extendedProps?.overdue);
+                        const hasSoon = dayEvents.some(e => e.extendedProps?.soon && !e.extendedProps?.paid);
+                        const hasUpcoming = dayEvents.some(e => !e.extendedProps?.paid && !e.extendedProps?.overdue && !e.extendedProps?.soon);
+
                         cells.push({
                             day: d,
                             date: ds,
                             currentMonth: true,
                             isToday: ds === td,
-                            events: this.events.filter(e => e.start === ds),
+                            events: dayEvents,
+                            hasPaid,
+                            hasOverdue,
+                            hasSoon,
+                            hasUpcoming,
+                            count: dayEvents.length,
                         });
                     }
 

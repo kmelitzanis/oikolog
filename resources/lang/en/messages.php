@@ -5,6 +5,7 @@ return [
     'bills' => 'Bills',
     'income' => 'Income',
     'family' => 'Family',
+    'products' => 'Products',
     'calendar' => 'Calendar',
     'settings' => 'Settings',
     'logout' => 'Logout',
