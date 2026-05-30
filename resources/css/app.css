@@ -1,17 +1,25 @@
 @import 'tailwindcss';
-@import 'filepond/dist/filepond.min.css';
-@import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-/* ── Class-based dark mode ──────────────────────────────────────────────── */
-@custom-variant dark (&:where(.dark, .dark *));
+@layer base {
+    :root {
+        --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    }
 
-@theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    /* Use Tailwind utilities for the base font */
+    body {
+        @apply font-sans;
+    }
+
+    /* Preserve the exact dark-mode base colors from the original CSS */
+    .dark body {
+        background-color: #0f172a;
+        color: #e2e8f0;
+    }
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────── */
@@ -19,9 +27,7 @@ html, body {
     height: 100%;
 }
 
-body {
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-}
+/* `body` font is applied in the `@layer base` above using `@apply font-sans` */
 
 /* ─── Alpine cloak ──────────────────────────────────────────────────────── */
 [x-cloak] {
@@ -51,20 +57,6 @@ body {
 .dark body {
     background-color: #0f172a;
     color: #e2e8f0;
-}
-
-/* ─── FilePond dark mode ─────────────────────────────────────────────────── */
-.dark .filepond--panel-root {
-    background-color: #1e293b;
-    border-color: #334155;
-}
-
-.dark .filepond--drop-label label {
-    color: #94a3b8;
-}
-
-.dark .filepond--item-panel {
-    background-color: #334155;
 }
 
 /* ─── Theme transition ───────────────────────────────────────────────────── */

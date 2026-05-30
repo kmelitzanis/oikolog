@@ -24,8 +24,6 @@
     "dependencies": {
         "@fullcalendar/core": "^6.1.20",
         "@fullcalendar/daygrid": "^6.1.20",
-        "@fullcalendar/interaction": "^6.1.20",
-        "filepond": "^4.32.12",
-        "filepond-plugin-image-preview": "^4.6.12"
+        "@fullcalendar/interaction": "^6.1.20"
     }
 }
