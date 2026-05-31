@@ -25,6 +25,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('users', App\Http\Controllers\Admin\UserController::class);
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
     Route::resource('providers', App\Http\Controllers\Admin\ProviderController::class);
+    Route::post('products/lookup-barcode', [App\Http\Controllers\Admin\ProductController::class, 'lookupBarcode'])->name('products.lookup-barcode');
     Route::resource('products', App\Http\Controllers\Admin\ProductController::class);
 });
 
@@ -124,4 +125,7 @@ Route::middleware('auth')->group(function () {
 
     // Products catalog
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+
+    // Recipes
+    Route::resource('recipes', App\Http\Controllers\Web\RecipeController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
 });

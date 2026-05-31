@@ -183,9 +183,24 @@
             <form @submit.prevent="saveItem()">
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">Name *</label>
-                        <input type="text" x-model="itemForm.name" required
-                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500">
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">Pick saved
+                            product or enter name</label>
+                        <div class="flex gap-2">
+                            <select x-model="selectedProductId"
+                                    @change="selectProduct(products.find(p => p.id == selectedProductId))"
+                                    class="flex-1 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none">
+                                <option value="">— Select product —</option>
+                                <template x-for="p in products" :key="p.id">
+                                    <option :value="p.id" x-text="p.name + (p.brand ? ' ('+p.brand+')' : '')"></option>
+                                </template>
+                            </select>
+                            <a href="{{ route('admin.products.create') }}" target="_blank"
+                               class="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-slate-700 rounded-xl text-sm">Create</a>
+                        </div>
+                        <div class="mt-2">
+                            <input type="text" x-model="itemForm.name" required
+                                   class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500">
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>

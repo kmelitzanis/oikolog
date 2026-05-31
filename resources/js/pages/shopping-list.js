@@ -9,6 +9,10 @@ window.shoppingListApp = function () {
         addItemModalOpen: false,
         editingItem: null,
         itemForm: {name: '', quantity: 1, unit: 'piece'},
+        products: [],
+        productQuery: '',
+        selectedProduct: null,
+        selectedProductId: null,
         barcodeInput: '',
         barcodeResult: null,
         barcodeLoading: false,
@@ -16,6 +20,7 @@ window.shoppingListApp = function () {
         init(listData) {
             this.list = listData;
             this.loadItems();
+            this.loadProducts();
         },
 
         async loadItems() {
@@ -54,6 +59,26 @@ window.shoppingListApp = function () {
             this.editingItem = item;
             this.itemForm = {name: item.name, quantity: item.quantity, unit: item.unit};
             this.addItemModalOpen = true;
+        },
+
+        async loadProducts() {
+            try {
+                const res = await fetch('/api/products?per_page=200', {headers: {'Accept': 'application/json'}});
+                if (!res.ok) return;
+                const data = await res.json();
+                // API returns paginated data
+                this.products = data.data || data;
+            } catch (e) {
+                console.error('Failed to load products', e);
+            }
+        },
+
+        selectProduct(p) {
+            this.selectedProduct = p;
+            this.itemForm.name = p.name;
+            this.itemForm.unit = p.unit || 'piece';
+            this.itemForm.quantity = p.default_quantity || 1;
+            this.itemForm.barcode = p.barcode || null;
         },
 
         async saveItem() {

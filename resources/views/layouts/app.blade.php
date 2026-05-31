@@ -68,6 +68,7 @@
                     ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => 'income.*'],
                     ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
                     ['route' => 'shopping-list.index', 'icon' => 'shopping_cart', 'label' => __('messages.shopping_lists'), 'match' => 'shopping-list.*'],
+                    ['route' => 'recipes.index',     'icon' => 'restaurant_menu','label' => __('Recipes'),            'match' => 'recipes.*'],
                 ];
             @endphp
             @foreach($navLinks as $link)
@@ -230,8 +231,8 @@
             $bottomNavLinks = [
                 ['route' => 'dashboard',    'icon' => 'dashboard',    'match' => 'dashboard'],
                 ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*'],
+                ['route' => 'recipes.index','icon' => 'restaurant_menu','match' => 'recipes.*'],
                 ['route' => 'income.index', 'icon' => 'trending_up',  'match' => 'income.*'],
-                ['route' => 'family.index', 'icon' => 'group',        'match' => 'family.*'],
             ];
         @endphp
 
