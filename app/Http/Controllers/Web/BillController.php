@@ -252,7 +252,18 @@ class BillController extends Controller
             $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
         }
 
+        // Detect whether the recurrence schedule itself changed so we can snap
+        // next_due_date back onto the new cadence (otherwise it keeps drifting
+        // on the old frequency and appears to recur too often).
+        $scheduleChanged = $bill->frequency !== $data['frequency']
+            || optional($bill->start_date)->toDateString() !== \Carbon\Carbon::parse($data['start_date'])->toDateString();
+
         $bill->update($data);
+
+        if ($scheduleChanged) {
+            $bill->realignNextDueDate();
+            $bill->save();
+        }
 
         // Handle uploaded receipt images on update
         if ($request->hasFile('receipts') && class_exists(\Spatie\MediaLibrary\MediaCollections\Models\Media::class) && method_exists($bill, 'addMedia')) {

@@ -208,6 +208,38 @@ class Bill extends Model
     }
 
     /**
+     * Snap next_due_date back onto the recurrence schedule that is anchored at
+     * start_date. Call this whenever the schedule itself changes (frequency,
+     * frequency_interval or start_date) so the stored due date can't drift onto
+     * an old cadence — e.g. a bill switched from monthly to quarterly would
+     * otherwise keep its monthly next_due_date and appear to recur every month.
+     *
+     * The new next_due_date becomes the first scheduled occurrence that has not
+     * yet been covered by a payment (or start_date itself when unpaid).
+     */
+    public function realignNextDueDate(): void
+    {
+        if (! $this->start_date) return;
+
+        $occurrence = Carbon::parse($this->start_date)->startOfDay();
+
+        // Skip periods already covered by the most recent payment.
+        $paidThrough = $this->last_paid_date
+            ? Carbon::parse($this->last_paid_date)->startOfDay()
+            : null;
+
+        if ($paidThrough && $paidThrough->gte($occurrence)) {
+            while ($occurrence->lte($paidThrough)) {
+                $next = $this->advanceDate($occurrence);
+                if (! $next || $next->lte($occurrence)) break;
+                $occurrence = $next;
+            }
+        }
+
+        $this->next_due_date = $occurrence->toDateString();
+    }
+
+    /**
      * Advance a Carbon date according to this bill's frequency + interval.
      * Returns a new Carbon instance or null for non-recurring (once).
      */

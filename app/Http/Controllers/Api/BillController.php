@@ -110,7 +110,18 @@ class BillController extends Controller
             $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
         }
 
+        // If the recurrence schedule changed (and the caller didn't set an
+        // explicit next_due_date), snap next_due_date back onto the new cadence.
+        $scheduleChanged = (isset($data['frequency']) && $data['frequency'] !== $bill->frequency)
+            || (array_key_exists('frequency_interval', $data) && (int) $data['frequency_interval'] !== (int) $bill->frequency_interval)
+            || (isset($data['start_date']) && \Carbon\Carbon::parse($data['start_date'])->toDateString() !== optional($bill->start_date)->toDateString());
+
         $bill->update($data);
+
+        if ($scheduleChanged && ! isset($data['next_due_date'])) {
+            $bill->realignNextDueDate();
+            $bill->save();
+        }
 
         return response()->json(['data' => $this->billResource($bill->load('category'))]);
     }
