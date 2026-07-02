@@ -127,5 +127,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 
     // Recipes
-    Route::resource('recipes', App\Http\Controllers\Web\RecipeController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+    Route::post('/recipes/{recipe}/favorite', [App\Http\Controllers\Web\RecipeController::class, 'toggleFavorite'])->name('recipes.favorite');
+    Route::post('/recipes/{recipe}/to-shopping-list', [App\Http\Controllers\Web\RecipeController::class, 'toShoppingList'])->name('recipes.to-shopping-list');
+    Route::resource('recipes', App\Http\Controllers\Web\RecipeController::class);
+
+    // Meal planner
+    Route::controller(App\Http\Controllers\Web\MealPlanController::class)
+        ->prefix('meal-planner')
+        ->name('meal-plans.')
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{mealPlan}', 'update')->name('update');
+            Route::delete('/{mealPlan}', 'destroy')->name('destroy');
+            Route::post('/to-shopping-list', 'toShoppingList')->name('to-shopping-list');
+        });
 });

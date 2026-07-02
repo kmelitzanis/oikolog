@@ -24,7 +24,11 @@ class ShoppingListController extends Controller
     public function index(Request $request): JsonResponse
     {
         $lists = ShoppingList::where('user_id', $request->user()->id)
-            ->withCount('items')
+            ->withCount([
+                'items',
+                'items as checked_items_count' => fn ($q) => $q->where('checked', true),
+            ])
+            ->when($request->filled('search'), fn ($q) => $q->where('name', 'like', '%' . $request->search . '%'))
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 

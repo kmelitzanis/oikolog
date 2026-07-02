@@ -7,7 +7,7 @@ window.shoppingListsApp = function () {
         createModalOpen: false,
         searchQuery: '',
         editingList: null,
-        form: {name: '', description: ''},
+        form: { name: '', description: '' },
 
         async init() {
             await this.loadLists();
@@ -19,19 +19,34 @@ window.shoppingListsApp = function () {
             if (this.searchQuery) params.append('search', this.searchQuery);
 
             const res = await fetch(`/api/shopping-lists?${params}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
             const data = await res.json();
             this.lists = data.data ?? [];
             this.loading = false;
         },
 
-        editList(list) {
+        // Progress helpers (API returns items_count + checked_items_count)
+        pct(list) {
+            const total = list.items_count || 0;
+            if (!total) return 0;
+            return Math.round((list.checked_items_count || 0) / total * 100);
+        },
+        progressLabel(list) {
+            const total = list.items_count || 0;
+            const done = list.checked_items_count || 0;
+            if (!total) return '0';
+            return `${done} / ${total}`;
+        },
+
+        openCreate() {
+            this.editingList = null;
+            this.form = { name: '', description: '' };
+            this.createModalOpen = true;
+        },
+        openEdit(list) {
             this.editingList = list;
-            this.form = {name: list.name, description: list.description};
+            this.form = { name: list.name, description: list.description };
             this.createModalOpen = true;
         },
 
@@ -46,14 +61,13 @@ window.shoppingListsApp = function () {
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
                     },
                     body: JSON.stringify(this.form),
                 });
 
                 if (!res.ok) {
                     const error = await res.json();
-                    console.error('API Error:', error);
                     alert('Error: ' + (error.message || 'Failed to save list'));
                     this.saving = false;
                     return;
@@ -62,10 +76,9 @@ window.shoppingListsApp = function () {
                 this.saving = false;
                 this.createModalOpen = false;
                 this.editingList = null;
-                this.form = {name: '', description: ''};
+                this.form = { name: '', description: '' };
                 await this.loadLists();
             } catch (err) {
-                console.error('Fetch error:', err);
                 alert('Error: ' + err.message);
                 this.saving = false;
             }
@@ -75,10 +88,9 @@ window.shoppingListsApp = function () {
             if (!confirm('Are you sure?')) return;
             await fetch(`/api/shopping-lists/${id}`, {
                 method: 'DELETE',
-                headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content}
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
             });
             await this.loadLists();
         },
     };
 };
-

@@ -11,4 +11,7 @@ import './pages/shopping-lists';
 import './pages/shopping-list';
 import './pages/file-previews';
 import './pages/calendar';
+import './pages/recipe-form';
+import './pages/recipes';
+import './pages/meal-planner';
 
