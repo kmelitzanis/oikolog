@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline — Oikolog</title>
+    <style>
+        :root { color-scheme: light dark; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f9fafb;
+            color: #111827;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #0f172a; color: #f1f5f9; }
+            p { color: #94a3b8; }
+        }
+        .card { text-align: center; padding: 2rem; }
+        .icon {
+            width: 72px; height: 72px; border-radius: 20px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+        h1 { font-size: 1.35rem; margin: 0 0 .5rem; font-weight: 800; }
+        p { margin: 0 0 1.5rem; color: #6b7280; font-size: .95rem; }
+        button {
+            border: 0; border-radius: 12px; padding: .75rem 1.5rem;
+            background: #4f46e5; color: #fff; font-weight: 600; font-size: .9rem;
+            cursor: pointer;
+        }
+        button:hover { background: #4338ca; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="icon">
+        <svg width="40" height="40" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <rect x="116" y="166" width="280" height="196" rx="36" fill="none" stroke="#fff" stroke-width="30"/>
+            <path d="M396 232 h-64 a40 40 0 0 0 0 80 h64" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"/>
+            <circle cx="336" cy="272" r="16" fill="#fff"/>
+        </svg>
+    </div>
+    <h1>Χωρίς σύνδεση</h1>
+    <p>Δεν υπάρχει σύνδεση στο διαδίκτυο. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.</p>
+    <button onclick="location.reload()">Δοκιμή ξανά</button>
+</div>
+</body>
+</html>
