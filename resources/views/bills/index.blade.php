@@ -30,8 +30,7 @@
              x-transition:leave-start="opacity-100 translate-y-0"
              x-transition:leave-end="opacity-0 -translate-y-2"
              class="w-full mt-2">
-            <div
-                class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-4 sm:p-5">
+            <x-card flush class="p-4 sm:p-5">
                 {{-- Calendar toolbar --}}
                 <div
                     class="flex flex-col gap-3 border-b border-gray-100 dark:border-slate-700 pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -132,7 +131,7 @@
                         <span class="material-icons-round text-indigo-400 animate-spin text-xl">refresh</span>
                     </div>
                 </template>
-            </div>
+            </x-card>
         </div>
     </div>
 
@@ -185,8 +184,7 @@
     </form>
 
     {{-- Bills --}}
-    <div
-        class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+    <x-card flush class="overflow-hidden">
         @forelse($bills as $bill)
             @php
                 $isOverdue    = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
@@ -195,11 +193,16 @@
                 $isUpcoming   = !$isOverdue && !$isSoon && $daysUntil !== null && $daysUntil > 7 && $daysUntil <= 60 && $bill->is_active;
                 $lastPayment  = $bill->payments->first();
                 $isPaid       = (bool)$bill->last_paid_date;
+                // "Current cycle paid": for recurring bills the tick returns once
+                // the next occurrence is due again (next_due in the past/today).
+                $isRecurring       = $bill->frequency !== 'once';
+                $currentCyclePaid  = (bool)$bill->last_paid_date
+                    && (!$isRecurring || ($bill->next_due_date && $bill->next_due_date->isFuture()));
                 $color        = $bill->category?->color_hex ?? '#6366F1';
                 $rowClass     = $isOverdue ? 'bg-red-50 dark:bg-red-900/10' : ($isSoon ? 'bg-orange-50 dark:bg-orange-900/10' : ($isUpcoming ? 'bg-blue-50/40 dark:bg-blue-900/5' : ($isPaid ? 'bg-green-50 dark:bg-green-900/10' : 'bg-white dark:bg-slate-800')));
                 $amountClass  = $isOverdue ? 'text-red-600 font-bold' : ($isSoon ? 'text-orange-600 font-bold' : ($isUpcoming ? 'text-blue-600 dark:text-blue-400 font-bold' : ($isPaid ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-gray-900 dark:text-white font-bold')));
             @endphp
-            <div x-data="{ paid: {{ $lastPayment ? 'true' : 'false' }} }"
+            <div x-data="{ paid: {{ $currentCyclePaid ? 'true' : 'false' }}, hasPayments: {{ $lastPayment ? 'true' : 'false' }} }"
                  class="flex items-center gap-3 sm:gap-4 px-4 py-4 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }} {{ $rowClass }} hover:brightness-95 transition cursor-pointer"
                  @click.self="window.location='{{ route('bills.show', $bill) }}'">
 
@@ -296,14 +299,15 @@
                                 currency:       '{{ $bill->currency_code }}',
                                 payRoute:       '{{ route('bills.pay', $bill) }}',
                                 costVaries:     {{ $bill->cost_varies ? 'true' : 'false' }},
+                                defaultIncomeId: '{{ $bill->default_income_id }}',
                                 lastPaidAmount: '{{ $bill->cost_varies && $bill->payments->first() ? number_format((float)$bill->payments->first()->amount, 2, '.', '') : '' }}'
                             })"
                             class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition">
                         <span class="material-icons-round text-base">check_circle</span>
                     </button>
 
-                    {{-- Unpay --}}
-                    <form method="POST" action="{{ route('bills.unpay', $bill) }}" x-show="paid" x-cloak>
+                    {{-- Unpay (reverses the most recent payment) --}}
+                    <form method="POST" action="{{ route('bills.unpay', $bill) }}" x-show="hasPayments" x-cloak>
                         @csrf @method('DELETE')
                         <button type="submit" title="{{ __('messages.undo_payment') }}"
                                 @click="if(!confirm('{{ __('messages.undo_payment') }}?')) $event.preventDefault()"
@@ -341,7 +345,7 @@
                 </div>
             </div>
         @endforelse
-    </div>
+    </x-card>
 
     @if($bills->hasPages())
         <div class="mt-6">{{ $bills->appends(request()->query())->links() }}</div>

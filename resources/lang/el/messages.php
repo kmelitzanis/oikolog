@@ -221,4 +221,16 @@ return [
     'existing_list' => 'Υπάρχουσα λίστα',
     'new_list_name' => 'Όνομα νέας λίστας',
     'create_new_list' => 'Δημιουργία νέας λίστας',
+
+    // Bills ↔ income
+    'default_income' => 'Προεπιλεγμένο έσοδο',
+    'no_default_income' => '— Κανένα —',
+    'default_income_hint' => 'Προεπιλέγεται ως πηγή χρημάτων όταν πληρώνεις αυτόν τον λογαριασμό.',
+    'income_allocation' => 'Αυτή η περίοδος',
+    'income_received' => 'Εισπράχθηκαν',
+    'income_spent' => 'ξοδεύτηκαν',
+    'income_remaining' => 'Υπόλοιπο',
+    'spending_timeline' => 'Ξοδεύτηκαν σε',
+    'no_spending_yet' => 'Δεν έχει πληρωθεί κανένας λογαριασμός από αυτό το έσοδο ακόμα.',
+    'partial' => 'μερική',
 ];

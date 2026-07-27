@@ -15,8 +15,7 @@
             {{ session('success') }}
         </div>
     @endif
-    <div
-        class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+    <x-card flush class="overflow-hidden">
         <table class="min-w-full text-sm">
             <thead>
             <tr class="border-b border-gray-100 dark:border-slate-700 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
@@ -80,5 +79,5 @@
         @if($users->hasPages())
             <div class="px-5 py-4 border-t border-gray-100 dark:border-slate-700">{{ $users->links() }}</div>
         @endif
-    </div>
+    </x-card>
 @endsection

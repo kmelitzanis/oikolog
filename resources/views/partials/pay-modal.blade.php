@@ -65,7 +65,7 @@
             this.remainingBalance = data.remainingBalance ?? null;
             this.partialAmount   = '';
             this.paidByUserId    = '{{ auth()->id() }}';
-            this.incomeId        = '';
+            this.incomeId        = data.defaultIncomeId ?? '';
             this.paymentMode     = 'full';
             this.open            = true;
         },

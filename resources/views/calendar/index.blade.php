@@ -77,8 +77,7 @@
             </div>
 
             {{-- Calendar grid --}}
-            <div
-                class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-2 md:p-3">
+            <x-card flush class="p-2 md:p-3">
                 <div class="grid grid-cols-7 gap-1.5 md:gap-2">
                     <template x-for="(cell, i) in calendarCells" :key="i">
                         <div
@@ -150,13 +149,12 @@
                         </div>
                     </template>
                 </div>
-            </div>
+            </x-card>
         </div>
 
         {{-- ── List View ──────────────────────────────────────────────────────── --}}
         <div x-show="view==='list'" x-cloak>
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+            <x-card flush class="overflow-hidden">
                 <template x-if="listEvents.length === 0">
                     <div class="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-slate-500">
                         <span class="material-icons-round text-4xl mb-2">event_busy</span>
@@ -196,15 +194,14 @@
                         </template>
                     </div>
                 </template>
-            </div>
+            </x-card>
     </div>
 
         {{-- ── Upcoming Bills (below calendar in month view) ──────────────────── --}}
         <div x-show="view==='month'" x-cloak>
             <h2 class="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-3">Upcoming this
                 month</h2>
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+            <x-card flush class="overflow-hidden">
                 <template x-if="listEvents.length === 0 && !loading">
                     <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-slate-500">
                         <span class="material-icons-round text-3xl mb-2">event_available</span>
@@ -247,7 +244,7 @@
                         <span class="material-icons-round text-indigo-400 animate-spin text-2xl">refresh</span>
                     </div>
                 </template>
-            </div>
+            </x-card>
         </div>
     </div>
 @endsection

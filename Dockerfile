@@ -31,6 +31,12 @@ RUN composer install --no-dev --optimize-autoloader
 # Build assets (if using Vite/Mix)
 RUN npm ci && npm run build
 
+# Keep a pristine copy of the built public/ OUTSIDE the mount point. Compose
+# mounts a named volume over /var/www/html/public, which otherwise shadows (and
+# freezes) the image's assets. The entrypoint re-syncs from here on every boot
+# so a new image's JS/CSS/manifest actually reach the volume.
+RUN cp -a public /opt/public-dist
+
 # Permissions
 RUN chown -R www-data:www-data /var/www/html
 

@@ -14,7 +14,7 @@
     {{-- Stats --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div
-            class="bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 text-white col-span-2 lg:col-span-1">
+            class="bg-linear-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 text-white col-span-2 lg:col-span-1">
             <div class="flex items-center gap-1.5 text-xs text-emerald-200 font-medium mb-2">
                 <span class="material-icons-round text-base">trending_up</span> Monthly Income
             </div>
@@ -31,11 +31,11 @@
             ['icon'=>'repeat',         'color'=>'text-indigo-500', 'value'=>$stats['recurring'],    'label'=>'Recurring'],
             ['icon'=>'payments',       'color'=>'text-amber-500',  'value'=>$stats['total_sources'] - $stats['recurring'], 'label'=>'One-time'],
         ] as $s)
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 flex flex-col gap-1">
+            <x-card class="flex flex-col gap-1">
                 <span class="material-icons-round {{ $s['color'] }} text-2xl">{{ $s['icon'] }}</span>
                 <div class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1">{{ $s['value'] }}</div>
                 <div class="text-sm text-gray-400 dark:text-gray-300 font-medium">{{ $s['label'] }}</div>
-            </div>
+            </x-card>
         @endforeach
     </div>
 
@@ -67,7 +67,7 @@
     </form>
 
     {{-- Income List --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+    <x-card flush class="overflow-hidden">
         @forelse($incomes as $income)
             @php
                 $daysUntil = $income->daysUntilNext();
@@ -172,7 +172,7 @@
                 </a>
             </div>
         @endforelse
-    </div>
+    </x-card>
 
     {{-- Pagination --}}
     @if($incomes->hasPages())

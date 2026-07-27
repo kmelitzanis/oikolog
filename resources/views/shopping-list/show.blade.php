@@ -11,7 +11,7 @@
     </a>
 
     {{-- Header card with progress ring --}}
-    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 sm:p-6 mb-5">
+    <x-card class="sm:p-6 mb-5">
         <div class="flex items-center gap-5">
             {{-- Progress ring --}}
             <div class="relative shrink-0 w-[68px] h-[68px]">
@@ -51,7 +51,7 @@
                 <span class="material-icons-round">tune</span>
             </button>
         </form>
-    </div>
+    </x-card>
 
     {{-- Search + barcode --}}
     <div class="flex gap-2 mb-4">
@@ -91,12 +91,12 @@
 
     {{-- Empty --}}
     <template x-if="!loading && total === 0">
-        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm px-6 py-14 text-center">
+        <x-card flush class="px-6 py-14 text-center">
             <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
                 <span class="material-icons-round text-3xl text-indigo-400">shopping_basket</span>
             </div>
             <p class="text-sm text-gray-400 dark:text-slate-500">{{ __('messages.no_items') }}</p>
-        </div>
+        </x-card>
     </template>
 
     {{-- To buy --}}
@@ -105,7 +105,7 @@
             {{ __('messages.to_buy') }}
             <span class="px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 text-[11px]" x-text="toBuy.length"></span>
         </h2>
-        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm divide-y divide-gray-50 dark:divide-slate-700/60 overflow-hidden">
+        <x-card flush class="divide-y divide-gray-50 dark:divide-slate-700/60 overflow-hidden">
             <template x-for="item in toBuy" :key="item.id">
                 <div class="flex items-center gap-3 px-4 py-3 group hover:bg-gray-50/60 dark:hover:bg-slate-700/30 transition">
                     <button @click="toggleItem(item)"
@@ -134,7 +134,7 @@
                     </div>
                 </div>
             </template>
-        </div>
+        </x-card>
     </div>
 
     {{-- In cart --}}
@@ -143,7 +143,7 @@
             {{ __('messages.in_cart') }}
             <span class="px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[11px]" x-text="inCart.length"></span>
         </h2>
-        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm divide-y divide-gray-50 dark:divide-slate-700/60 overflow-hidden">
+        <x-card flush class="divide-y divide-gray-50 dark:divide-slate-700/60 overflow-hidden">
             <template x-for="item in inCart" :key="item.id">
                 <div class="flex items-center gap-3 px-4 py-3 group">
                     <button @click="toggleItem(item)"
@@ -159,7 +159,7 @@
                     </button>
                 </div>
             </template>
-        </div>
+        </x-card>
     </div>
 
     {{-- Add/Edit item modal --}}

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Income extends Model
 {
@@ -42,6 +43,17 @@ class Income extends Model
     public function family(): BelongsTo
     {
         return $this->belongsTo(Family::class);
+    }
+
+    /** Bill payments funded from this income. */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function bills(): HasMany
+    {
+        return $this->hasMany(Bill::class, 'default_income_id');
     }
 
     // ── Scopes ─────────────────────────────────────────────────────────────────
@@ -164,5 +176,60 @@ class Income extends Model
     {
         if (!$this->next_date) return null;
         return (int)now()->startOfDay()->diffInDays(Carbon::parse($this->next_date)->startOfDay(), false);
+    }
+
+    // ── Spending / allocation ──────────────────────────────────────────────────
+
+    /** Start of the income period that contains $ref (anchored on start_date). */
+    public function currentPeriodStart(?Carbon $ref = null): ?Carbon
+    {
+        if (!$this->start_date) return null;
+        $ref = ($ref ?? Carbon::today())->copy()->endOfDay();
+        $occ = Carbon::parse($this->start_date)->startOfDay();
+        if ($occ->gt($ref)) return $occ; // period hasn't started yet
+        while (true) {
+            $next = $this->advanceDate($occ);
+            if (!$next || $next->gt($ref)) break;
+            $occ = $next;
+        }
+        return $occ;
+    }
+
+    /** End of the current period (exclusive); null for one-time income. */
+    public function currentPeriodEnd(?Carbon $ref = null): ?Carbon
+    {
+        $start = $this->currentPeriodStart($ref);
+        if (!$start) return null;
+        return $this->advanceDate($start->copy());
+    }
+
+    /** Total paid from this income within the current period. */
+    public function spentThisPeriod(): float
+    {
+        $start = $this->currentPeriodStart();
+        if (!$start) return 0.0;
+
+        $q = $this->payments()->whereNotNull('paid_at')
+            ->where('paid_at', '>=', $start->copy()->startOfDay());
+
+        if ($end = $this->currentPeriodEnd()) {
+            $q->where('paid_at', '<', $end->copy()->startOfDay());
+        }
+
+        return round((float) $q->sum('amount'), 2);
+    }
+
+    /** Amount left of this period's income after bill payments. */
+    public function remainingThisPeriod(): float
+    {
+        return round((float) $this->amount - $this->spentThisPeriod(), 2);
+    }
+
+    /** Percentage of this period's income already spent (0–100). */
+    public function spentPercent(): int
+    {
+        $amount = (float) $this->amount;
+        if ($amount <= 0) return 0;
+        return (int) min(100, round($this->spentThisPeriod() / $amount * 100));
     }
 }

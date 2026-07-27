@@ -78,7 +78,30 @@ class IncomeController extends Controller
     public function show(Income $income)
     {
         $this->authorizeAccess($income);
-        return view('income.show', compact('income'));
+
+        $periodStart = $income->currentPeriodStart();
+        $periodEnd   = $income->currentPeriodEnd();
+
+        $query = $income->payments()
+            ->with(['bill:id,name,category_id', 'bill.category:id,name,icon,color_hex', 'paidBy:id,name'])
+            ->whereNotNull('paid_at')
+            ->orderByDesc('paid_at');
+
+        if ($periodStart) {
+            $query->where('paid_at', '>=', $periodStart->copy()->startOfDay());
+            if ($periodEnd) $query->where('paid_at', '<', $periodEnd->copy()->startOfDay());
+        }
+
+        $periodPayments = $query->get();
+        $spent          = round((float) $periodPayments->sum('amount'), 2);
+        $remaining      = round((float) $income->amount - $spent, 2);
+        $spentPercent   = (float) $income->amount > 0
+            ? (int) min(100, round($spent / (float) $income->amount * 100))
+            : 0;
+
+        return view('income.show', compact(
+            'income', 'periodStart', 'periodEnd', 'periodPayments', 'spent', 'remaining', 'spentPercent'
+        ));
     }
 
     public function edit(Income $income)

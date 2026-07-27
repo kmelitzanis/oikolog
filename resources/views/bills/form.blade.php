@@ -31,8 +31,7 @@
             @if(isset($bill))
                 @method('PUT')
             @endif
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 space-y-6">
+            <x-card flush class="p-6 space-y-6">
                 {{-- Name --}}
                 <div>
                     <label
@@ -120,6 +119,27 @@
                         </div>
                     </template>
                 </div>
+                {{-- Default income (pre-selected when paying) --}}
+                @isset($incomes)
+                    @if($incomes->count() > 0)
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
+                                {{ __('messages.default_income') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
+                            </label>
+                            <select name="default_income_id"
+                                    class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                                <option value="">{{ __('messages.no_default_income') }}</option>
+                                @foreach($incomes as $income)
+                                    <option value="{{ $income->id }}"
+                                        {{ (string) old('default_income_id', $bill->default_income_id ?? '') === (string) $income->id ? 'selected' : '' }}>
+                                        {{ $income->name }} ({{ $income->currency_code }} {{ number_format($income->amount, 2) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">{{ __('messages.default_income_hint') }}</p>
+                        </div>
+                    @endif
+                @endisset
                 {{-- Frequency --}}
                 <div>
                     <label
@@ -277,7 +297,7 @@
                         {{ __('messages.cancel') }}
                     </a>
                 </div>
-            </div>
+            </x-card>
         </form>
     </div>
 @endsection

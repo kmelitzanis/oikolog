@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
 use App\Models\Category;
+use App\Models\Income;
 use App\Models\Payment;
 use App\Models\Provider;
 use Illuminate\Http\Request;
@@ -55,8 +56,10 @@ class BillController extends Controller
                 'logo_url' => $p->logo_url,
                 'category_ids' => $p->categories->pluck('id')->all(),
             ]);
+        $incomes = Income::forUser(request()->user())->active()->orderBy('name')
+            ->get(['id', 'name', 'currency_code', 'amount']);
 
-        return view('bills.form', compact('categories', 'providers'));
+        return view('bills.form', compact('categories', 'providers', 'incomes'));
     }
 
     public function store(Request $request)
@@ -66,6 +69,7 @@ class BillController extends Controller
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
             'provider_id' => ['nullable', 'exists:providers,id'],
+            'default_income_id' => ['nullable', 'exists:incomes,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'cost_varies' => ['nullable', 'boolean'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
@@ -219,8 +223,10 @@ class BillController extends Controller
                 'logo_url' => $p->logo_url,
                 'category_ids' => $p->categories->pluck('id')->all(),
             ]);
+        $incomes = Income::forUser(request()->user())->active()->orderBy('name')
+            ->get(['id', 'name', 'currency_code', 'amount']);
 
-        return view('bills.form', compact('bill', 'categories', 'providers'));
+        return view('bills.form', compact('bill', 'categories', 'providers', 'incomes'));
     }
 
     public function update(Request $request, Bill $bill)
@@ -232,6 +238,7 @@ class BillController extends Controller
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
             'provider_id' => ['nullable', 'exists:providers,id'],
+            'default_income_id' => ['nullable', 'exists:incomes,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'cost_varies' => ['nullable', 'boolean'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],

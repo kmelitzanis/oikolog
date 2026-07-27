@@ -40,7 +40,7 @@
 
         <form @submit.prevent="submit('{{ $action }}', '{{ $method }}')" class="space-y-5">
             {{-- Identity card --}}
-            <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 sm:p-6">
+            <x-card class="sm:p-6">
                 <div class="flex gap-4">
                     {{-- Emoji picker --}}
                     <div x-data="{ open: false }" class="relative shrink-0">
@@ -95,10 +95,10 @@
                         </select>
                     </div>
                 </div>
-            </div>
+            </x-card>
 
             {{-- Ingredients card --}}
-            <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 sm:p-6">
+            <x-card class="sm:p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <span class="material-icons-round text-indigo-500 text-xl">restaurant</span>{{ __('messages.ingredients') }}
@@ -126,10 +126,10 @@
                         </div>
                     </template>
                 </div>
-            </div>
+            </x-card>
 
             {{-- Instructions card --}}
-            <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 sm:p-6">
+            <x-card class="sm:p-6">
                 <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
                     <span class="material-icons-round text-indigo-500 text-xl">menu_book</span>{{ __('messages.instructions') }}
                 </h3>
@@ -137,7 +137,7 @@
                 <textarea x-model="form.instructions" rows="6"
                           class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 resize-y leading-relaxed transition"
                           placeholder="1. …&#10;2. …"></textarea>
-            </div>
+            </x-card>
 
             {{-- Actions --}}
             <div class="flex gap-3 pb-2">

@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* Class-based dark mode. Tailwind v4 is CSS-first and ignores `darkMode: 'class'`
+   in tailwind.config.js unless a @config directive loads it — without this the
+   `dark:` variant compiles to @media (prefers-color-scheme: dark) and the theme
+   toggle in the sidebar has no effect. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';

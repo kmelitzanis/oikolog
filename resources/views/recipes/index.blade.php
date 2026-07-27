@@ -28,7 +28,7 @@
 
         @if($recipes->isEmpty())
             {{-- Empty state --}}
-            <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm px-6 py-16 text-center">
+            <x-card flush class="px-6 py-16 text-center">
                 <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-3xl">
                     🍳
                 </div>
@@ -38,12 +38,12 @@
                    class="inline-flex items-center gap-2 mt-6 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-5 py-2.5 transition">
                     <span class="material-icons-round text-lg">add</span>{{ __('messages.create_recipe') }}
                 </a>
-            </div>
+            </x-card>
         @else
             <div x-data="recipesIndex()" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach($recipes as $r)
                     @php $total = $r->totalMinutes(); @endphp
-                    <div class="group relative bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
+                    <x-card flush class="group relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
                         {{-- Cover band --}}
                         <a href="{{ route('recipes.show', $r) }}" class="block">
                             <div class="h-28 bg-linear-to-br from-indigo-500 via-indigo-500 to-purple-500 flex items-center justify-center relative">
@@ -87,7 +87,7 @@
                                 @endif
                             </div>
                         </div>
-                    </div>
+                    </x-card>
                 @endforeach
             </div>
 

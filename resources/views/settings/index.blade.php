@@ -7,8 +7,7 @@
         </div>
         <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data">
             @csrf
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 space-y-5">
+            <x-card flush class="p-6 space-y-5">
                 {{-- Avatar --}}
                 <div>
                     <label
@@ -108,12 +107,11 @@
                         <span class="material-icons-round text-lg">save</span> {{ __('messages.save_changes') }}
                     </button>
                 </div>
-            </div>
+            </x-card>
         </form>
 
         {{-- 2FA --}}
-        <div
-            class="mt-6 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6">
+        <x-card flush class="mt-6 p-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div
@@ -135,6 +133,6 @@
                     {{ $user->two_factor_enabled ? 'Manage' : 'Set up' }}
                 </a>
             </div>
-        </div>
+        </x-card>
     </div>
 @endsection

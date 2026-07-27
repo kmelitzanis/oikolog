@@ -13,8 +13,7 @@
             </div>
         @endif
 
-        <div
-            class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 space-y-6">
+        <x-card flush class="p-6 space-y-6">
 
             @if($enabled)
                 {{-- 2FA is enabled --}}
@@ -112,7 +111,7 @@
                 </form>
             @endif
 
-        </div>
+        </x-card>
 
         <div class="mt-4">
             <a href="{{ route('settings') }}"

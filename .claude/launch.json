@@ -6,6 +6,12 @@
             "runtimeExecutable": "php",
             "runtimeArgs": ["artisan", "serve", "--port=8000"],
             "port": 8000
+        },
+        {
+            "name": "design-system",
+            "runtimeExecutable": "python3",
+            "runtimeArgs": ["-m", "http.server", "8001", "--directory", "design-system"],
+            "port": 8001
         }
     ]
 }

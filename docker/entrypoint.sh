@@ -28,6 +28,14 @@ if [ "${FORCE_MIGRATE}" = "1" ]; then
     fi
 fi
 
+# Re-sync built public assets into the (possibly stale) mounted volume so a new
+# image's JS/CSS/manifest always go live. Without this, the named volume keeps
+# the first image's assets forever and new frontend code silently never loads.
+if [ -d /opt/public-dist ]; then
+    echo "🔄 Syncing public assets into volume..."
+    cp -a /opt/public-dist/. /var/www/html/public/ 2>/dev/null || true
+fi
+
 php artisan storage:link --force 2>/dev/null || true
 
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true

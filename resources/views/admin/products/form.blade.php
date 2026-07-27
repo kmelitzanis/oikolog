@@ -71,7 +71,7 @@
             @endif
 
             {{-- ── Barcode lookup ─────────────────────────────────────────── --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 mb-4">
+            <x-card flush class="p-6 mb-4">
                 <p class="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3 flex items-center gap-2">
                     <span class="material-icons-round text-indigo-500">qr_code_scanner</span>
                     Auto-fill from barcode
@@ -96,10 +96,10 @@
                     <span class="material-icons-round text-sm">check_circle</span>
                     Fields filled from Open Food Facts.
                 </p>
-            </div>
+            </x-card>
 
             {{-- ── Product details ────────────────────────────────────────── --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 space-y-5 mb-4">
+            <x-card flush class="p-6 space-y-5 mb-4">
                 <p class="text-sm font-semibold text-gray-700 dark:text-slate-200 -mb-1">Product info</p>
 
                 <div>
@@ -169,10 +169,10 @@
                     <input type="file" name="image" accept="image/*"
                            class="text-sm text-gray-500 dark:text-slate-400">
                 </div>
-            </div>
+            </x-card>
 
             {{-- ── Nutrition ────────────────────────────────────────────── --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 space-y-4 mb-4">
+            <x-card flush class="p-6 space-y-4 mb-4">
                 <p class="text-sm font-semibold text-gray-700 dark:text-slate-200 flex items-center gap-2">
                     <span class="material-icons-round text-green-500">nutrition</span>
                     Nutrition (per 100 g / serving)
@@ -237,7 +237,7 @@
                         </select>
                     </div>
                 </div>
-            </div>
+            </x-card>
 
             <div class="flex gap-3 mt-2">
                 <button type="submit"

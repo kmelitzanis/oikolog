@@ -42,8 +42,7 @@
         </div>
 
         {{-- Amounts + Dates --}}
-        <div
-            class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 mb-4">
+        <x-card class="mb-4">
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <div
                     class="{{ $isOverdue ? 'bg-red-50 dark:bg-red-900/20' : ($isSoon ? 'bg-orange-50 dark:bg-orange-900/20' : 'bg-indigo-50 dark:bg-indigo-900/20') }} rounded-xl p-4">
@@ -109,6 +108,7 @@
                                 currency:         '{{ $bill->currency_code }}',
                                 payRoute:         '{{ route('bills.pay', $bill) }}',
                                 costVaries:       {{ $bill->cost_varies ? 'true' : 'false' }},
+                                defaultIncomeId:  '{{ $bill->default_income_id }}',
                                 lastPaidAmount:   '{{ $bill->cost_varies && $payments->first() ? number_format((float)$payments->first()->amount, 2, '.', '') : '' }}',
                                 remainingBalance: {{ $bill->hasPartialPayment() ? number_format($bill->remaining_balance, 2, '.', '') : 'null' }}
                             })"
@@ -117,11 +117,10 @@
                     </button>
                 </div>
             @endif
-        </div>
+        </x-card>
 
         {{-- Details --}}
-        <div
-            class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 mb-4">
+        <x-card class="mb-4">
             <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Details</h2>
             @php
                 $lastPayment = $payments->first();
@@ -158,10 +157,10 @@
                     <div class="text-sm text-gray-600 dark:text-slate-300">{{ $bill->notes }}</div>
                 </div>
             @endif
-        </div>
+        </x-card>
 
         {{-- Payment History --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
+        <x-card>
             <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Payment History</h2>
             @forelse($payments as $payment)
                 <div
@@ -206,13 +205,12 @@
             @empty
                 <p class="text-sm text-gray-400 dark:text-slate-500 text-center py-8">No payments recorded yet.</p>
             @endforelse
-        </div>
+        </x-card>
 
         {{-- Receipts / attachments --}}
         @php $receipts = method_exists($bill, 'receiptUrls') ? $bill->receiptUrls() : []; @endphp
         @if(!empty($receipts))
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 mt-4">
+            <x-card class="mt-4">
                 <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Attachments</h2>
                 <div class="flex gap-3 flex-wrap">
                     @foreach($receipts as $url)
@@ -222,7 +220,7 @@
                         </a>
                     @endforeach
                 </div>
-            </div>
+            </x-card>
         @endif
 
     </div>

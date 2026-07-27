@@ -70,10 +70,10 @@
             </div>
         </div>
 
-        {{-- Week grid --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {{-- Week grid: 7 columns on desktop (full week, no trailing gap), 2 on tablet, 1 on mobile --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
             @foreach($days as $day)
-                <div class="bg-white dark:bg-slate-800 rounded-3xl border shadow-sm overflow-hidden {{ $day['isToday'] ? 'border-indigo-300 dark:border-indigo-600 ring-1 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-100 dark:border-slate-700' }}">
+                <x-card flush class="flex flex-col overflow-hidden {{ $day['isToday'] ? 'border-indigo-300 dark:border-indigo-600 ring-1 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-100 dark:border-slate-700' }}">
                     {{-- Day header --}}
                     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-slate-700/60 {{ $day['isToday'] ? 'bg-indigo-50/60 dark:bg-indigo-900/20' : '' }}">
                         <div>
@@ -86,37 +86,37 @@
                     </div>
 
                     {{-- Meal slots --}}
-                    <div class="p-3 space-y-2">
+                    <div class="flex-1 p-2.5 space-y-2.5">
                         @foreach($mealTypes as $key => $meal)
                             <div>
-                                <div class="flex items-center gap-1.5 mb-1 px-1">
+                                <div class="flex items-center gap-1.5 mb-1 px-0.5">
                                     <span class="text-sm">{{ $meal['icon'] }}</span>
-                                    <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">{{ $meal['label'] }}</span>
+                                    <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">{{ $meal['label'] }}</span>
                                 </div>
 
                                 {{-- Existing meals --}}
                                 <template x-for="plan in planFor('{{ $day['date'] }}', '{{ $key }}')" :key="plan.id">
                                     <div @click="openEdit(plan)"
-                                         class="group flex items-center gap-2 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-900/40 rounded-xl px-2.5 py-2 mb-1 cursor-pointer hover:shadow-sm transition">
-                                        <span class="text-base" x-show="plan.emoji" x-text="plan.emoji"></span>
-                                        <span class="material-icons-round text-indigo-400 text-base" x-show="!plan.emoji">restaurant</span>
+                                         class="group flex items-center gap-1.5 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-900/40 rounded-lg px-2 py-1.5 mb-1 cursor-pointer hover:shadow-sm transition">
+                                        <span class="text-sm shrink-0" x-show="plan.emoji" x-text="plan.emoji"></span>
+                                        <span class="material-icons-round text-indigo-400 text-sm shrink-0" x-show="!plan.emoji">restaurant</span>
                                         <div class="flex-1 min-w-0">
-                                            <div class="text-sm font-medium text-gray-800 dark:text-slate-100 truncate" x-text="plan.name"></div>
-                                            <div class="text-[11px] text-gray-400 dark:text-slate-500" x-text="`${plan.servings} {{ __('messages.servings') }}`"></div>
+                                            <div class="text-xs font-medium text-gray-800 dark:text-slate-100 truncate" x-text="plan.name"></div>
+                                            <div class="text-[10px] text-gray-400 dark:text-slate-500" x-text="`${plan.servings} {{ __('messages.servings') }}`"></div>
                                         </div>
-                                        <span class="material-icons-round text-gray-300 dark:text-slate-600 text-base opacity-0 group-hover:opacity-100 transition">edit</span>
                                     </div>
                                 </template>
 
-                                {{-- Add slot --}}
+                                {{-- Add slot (compact, icon-only to fit 7-column layout) --}}
                                 <button @click="openAdd('{{ $day['date'] }}', '{{ $key }}')" type="button"
-                                        class="w-full flex items-center justify-center gap-1 border border-dashed border-gray-200 dark:border-slate-600 rounded-xl py-1.5 text-xs font-medium text-gray-400 dark:text-slate-500 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition">
-                                    <span class="material-icons-round text-sm">add</span>{{ __('messages.add_meal') }}
+                                        :title="'{{ __('messages.add_meal') }}'"
+                                        class="w-full flex items-center justify-center gap-1 border border-dashed border-gray-200 dark:border-slate-600 rounded-lg py-1.5 text-[11px] font-medium text-gray-400 dark:text-slate-500 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition">
+                                    <span class="material-icons-round text-sm">add</span>
                                 </button>
                             </div>
                         @endforeach
                     </div>
-                </div>
+                </x-card>
             @endforeach
         </div>
 

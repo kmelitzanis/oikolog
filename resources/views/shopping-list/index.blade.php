@@ -28,7 +28,7 @@
 
     {{-- Empty --}}
     <template x-if="!loading && lists.length === 0">
-        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm px-6 py-16 text-center">
+        <x-card flush class="px-6 py-16 text-center">
             <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
                 <span class="material-icons-round text-white text-3xl">shopping_cart</span>
             </div>
@@ -36,13 +36,13 @@
             <button @click="openCreate()" class="inline-flex items-center gap-2 mt-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-5 py-2.5 transition">
                 <span class="material-icons-round text-lg">add</span>{{ __('messages.new_list') }}
             </button>
-        </div>
+        </x-card>
     </template>
 
     {{-- Grid --}}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <template x-for="list in lists" :key="list.id">
-            <div class="group relative bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+            <x-card flush class="group relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                 <a :href="'/shopping-lists/' + list.id" class="block p-5">
                     <div class="flex items-start justify-between gap-3 mb-4">
                         <div class="min-w-0">
@@ -76,7 +76,7 @@
                         <span class="material-icons-round text-base">delete</span>
                     </button>
                 </div>
-            </div>
+            </x-card>
         </template>
     </div>
 

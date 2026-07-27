@@ -113,7 +113,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {{-- Ingredients --}}
             <aside class="lg:col-span-1 lg:sticky lg:top-20 space-y-4">
-                <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
+                <x-card>
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-gray-900 dark:text-white">{{ __('messages.ingredients') }}</h3>
                         {{-- Servings stepper --}}
@@ -148,12 +148,12 @@
                             class="w-full mt-4 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-2.5 text-sm transition shadow-sm">
                         <span class="material-icons-round text-lg">add_shopping_cart</span>{{ __('messages.add_to_list') }}
                     </button>
-                </div>
+                </x-card>
             </aside>
 
             {{-- Instructions --}}
             <div class="lg:col-span-2">
-                <div class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 sm:p-6">
+                <x-card class="sm:p-6">
                     <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-5">
                         <span class="material-icons-round text-indigo-500">menu_book</span>{{ __('messages.instructions') }}
                     </h3>
@@ -173,7 +173,7 @@
                             <a href="{{ route('recipes.edit', $recipe) }}" class="text-indigo-600 dark:text-indigo-400 text-sm font-semibold mt-2 inline-block">{{ __('messages.edit_recipe') }}</a>
                         </div>
                     @endif
-                </div>
+                </x-card>
             </div>
         </div>
 

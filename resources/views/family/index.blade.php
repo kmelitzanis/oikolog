@@ -10,8 +10,7 @@
             {{-- No Family --}}
             <div x-data="{ createOpen: false, joinOpen: false }" class="relative">
 
-                <div
-                    class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-12 text-center">
+                <x-card flush class="p-12 text-center">
                     <span class="material-icons-round text-6xl text-indigo-200 dark:text-indigo-800 block mb-4">group_add</span>
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">No Family Group</h2>
                     <p class="text-sm text-gray-400 dark:text-slate-500 max-w-xs mx-auto mb-8">Create a family group to
@@ -27,7 +26,7 @@
                             <span class="material-icons-round text-lg">link</span> Join with Code
                     </button>
                 </div>
-            </div>
+            </x-card>
 
             {{-- Create Modal --}}
                 <div x-show="createOpen"
@@ -101,8 +100,7 @@
         @else
 
             {{-- Family Info --}}
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 mb-4">
+            <x-card class="mb-4">
                 <div class="flex items-center justify-between mb-5">
                     <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ $family->name }}</h2>
                     @if(auth()->user()->isFamilyAdmin())
@@ -160,7 +158,7 @@
                         @endif
                     </div>
                 @endforeach
-            </div>
+            </x-card>
 
             {{-- Leave --}}
             @if(!auth()->user()->isFamilyOwner())

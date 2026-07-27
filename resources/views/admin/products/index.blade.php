@@ -11,7 +11,7 @@
             </a>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+        <x-card flush class="overflow-hidden">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700">
                 <tr>
@@ -98,7 +98,7 @@
                 @endforelse
                 </tbody>
             </table>
-        </div>
+        </x-card>
 
         <div class="mt-6">{{ $products->links() }}</div>
     </div>

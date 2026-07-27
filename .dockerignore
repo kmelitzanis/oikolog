@@ -9,3 +9,4 @@ storage/*.key
 .DS_Store
 .git
 
+/design-system

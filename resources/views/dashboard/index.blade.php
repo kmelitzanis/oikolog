@@ -28,7 +28,7 @@
     {{-- Stats Row --}}
     <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {{-- Monthly Spending --}}
-        <div class="bg-gradient-to-br from-indigo-600 to-indigo-500 rounded-2xl p-5 text-white">
+        <div class="bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl p-5 text-white">
             <div class="flex items-center gap-1.5 text-xs text-indigo-200 font-medium mb-2">
                 <span
                     class="material-icons-round text-base">account_balance_wallet</span> {{ __('messages.monthly_spend') }}
@@ -42,7 +42,7 @@
         </div>
 
         {{-- Monthly Income --}}
-        <div class="bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 text-white">
+        <div class="bg-linear-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 text-white">
             <div class="flex items-center gap-1.5 text-xs text-emerald-200 font-medium mb-2">
                 <span class="material-icons-round text-base">trending_up</span> {{ __('messages.monthly_income') }}
             </div>
@@ -56,7 +56,7 @@
 
         {{-- Net Balance --}}
         @php $netPositive = $stats['monthly_net'] >= 0; @endphp
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
+        <x-card>
             <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-400 font-medium mb-2">
                 <span
                     class="material-icons-round text-base {{ $netPositive ? 'text-emerald-500' : 'text-red-500' }}">{{ $netPositive ? 'savings' : 'trending_down' }}</span>
@@ -66,17 +66,16 @@
                 {{ $netPositive ? '+' : '' }}{{ auth()->user()->currency_code }} {{ number_format($stats['monthly_net'], 2) }}
             </div>
             <div class="text-xs text-gray-400 dark:text-slate-500 mt-1">{{ __('messages.income_minus_exp') }}</div>
-        </div>
+        </x-card>
 
         @foreach([
             ['icon'=>'warning', 'color'=>'text-red-500', 'value'=>$stats['overdue_count'], 'label'=>__('messages.overdue')],
         ] as $stat)
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 flex flex-col gap-1">
+            <x-card class="flex flex-col gap-1">
                 <span class="material-icons-round {{ $stat['color'] }} text-2xl">{{ $stat['icon'] }}</span>
                 <div class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1">{{ $stat['value'] }}</div>
                 <div class="text-sm text-gray-400 dark:text-slate-400 font-medium">{{ $stat['label'] }}</div>
-            </div>
+            </x-card>
         @endforeach
     </div>
 
@@ -84,7 +83,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
         {{-- Upcoming Bills --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6">
+        <x-card flush class="p-6">
             <div class="flex items-center justify-between mb-5">
                 <h2 class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.upcoming_bills') }}</h2>
                 <a href="{{ route('bills.index') }}"
@@ -130,7 +129,8 @@
                                     amount:     '{{ number_format($bill->amount, 2) }}',
                                     currency:   '{{ auth()->user()->currency_code }}',
                                     payRoute:   '{{ route('bills.pay', $bill) }}',
-                                    costVaries: {{ $bill->cost_varies ? 'true' : 'false' }}
+                                    costVaries: {{ $bill->cost_varies ? 'true' : 'false' }},
+                                    defaultIncomeId: '{{ $bill->default_income_id }}'
                                 })"
                                 class="mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline bg-transparent border-0 cursor-pointer p-0">
                             ✓ Pay
@@ -143,10 +143,10 @@
                     <span class="text-sm">{{ __('messages.no_upcoming') }}</span>
                 </div>
             @endforelse
-        </div>
+        </x-card>
 
         {{-- Upcoming Income --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6">
+        <x-card flush class="p-6">
             <div class="flex items-center justify-between mb-5">
                 <h2 class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.upcoming_income') }}</h2>
                 <a href="{{ route('income.index') }}"
@@ -194,13 +194,13 @@
                        class="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">+ {{ __('messages.add_income') }}</a>
                 </div>
             @endforelse
-        </div>
+        </x-card>
     </div>
 
     {{-- Category breakdown + Analytics --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {{-- By Category --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6">
+        <x-card flush class="p-6">
             <h2 class="text-base font-bold text-gray-900 dark:text-white mb-5">{{ __('messages.by_category') }}</h2>
             @php $total = $byCategory->sum(); @endphp
             @forelse($byCategory->take(10) as $name => $amount)
@@ -218,10 +218,10 @@
             @empty
                 <p class="text-sm text-gray-400 dark:text-slate-500 text-center py-8">{{ __('messages.no_bills') }}</p>
             @endforelse
-        </div>
+        </x-card>
 
         {{-- Income by source --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6">
+        <x-card flush class="p-6">
             <h2 class="text-base font-bold text-gray-900 dark:text-white mb-5">{{ __('messages.monthly_income') }}</h2>
             @php
                 $incomeBySource = $upcomingIncomes->isEmpty()
@@ -246,13 +246,12 @@
             @empty
                 <p class="text-sm text-gray-400 dark:text-slate-500 text-center py-8">{{ __('messages.no_incomes') }}</p>
             @endforelse
-        </div>
+        </x-card>
     </div>
 
     {{-- Analytics Charts --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div
-            class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6">
+        <x-card flush class="lg:col-span-2 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-bold text-gray-900 dark:text-white">Monthly Overview</h3>
                 <span class="text-xs text-gray-400 dark:text-slate-500">Last 12 months</span>
@@ -261,24 +260,22 @@
                 <canvas id="chart-monthly" class="w-full h-full"
                         style="display:block;width:100% !important;height:100% !important;"></canvas>
             </div>
-        </div>
+        </x-card>
         <div class="flex flex-col gap-4">
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
+            <x-card>
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Spending vs Income</h3>
                 <div class="relative h-32 overflow-hidden">
                     <canvas id="chart-income-spend" class="w-full h-full"
                             style="display:block;width:100% !important;height:100% !important;"></canvas>
                 </div>
-            </div>
-            <div
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
+            </x-card>
+            <x-card>
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">{{ __('messages.by_category') }}</h3>
                 <div class="relative h-32 overflow-hidden">
                     <canvas id="chart-category" class="w-full h-full"
                             style="display:block;width:100% !important;height:100% !important;"></canvas>
                 </div>
-            </div>
+            </x-card>
         </div>
     </div>
 

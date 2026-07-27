@@ -221,4 +221,16 @@ return [
     'existing_list' => 'Existing list',
     'new_list_name' => 'New list name',
     'create_new_list' => 'Create new list',
+
+    // Bills ↔ income
+    'default_income' => 'Default income',
+    'no_default_income' => '— None —',
+    'default_income_hint' => 'Pre-selected as the funding source when you mark this bill paid.',
+    'income_allocation' => 'This period',
+    'income_received' => 'Received',
+    'income_spent' => 'spent',
+    'income_remaining' => 'Remaining',
+    'spending_timeline' => 'Spent on',
+    'no_spending_yet' => 'No bills paid from this income yet.',
+    'partial' => 'partial',
 ];
