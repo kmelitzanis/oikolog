@@ -126,6 +126,11 @@
                         $daysUntil !== null => __('messages.in_days', ['days' => $daysUntil]),
                         default => '—',
                     };
+
+                    // Bills paid "from" this income reduce it — but only the
+                    // detail page showed that, so paying against an income
+                    // looked like it did nothing. Surface it here too.
+                    $spentThisPeriod = $income->spentThisPeriod();
                 @endphp
                 <div class="flex items-center gap-3 sm:gap-4 {{ $incomeGrid }} px-4 lg:px-5 py-3.5 border-t border-gray-100 dark:border-slate-700/60 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition"
                      x-data>
@@ -171,6 +176,11 @@
                         <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
                             {{ number_format($income->monthlyEquivalent(), 2) }}/mo
                         </div>
+                        @if($spentThisPeriod > 0)
+                            <div class="text-[0.68rem] font-semibold text-amber-600 dark:text-amber-400 mt-0.5">
+                                −{{ $currency }} {{ number_format($spentThisPeriod, 2) }} {{ __('messages.income_spent') }}
+                            </div>
+                        @endif
                     </div>
 
                     {{-- 5 · Actions --}}

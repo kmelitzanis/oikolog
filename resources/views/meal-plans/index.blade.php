@@ -67,10 +67,9 @@
             </div>
         </div>
 
-        {{-- Week grid — the mockup's seven day cards at 24px radius / 12px gap.
-             Its header is centred: a tracked weekday label over a large day
-             number, with today inverted to amber. --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+        {{-- Mobile / tablet: the seven day cards, one meal group per card.
+             Below lg this reads better as stacked days than a cramped grid. --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden">
             @foreach($days as $day)
                 <div class="flex flex-col overflow-hidden rounded-[24px] border bg-white dark:bg-slate-800
                             {{ $day['isToday'] ? 'border-amber-400 dark:border-amber-500' : 'border-gray-100 dark:border-slate-700' }}">
@@ -95,9 +94,6 @@
                                     <span class="text-[0.58rem] font-bold uppercase tracking-[0.07em] text-gray-400 dark:text-slate-500">{{ $meal['label'] }}</span>
                                 </div>
 
-                                {{-- Existing meals --}}
-                                {{-- The mockup renders the dish as plain text
-                                     under its label, not as a tinted chip. --}}
                                 <template x-for="plan in planFor('{{ $day['date'] }}', '{{ $key }}')" :key="plan.id">
                                     <div @click="openEdit(plan)"
                                          class="text-[0.8rem] leading-[1.35] font-semibold text-gray-900 dark:text-white mb-1.5 cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition">
@@ -105,7 +101,6 @@
                                     </div>
                                 </template>
 
-                                {{-- Add slot (compact, icon-only to fit 7-column layout) --}}
                                 <button @click="openAdd('{{ $day['date'] }}', '{{ $key }}')" type="button"
                                         :title="'{{ __('messages.add_meal') }}'"
                                         class="w-full flex items-center justify-center gap-1 border border-dashed border-gray-200 dark:border-slate-700 rounded-lg py-1 text-[11px] font-medium text-gray-300 dark:text-slate-600 hover:border-amber-400 hover:text-amber-500 hover:bg-amber-50/40 dark:hover:bg-amber-500/10 transition">
@@ -116,6 +111,56 @@
                     </div>
                 </div>
             @endforeach
+        </div>
+
+        {{-- Desktop: a calendar grid — meal types as rows, days as columns —
+             rather than seven repeated cards, so the week reads at a glance
+             the way the Calendar page does. --}}
+        <div class="hidden lg:block rounded-[24px] border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+            <div class="grid" style="grid-template-columns: 120px repeat(7, 1fr);">
+
+                {{-- Day header row --}}
+                <div class="border-b border-r border-gray-100 dark:border-slate-700"></div>
+                @foreach($days as $day)
+                    <div class="p-3 text-center border-b border-gray-100 dark:border-slate-700
+                                {{ !$loop->last ? 'border-r' : '' }}
+                                {{ $day['isToday'] ? 'bg-amber-500' : 'bg-gray-50 dark:bg-slate-900/50' }}">
+                        <div class="text-[0.6rem] font-bold uppercase tracking-[0.08em]
+                                    {{ $day['isToday'] ? 'text-slate-900/70' : 'text-gray-400 dark:text-slate-500' }}">
+                            {{ $day['weekday'] }}
+                        </div>
+                        <div class="text-[1.1rem] font-extrabold mt-0.5
+                                    {{ $day['isToday'] ? 'text-slate-900' : 'text-gray-900 dark:text-white' }}">
+                            {{ \Carbon\Carbon::parse($day['date'])->day }}
+                        </div>
+                    </div>
+                @endforeach
+
+                {{-- One row per meal type --}}
+                @foreach($mealTypes as $key => $meal)
+                    <div class="flex items-center gap-1.5 px-3 py-3 border-r border-gray-100 dark:border-slate-700
+                                {{ !$loop->last ? 'border-b' : '' }} bg-gray-50/60 dark:bg-slate-900/30">
+                        <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background: {{ $meal['dot'] }}"></span>
+                        <span class="text-[0.62rem] font-bold uppercase tracking-[0.07em] text-gray-400 dark:text-slate-500">{{ $meal['label'] }}</span>
+                    </div>
+                    @foreach($days as $day)
+                        <div class="group p-2 min-h-[76px] {{ !$loop->last ? 'border-r' : '' }} {{ !$loop->parent->last ? 'border-b' : '' }} border-gray-100 dark:border-slate-700
+                                    {{ $day['isToday'] ? 'bg-amber-50/40 dark:bg-amber-500/[0.06]' : '' }}">
+                            <template x-for="plan in planFor('{{ $day['date'] }}', '{{ $key }}')" :key="plan.id">
+                                <div @click="openEdit(plan)"
+                                     class="text-[0.78rem] leading-[1.35] font-semibold text-gray-900 dark:text-white mb-1 cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition">
+                                    <span x-show="plan.emoji" x-text="plan.emoji"></span><span x-text="plan.name"></span>
+                                </div>
+                            </template>
+                            <button @click="openAdd('{{ $day['date'] }}', '{{ $key }}')" type="button"
+                                    :title="'{{ __('messages.add_meal') }}'"
+                                    class="w-full flex items-center justify-center gap-1 rounded-lg py-1 text-[11px] font-medium text-transparent group-hover:text-gray-300 dark:group-hover:text-slate-600 hover:!text-amber-500 hover:bg-amber-50/40 dark:hover:bg-amber-500/10 transition">
+                                <span class="material-icons-round text-sm">add</span>
+                            </button>
+                        </div>
+                    @endforeach
+                @endforeach
+            </div>
         </div>
 
         {{-- The mockup's week action sits below the grid as an outline button

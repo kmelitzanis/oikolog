@@ -23,3 +23,8 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /design-system
+
+# AI coding agent config/instructions — not for the public repo
+/.claude
+AGENTS.md
+CLAUDE.md
