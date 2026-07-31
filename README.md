@@ -1,166 +1,175 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="public/icons/icon-192.png" width="96" height="96" alt="Oikolog">
 </p>
 
-# Oikolog
+<h1 align="center">Oikolog</h1>
 
-Oikolog is a modern Laravel application for families to track recurring bills, payments, shared expenses, and income. It
-features a calendar view with bill indicators, analytics, multilingual support, and receipt uploads.
+<p align="center">
+  Household bills, income, shopping and meal planning — for the whole family, in one place.
+</p>
 
-## Features
-
-- 📅 Calendar with bill/income indicators
-- 💸 Track recurring and one-time bills
-- 📊 Spending analytics and summaries
-- 👨‍👩‍👧‍👦 Family member management
-- 🧾 Upload and store receipts
-- 🌍 Multilingual UI
-- 🔒 Role-based access control
-
-## Quick Start
-
-1. Clone the repo and install dependencies:
-   ```bash
-   git clone https://github.com/kmelitzanis/oikolog.git
-   cd oikolog
-   composer install
-   npm install
-   ```
-2. Copy `.env.example` to `.env` and set DB credentials. Generate app key:
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
-3. Run migrations and seed translations:
-   ```bash
-   php artisan migrate
-   php artisan db:seed --class="Database\\Seeders\\TranslationSeeder"
-   ```
-4. Build frontend assets:
-   ```bash
-   npm run build
-   ```
-5. Start the server:
-   ```bash
-   php artisan serve
-   ```
-
-## Development
-
-- Run tests: `php artisan test`
-- Manage translations at `/translations` (admin only)
-- Storage link: `php artisan storage:link`
-
-## License
-
-This project is licensed under the GNU GPL v3.0. See LICENSE for details.
+<p align="center">
+  <img src="https://img.shields.io/badge/PHP-%5E8.2-777BB4?logo=php&logoColor=white" alt="PHP ^8.2">
+  <img src="https://img.shields.io/badge/Laravel-11-FF2D20?logo=laravel&logoColor=white" alt="Laravel 11">
+  <img src="https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind 4">
+  <img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0">
+</p>
 
 ---
 
-Built with Laravel, Tailwind CSS, Alpine.js, and FullCalendar.
+Oikolog keeps track of what a household actually spends and owes. Recurring bills know when they are next due,
+payments (including partial ones) are recorded against them, and everything can be shared with the rest of the
+family. Around that sits the day-to-day: shopping lists, recipes and a weekly meal plan that can push its
+ingredients straight into a list.
 
-<!-- Buy Me a Beer Button -->
-<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="kostasmel" data-color="#5F7FFF" data-emoji="🍺"  data-font="Inter" data-text="Buy me a beer" data-outline-color="#000000" data-font-color="#ffffff" data-coffee-color="#FFDD00" ></script>
+## Features
 
-## About Laravel
+**Money**
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Recurring and one-off bills — weekly through yearly, with automatic next-due-date calculation
+- Full and **partial** payments, with per-payment history and one-click undo
+- Bills with a variable amount ("cost varies") — enter the real figure at payment time
+- Income sources with expected dates, and a month-to-date "received" view
+- Dashboard: net for the month, what needs attention now, six-month trend and spend by category
+- Month overview — the month as a countdown line, showing what is left to pay
+- Calendar with per-day status indicators (overdue / due soon / paid / upcoming)
+- Receipts and attachments on any bill
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Household**
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Family groups with an invite code, owner/member roles and ownership transfer
+- Shared bills visible to every member, with a recent-activity feed
+- Shopping lists with quantities, barcode lookup and a product catalogue
+- Recipes with ingredients, steps and timings
+- Weekly meal planner that can send a week's ingredients to a shopping list
 
-## Learning Laravel
+**Platform**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- Installable PWA with offline fallback and a service worker
+- Greek and English throughout, with database-backed translation overrides you can edit in the UI
+- Two-factor authentication (TOTP) with QR enrolment
+- Role-based admin area for categories, providers, products and users
+- Light and dark themes
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Tech stack
 
-## Laravel Sponsors
+| Layer    | Choice                                              |
+|----------|-----------------------------------------------------|
+| Backend  | Laravel 11, PHP 8.2+                                |
+| Frontend | Blade, Alpine.js, Tailwind CSS 4, Vite              |
+| Database | MySQL 8 (Docker default) or SQLite (local dev)      |
+| Auth     | Laravel Sanctum, `pragmarx/google2fa` for TOTP      |
+| Media    | `spatie/laravel-medialibrary`, `intervention/image` |
+| Calendar | FullCalendar                                        |
+| Testing  | Pest / PHPUnit                                      |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Getting started
 
-### Premium Partners
+```bash
+git clone https://github.com/kmelitzanis/oikolog.git
+cd oikolog
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+For local development SQLite is the quickest path — set this in `.env`:
 
-## Contributing
+```
+DB_CONNECTION=sqlite
+DB_DATABASE=database/database.sqlite
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Then create the schema, seed the translations, and link storage so uploads are reachable:
 
-## Code of Conduct
+```bash
+touch database/database.sqlite
+php artisan migrate
+php artisan db:seed --class="Database\Seeders\TranslationSeeder"
+php artisan storage:link
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Create an account and start the app:
 
-## Security Vulnerabilities
+```bash
+php artisan make:user --admin
+npm run build
+php artisan serve
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### ⚠️ The dev server port matters
+
+`SANCTUM_STATEFUL_DOMAINS` in `.env` lists the hosts allowed to authenticate with the session cookie. If you serve
+the app on a port that is not in that list, every `/api/*` request returns **401** and the API-backed pages
+(shopping lists, recipes, meal planner) silently render empty — with no error in the UI.
+
+Either serve on the configured port, or add the one you use:
+
+```
+SANCTUM_STATEFUL_DOMAINS=localhost:8000,127.0.0.1:8000
+```
+
+## Docker
+
+```bash
+docker compose up -d
+```
+
+Brings up `app`, `webserver` and a MySQL 8 database. Migrations run on boot by default; set `FORCE_MIGRATE=0` to
+skip them.
+
+## Development
+
+```bash
+npm run dev            # Vite dev server with HMR
+npm run build          # production assets
+php artisan test       # Pest + PHPUnit
+```
+
+Useful commands:
+
+| Command                            | Purpose                                                                        |
+|------------------------------------|--------------------------------------------------------------------------------|
+| `php artisan make:user`            | Create a user (`--admin` for an owner account)                                 |
+| `php artisan admin:reset-password` | Reset the admin password                                                       |
+| `php artisan bills:realign`        | Snap drifted `next_due_date`s back onto their schedule (`--dry-run` to preview) |
+
+### Translations
+
+Translations live in `resources/lang/{en,el}/messages.php`, and database entries override the files at runtime.
+Admins can edit them at `/translations` — useful for fixing wording without a deploy. The admin account is the one
+whose email matches `ADMIN_EMAIL` in `.env`.
+
+### Design system
+
+The UI follows a documented design system: **amber-500 `#f59e0b` on slate**, with the status colours mapped 1:1 to
+bill state. Anything on an amber surface takes slate-900 ink — amber is far too light to carry white text.
+
+The logo is the "beam stack": there is no separate icon mark, the wordmark *is* the logo, and the `l` of *log* is
+redrawn as four ledger beams of unequal length. It lives in `resources/views/components/logo.blade.php`, sized in
+`em` so the mark tracks the wordmark at any size. App icons are generated from `public/icons/icon.svg`.
+
+## Project layout
+
+```
+app/Http/Controllers/Web/    Blade-rendered pages
+app/Http/Controllers/Api/    JSON endpoints used by the Alpine components
+app/Models/                  Eloquent models (Bill, Income, ShoppingList, Recipe, …)
+app/Policies/                Authorisation rules
+resources/views/             Blade templates and components
+resources/js/pages/          Per-page Alpine components
+design-system/               Generated design-system previews
+```
+
+More detail for contributors — and for AI coding agents — lives in [AGENTS.md](AGENTS.md).
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Released under the **GNU GPL v3.0**. See [LICENSE](LICENSE).
 
-## Project setup (development)
+---
 
-1. Install PHP dependencies:
-
-   ```bash
-   composer install
-   ```
-
-2. Copy `.env.example` to `.env` and set your database settings (MySQL or SQLite):
-
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
-
-3. If you want to use SQLite for local dev, set in `.env`:
-
-   ```
-   DB_CONNECTION=sqlite
-   DB_DATABASE=database/database.sqlite
-   ```
-
-4. Run migrations and seed initial translations:
-
-   ```bash
-   php artisan migrate
-   php artisan db:seed --class="Database\\Seeders\\TranslationSeeder"
-   ```
-
-5. Create storage link so uploaded avatars are publicly accessible:
-
-   ```bash
-   php artisan storage:link
-   ```
-
-6. Translations management UI
-
-    - The Translations CRUD is accessible at `/translations` and is restricted to the account whose email matches
-      `ADMIN_EMAIL` in your `.env`.
-    - Use the Translations UI to edit values stored in the database; DB values override file-based translations.
-
-7. Run tests:
-
-   ```bash
-   php artisan test
-   ```
+<p align="center">
+  If Oikolog is useful to you, <a href="https://buymeacoffee.com/kostasmel">buy me a beer</a> 🍺
+</p>
