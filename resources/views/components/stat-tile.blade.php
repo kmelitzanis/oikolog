@@ -13,7 +13,7 @@
     [$bgClass, $labelClass, $valueClass] = match ($tone) {
         'danger'  => ['bg-red-50 dark:bg-red-900/15', 'text-red-400', 'text-red-500 dark:text-red-400'],
         'success' => ['bg-emerald-50 dark:bg-emerald-900/15', 'text-emerald-500', 'text-emerald-600 dark:text-emerald-400'],
-        'brand'   => ['bg-indigo-50 dark:bg-indigo-900/20', 'text-indigo-400', 'text-indigo-600 dark:text-indigo-300'],
+        'brand'   => ['bg-amber-50 dark:bg-amber-900/20', 'text-amber-500', 'text-amber-700 dark:text-amber-300'],
         default   => ['bg-gray-50 dark:bg-slate-700/40', 'text-gray-400 dark:text-slate-500', 'text-gray-900 dark:text-white'],
     };
 @endphp

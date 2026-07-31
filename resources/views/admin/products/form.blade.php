@@ -73,16 +73,16 @@
             {{-- ── Barcode lookup ─────────────────────────────────────────── --}}
             <x-card flush class="p-6 mb-4">
                 <p class="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3 flex items-center gap-2">
-                    <span class="material-icons-round text-indigo-500">qr_code_scanner</span>
+                    <span class="material-icons-round text-amber-500">qr_code_scanner</span>
                     Auto-fill from barcode
                 </p>
                 <div class="flex gap-2">
                     <input type="text" x-model="barcode" name="barcode" id="field-barcode"
                            placeholder="e.g. 5000112637922"
-                           class="flex-1 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                           class="flex-1 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                     <button type="button" @click="lookupBarcode()"
                             :disabled="lookupLoading"
-                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+                            class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-slate-900 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
                         <span class="material-icons-round text-lg"
                               x-text="lookupLoading ? 'hourglass_top' : 'search'"></span>
                         <span x-text="lookupLoading ? 'Looking up…' : 'Lookup'"></span>
@@ -106,7 +106,7 @@
                     <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Name *</label>
                     <input type="text" name="name" id="field-name" value="{{ old('name', $product->name ?? '') }}"
                            required
-                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -114,26 +114,26 @@
                         <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Brand</label>
                         <input type="text" name="brand" id="field-brand"
                                value="{{ old('brand', $product->brand ?? '') }}"
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Category</label>
                         <input type="text" name="category" value="{{ old('category', $product->category ?? '') }}"
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Description</label>
                     <textarea name="description" rows="2"
-                              class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">{{ old('description', $product->description ?? '') }}</textarea>
+                              class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500">{{ old('description', $product->description ?? '') }}</textarea>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Unit</label>
                         <select name="unit"
-                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                             @foreach(['piece','kg','g','l','ml','pack','box'] as $u)
                                 <option value="{{ $u }}" {{ old('unit', $product->unit ?? 'piece') === $u ? 'selected' : '' }}>{{ $u }}</option>
                             @endforeach
@@ -144,7 +144,7 @@
                             Qty</label>
                         <input type="number" name="default_quantity" step="0.01" min="0.01"
                                value="{{ old('default_quantity', $product->default_quantity ?? 1) }}"
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                     </div>
                 </div>
 
@@ -154,7 +154,7 @@
                         barcode)</label>
                     <input type="url" name="image_url" id="field-image-url"
                            value="{{ old('image_url', $product->image_url ?? '') }}" placeholder="https://…"
-                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                 </div>
 
                 <div>
@@ -202,7 +202,7 @@
                                    id="nutrition-{{ $key }}"
                                    value="{{ old('nutrition.' . $key, $nutrition[$key] ?? '') }}"
                                    placeholder="—"
-                                   class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                   class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                         </div>
                     @endforeach
                 </div>
@@ -213,7 +213,7 @@
                             Nutri-Score <span class="text-gray-400">(A–E)</span>
                         </label>
                         <select name="nutri_score" id="field-nutri-score"
-                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                             <option value="">—</option>
                             @foreach(['a','b','c','d','e'] as $s)
                                 <option value="{{ $s }}" {{ strtolower(old('nutri_score', $product->nutri_score ?? '')) === $s ? 'selected' : '' }}>
@@ -227,7 +227,7 @@
                             Eco-Score <span class="text-gray-400">(A–E)</span>
                         </label>
                         <select name="eco_score" id="field-eco-score"
-                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                             <option value="">—</option>
                             @foreach(['a','b','c','d','e'] as $s)
                                 <option value="{{ $s }}" {{ strtolower(old('eco_score', $product->eco_score ?? '')) === $s ? 'selected' : '' }}>
@@ -241,7 +241,7 @@
 
             <div class="flex gap-3 mt-2">
                 <button type="submit"
-                        class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-6 py-3 transition">
+                        class="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-6 py-3 transition">
                     Save
                 </button>
                 <a href="{{ route('admin.products.index') }}"

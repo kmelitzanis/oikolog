@@ -6,8 +6,16 @@
 --}}
 @props(['tone' => 'neutral'])
 @php
+    // Only supply a display utility when the caller hasn't. Several badges are
+    // `hidden md:inline-flex`; baking in `inline-flex` would collide at equal
+    // specificity and the winner would depend on stylesheet order.
+    $incoming = (string) $attributes->get('class');
+    $callerSetsDisplay = (bool) preg_match('/(?:^|\s)(hidden|inline-flex|flex|block|inline-block|inline|grid)(?:\s|$)/', $incoming);
+
     $toneClass = match ($tone) {
-        'brand'    => 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+        // Brand is the solid amber chip; `partial` keeps the soft amber tint, so
+        // the two stay distinguishable now that amber is the brand colour.
+        'brand'    => 'bg-amber-500 text-slate-900',
         'overdue'  => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
         'soon'     => 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
         'upcoming' => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
@@ -17,7 +25,8 @@
     };
 @endphp
 <span {{ $attributes->class([
-    'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap',
+    'items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap',
+    'inline-flex' => ! $callerSetsDisplay,
     $toneClass,
 ]) }}>
     {{ $slot }}

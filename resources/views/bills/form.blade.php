@@ -40,7 +40,7 @@
                     <input type="text" name="name"
                            value="{{ old('name', isset($bill) ? $bill->name : '') }}"
                            placeholder="{{ __('messages.bill_name_ph') }}" required
-                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                 </div>
                 {{-- Amount --}}
                 <div>
@@ -60,7 +60,7 @@
                             <input type="checkbox" name="cost_varies" value="1" x-model="costVaries"
                                    class="sr-only peer">
                             <div class="relative w-9 h-5 bg-gray-200 dark:bg-slate-600 peer-focus:outline-none rounded-full
-                                        peer-checked:bg-indigo-500
+                                        peer-checked:bg-amber-500
                                         after:content-[''] after:absolute after:top-[2px] after:left-[2px]
                                         after:bg-white after:border-white after:rounded-full after:h-4 after:w-4 after:transition-all
                                         peer-checked:after:translate-x-full"></div>
@@ -74,10 +74,10 @@
                                value="{{ old('amount', isset($bill) ? $bill->amount : '') }}"
                                :placeholder="costVaries ? 'Estimated (optional)' : '0.00'"
                                :required="!costVaries"
-                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                     </div>
                     <p x-show="costVaries" x-cloak
-                       class="mt-1.5 text-xs text-indigo-500 dark:text-indigo-400 flex items-center gap-1">
+                       class="mt-1.5 text-xs text-amber-500 dark:text-amber-400 flex items-center gap-1">
                         <span class="material-icons-round text-sm">info</span>
                         Το ποσό θα σου ζητηθεί κάθε φορά που καταχωρείς πληρωμή.
                     </p>
@@ -88,7 +88,7 @@
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.category') }}
                         *</label>
                     <select name="category_id" required x-model="categoryId" @change="providerId = ''"
-                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                         <option value="">{{ __('messages.select_category') }}</option>
                         @foreach($categories as $cat)
                             <option
@@ -102,7 +102,7 @@
                         {{ __('messages.provider') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
                     </label>
                     <select name="provider_id" x-model="providerId"
-                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                         <option value="">{{ __('messages.no_provider') }}</option>
                         <template x-for="p in providers" :key="p.id">
                             <option :value="p.id" :selected="p.id === providerId" x-text="p.name"></option>
@@ -127,7 +127,7 @@
                                 {{ __('messages.default_income') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
                             </label>
                             <select name="default_income_id"
-                                    class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                                    class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                                 <option value="">{{ __('messages.no_default_income') }}</option>
                                 @foreach($incomes as $income)
                                     <option value="{{ $income->id }}"
@@ -158,7 +158,7 @@
                                 <input type="radio" name="frequency" value="{{ $val }}" x-model="freq"
                                        class="sr-only peer">
                                 <span :class="freq==='{{ $val }}'
-                                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+                                       ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300'
                                        : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-300'"
                                       class="inline-block px-4 py-2 rounded-xl text-sm font-medium border transition select-none">
                                 {{ $lbl }}
@@ -176,7 +176,7 @@
                         <input type="date" name="start_date"
                                value="{{ old('start_date', isset($bill) ? $bill->start_date->format('Y-m-d') : now()->format('Y-m-d')) }}"
                                required
-                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
@@ -184,7 +184,7 @@
                         </label>
                         <input type="date" name="end_date"
                                value="{{ old('end_date', (isset($bill) && $bill->end_date) ? $bill->end_date->format('Y-m-d') : '') }}"
-                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                     </div>
                 </div>
                 {{-- URL --}}
@@ -195,7 +195,7 @@
                     <input type="url" name="url"
                            value="{{ old('url', isset($bill) ? $bill->url : '') }}"
                            placeholder="https://example.com"
-                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                 </div>
                 {{-- Notes --}}
                 <div>
@@ -203,7 +203,7 @@
                         {{ __('messages.notes') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
                     </label>
                     <textarea name="notes" rows="3" placeholder="{{ __('messages.notes') }}…"
-                              class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition resize-none">{{ old('notes', isset($bill) ? $bill->notes : '') }}</textarea>
+                              class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white text-gray-900 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition resize-none">{{ old('notes', isset($bill) ? $bill->notes : '') }}</textarea>
                 </div>
                 {{-- Receipts — Drag & Drop --}}
                 <div>
@@ -211,7 +211,7 @@
                         {{ __('messages.receipts') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
                     </label>
                     <div id="receipts-drop-area"
-                         class="w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-4 bg-gray-50 dark:bg-slate-700 cursor-pointer transition hover:border-indigo-400 mb-2">
+                         class="w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-4 bg-gray-50 dark:bg-slate-700 cursor-pointer transition hover:border-amber-400 mb-2">
                         <span id="receipts-drop-text" class="text-gray-400 dark:text-slate-500 text-sm mb-2">Drag & drop receipts here or click to select (images or PDFs, multiple allowed)</span>
                         <input id="receipts-input" type="file" name="receipts[]" accept="image/*,application/pdf"
                                class="hidden" multiple>
@@ -277,7 +277,7 @@
                                     <input type="radio" name="notify_days_before" value="{{ $d }}"
                                            x-model.number="notifyDays" class="sr-only">
                                     <span :class="notifyDays==={{ $d }}
-                                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+                                       ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300'
                                        : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-300'"
                                           class="inline-block px-4 py-2 rounded-xl text-sm font-medium border transition select-none">{{ $d }}d</span>
                                 </label>
@@ -288,7 +288,7 @@
                 {{-- Submit --}}
                 <div class="flex gap-3 pt-2">
                     <button type="submit"
-                            class="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3 text-sm transition">
+                            class="flex-1 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-xl py-3 text-sm transition">
                         <span class="material-icons-round text-lg">{{ isset($bill) ? 'save' : 'add' }}</span>
                         {{ isset($bill) ? __('messages.save_changes') : __('messages.add_bill') }}
                     </button>

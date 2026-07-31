@@ -15,17 +15,13 @@
         <script defer src="{{ asset('build/'.$e['file']) }}"></script>
     @endif
 </head>
-<body class="min-h-screen bg-linear-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-6">
+<body class="min-h-screen bg-linear-to-br from-amber-50 to-amber-50 flex items-center justify-center p-6">
 
 <div class="w-full max-w-md bg-white rounded-3xl border border-gray-200 shadow-xl p-10">
 
     {{-- Logo --}}
     <div class="text-center mb-8">
-        <div
-            class="w-14 h-14 bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl inline-flex items-center justify-center mb-4 shadow-lg">
-            <span class="material-icons-round text-white text-3xl">account_balance_wallet</span>
-        </div>
-        <h1 class="text-2xl font-extrabold text-gray-900">Oikolog</h1>
+        <x-logo size="lg" class="mb-1" />
         <p class="text-sm text-gray-400 mt-1">Sign in to your account</p>
     </div>
 
@@ -42,21 +38,21 @@
             <label class="block text-sm font-medium text-gray-600 mb-1.5">Email</label>
             <input type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com" required
                    autocomplete="email"
-                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
+                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition">
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-600 mb-1.5">Password</label>
             <input type="password" name="password" placeholder="••••••••" required
                    autocomplete="current-password"
-                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
+                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition">
         </div>
         <div class="flex items-center">
             <input type="checkbox" name="remember" id="remember" value="1"
-                   class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                   class="w-4 h-4 rounded border-gray-300 text-amber-700 focus:ring-amber-500 cursor-pointer">
             <label for="remember" class="ml-2 text-sm text-gray-500 cursor-pointer select-none">Remember me</label>
         </div>
         <button type="submit"
-                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3 text-sm transition">
+                class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-xl py-3 text-sm transition">
             Sign In
         </button>
     </form>

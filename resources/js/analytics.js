@@ -89,7 +89,7 @@ async function renderCharts() {
             const items = Object.entries(statsResp.by_category).slice(0, 10);
             const labels = items.map(i => i[0]);
             const data = items.map(i => i[1]);
-            const palette = ['#6366f1', '#4f46e5', '#ef4444', '#f59e0b', '#10b981', '#06b6d4', '#f97316', '#8b5cf6', '#06b6d4', '#a3e635'];
+            const palette = ['#f59e0b', '#3b82f6', '#d97706', '#34d399', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899', '#a3e635'];
             makeDoughnutChart(categoryCtx, labels, data, palette);
         }
 

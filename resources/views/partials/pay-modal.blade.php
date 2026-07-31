@@ -74,19 +74,19 @@
             if (!this.payRoute) return;
 
             if (this.costVaries && !this.remainingBalance && (!this.customAmount || parseFloat(this.customAmount) <= 0)) {
-                alert('Παρακαλώ εισάγετε το συνολικό ποσό.');
+                alert(@js(__('messages.enter_total_amount')));
                 return;
             }
             if (this.paymentMode === 'partial') {
                 if (!this.partialAmount || parseFloat(this.partialAmount) <= 0) {
-                    alert('Παρακαλώ εισάγετε το ποσό που πληρώνετε τώρα.');
+                    alert(@js(__('messages.enter_partial_amount')));
                     return;
                 }
                 const max = this.remainingBalance !== null
                     ? parseFloat(this.remainingBalance)
                     : (this.costVaries ? parseFloat(this.customAmount) : parseFloat(this.amount));
                 if (parseFloat(this.partialAmount) > max) {
-                    alert('Το ποσό δεν μπορεί να υπερβαίνει το υπόλοιπο (' + this.currency + ' ' + max.toFixed(2) + ').');
+                    alert(@js(__('messages.amount_exceeds_balance')).replace(':max', this.currency + ' ' + max.toFixed(2)));
                     return;
                 }
             }
@@ -107,10 +107,12 @@
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+        class="fixed inset-0 z-[60] bg-slate-950/[0.68] backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
         @click.self="open = false"
     >
-        {{-- Modal Panel --}}
+        {{-- Modal panel — the mockup's 460px / 24px-radius sheet. The app keeps
+             controls the mockup has no equivalent for (partial payments, payer,
+             income link); they follow the same visual language. --}}
         <div
             x-show="open" x-cloak
             x-transition:enter="transition ease-out duration-200"
@@ -119,193 +121,126 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden"
+            class="w-full max-w-[460px] max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-[24px] p-6 border border-gray-100 dark:border-slate-700 shadow-[0_30px_70px_rgba(2,6,23,0.6)]"
         >
             {{-- Header --}}
-            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
-                <div class="flex items-center gap-2.5">
-                    <div
-                        class="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center">
-                        <span
-                            class="material-icons-round text-emerald-600 dark:text-emerald-400 text-xl">check_circle</span>
-                    </div>
-                    <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.mark_paid') }}</h3>
+            <div class="flex items-center gap-[13px] mb-5">
+                <div class="w-11 h-11 rounded-2xl shrink-0 flex items-center justify-center bg-emerald-500/[0.14] text-emerald-600 dark:text-emerald-400">
+                    <span class="material-icons-round text-xl">check_circle</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[1.05rem] font-bold text-gray-900 dark:text-white truncate" x-text="billName"></div>
+                    <div class="text-[0.76rem] text-gray-400 dark:text-slate-500 mt-px">{{ __('messages.mark_paid') }}</div>
                 </div>
                 <button type="button" @click="open = false"
-                        class="p-1.5 rounded-lg text-gray-400 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition">
-                    <span class="material-icons-round text-lg">close</span>
+                        class="w-8 h-8 rounded-xl shrink-0 bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition">
+                    <span class="material-icons-round text-base">close</span>
                 </button>
             </div>
 
-            {{-- Body --}}
-            <div class="px-5 py-4 space-y-4">
-
-                {{-- Bill Summary --}}
-                <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 rounded-xl px-4 py-3">
-                    <div>
-                        <div
-                            class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">
-                            Bill
-                        </div>
-                        <div class="text-sm font-semibold text-gray-900 dark:text-white" x-text="billName"></div>
-                    </div>
-                    <div class="text-right">
-                        <template x-if="remainingBalance !== null">
-                            <div>
-                                <div class="text-xs font-semibold text-amber-500 uppercase tracking-wide mb-0.5">
-                                    Υπόλοιπο
-                                </div>
-                                <div class="text-base font-extrabold text-amber-600 dark:text-amber-400"
-                                     x-text="currency + ' ' + parseFloat(remainingBalance).toFixed(2)"></div>
-                            </div>
-                        </template>
-                        <template x-if="remainingBalance === null && !costVaries">
-                            <div>
-                                <div class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wide mb-0.5">
-                                    Amount
-                                </div>
-                                <div class="text-base font-extrabold text-emerald-600 dark:text-emerald-400"
-                                     x-text="currency + ' ' + amount"></div>
-                            </div>
-                        </template>
-                        <template x-if="remainingBalance === null && costVaries">
-                            <span class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-lg">
-                                <span class="material-icons-round text-sm">sync_alt</span> Cost varies
-                            </span>
-                        </template>
-                    </div>
+            {{-- Amount — the mockup's inset panel. It's the editable field when
+                 the cost varies or a partial amount is being entered, and a
+                 read-only figure otherwise. --}}
+            <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 mb-3">
+                <div class="text-[0.62rem] font-bold uppercase tracking-[0.09em] text-gray-400 dark:text-slate-500"
+                     x-text="paymentMode === 'partial'
+                        ? '{{ __('messages.partial_amount_label') }}'
+                        : '{{ __('messages.payment_amount_label') }}'"></div>
+                <div class="flex items-center gap-2 mt-1.5">
+                    <template x-if="paymentMode === 'partial'">
+                        <input type="number" step="0.01" min="0.01" x-model="partialAmount" placeholder="0.00"
+                               class="flex-1 min-w-0 bg-transparent border-0 outline-none p-0 text-[2rem] font-extrabold tracking-[-0.03em] text-gray-900 dark:text-white">
+                    </template>
+                    <template x-if="paymentMode !== 'partial' && costVaries && remainingBalance === null">
+                        <input type="number" step="0.01" min="0.01" x-model="customAmount" placeholder="0.00"
+                               class="flex-1 min-w-0 bg-transparent border-0 outline-none p-0 text-[2rem] font-extrabold tracking-[-0.03em] text-gray-900 dark:text-white">
+                    </template>
+                    <template x-if="paymentMode !== 'partial' && !(costVaries && remainingBalance === null)">
+                        <div class="flex-1 min-w-0 text-[2rem] font-extrabold tracking-[-0.03em] text-gray-900 dark:text-white truncate"
+                             x-text="displayAmount"></div>
+                    </template>
+                    <span class="text-[1.4rem] font-extrabold text-gray-400 dark:text-slate-600 shrink-0"
+                          x-text="currencySymbol"></span>
                 </div>
-
-                {{-- Custom amount when cost varies (and no prior partial) --}}
-                <div x-show="costVaries && remainingBalance === null" x-cloak>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
-                        <span class="material-icons-round text-base align-middle text-gray-400 dark:text-slate-400 mr-0.5">payments</span>
-                        Συνολικό ποσό περιόδου *
-                    </label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm"
-                              x-text="currencySymbol"></span>
-                        <input type="number" step="0.01" min="0.01" x-model="customAmount"
-                               placeholder="0.00"
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-900 dark:text-white rounded-xl pl-6 pr-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                <template x-if="remainingBalance !== null">
+                    <div class="text-[0.72rem] font-semibold text-amber-600 dark:text-amber-400 mt-1.5">
+                        {{ __('messages.outstanding_balance') }}
                     </div>
-                </div>
-
-                {{-- Payment mode toggle --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Τύπος
-                        πληρωμής</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button"
-                                @click="paymentMode = 'full'"
-                                :class="paymentMode === 'full'
-                                    ? 'bg-emerald-600 text-white border-emerald-600'
-                                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600'"
-                                class="flex items-center justify-center gap-1.5 border rounded-xl px-3 py-2.5 text-sm font-semibold transition">
-                            <span class="material-icons-round text-base">check_circle</span>
-                            Ολοκληρωτική
-                        </button>
-                        <button type="button"
-                                @click="paymentMode = 'partial'"
-                                :class="paymentMode === 'partial'
-                                    ? 'bg-amber-500 text-white border-amber-500'
-                                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600'"
-                                class="flex items-center justify-center gap-1.5 border rounded-xl px-3 py-2.5 text-sm font-semibold transition">
-                            <span class="material-icons-round text-base">payments</span>
-                            Μερική
-                        </button>
-                    </div>
-                </div>
-
-                {{-- Full payment info --}}
-                <div x-show="paymentMode === 'full'" x-cloak
-                     class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                    <span class="material-icons-round text-base shrink-0">info</span>
-                    <span>
-                        Θα καταγραφεί πληρωμή
-                        <strong x-text="currency + ' ' + displayAmount"></strong>
-                        και η επόμενη λήξη θα ενημερωθεί.
-                    </span>
-                </div>
-
-                {{-- Partial payment amount --}}
-                <div x-show="paymentMode === 'partial'" x-cloak>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
-                        <span class="material-icons-round text-base align-middle text-amber-500 mr-0.5">payments</span>
-                        Ποσό που πληρώνετε τώρα *
-                    </label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm"
-                              x-text="currencySymbol"></span>
-                        <input type="number" step="0.01" min="0.01" x-model="partialAmount"
-                               placeholder="0.00"
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-amber-300 dark:border-amber-600 text-gray-900 dark:text-white rounded-xl pl-6 pr-4 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900 transition">
-                    </div>
-                    <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                        Η ημερομηνία λήξης <strong>δεν</strong> θα αλλάξει — απλά θα μειωθεί το υπόλοιπο.
-                    </p>
-                </div>
-
-                {{-- Who Pays (only if family with multiple members) --}}
-                @if($familyMembers->count() > 1)
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
-                            <span
-                                class="material-icons-round text-base align-middle text-gray-400 dark:text-slate-400 mr-0.5">person</span>
-                            Ποιος πληρώνει;
-                        </label>
-                        <select x-model="paidByUserId"
-                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
-                            @foreach($familyMembers as $member)
-                                <option value="{{ $member->id }}">
-                                    {{ $member->name }}{{ $member->id === auth()->id() ? ' (εγώ)' : '' }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endif
-
-                {{-- Deduct from income account --}}
-                @if($userIncomes->count() > 0)
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
-                            <span
-                                class="material-icons-round text-base align-middle text-gray-400 dark:text-slate-400 mr-0.5">account_balance</span>
-                            Αφαίρεση από λογαριασμό εσόδων
-                            <span class="text-gray-400 dark:text-slate-500 font-normal text-xs">(προαιρετικό)</span>
-                        </label>
-                        <select x-model="incomeId"
-                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
-                            <option value="">— Κανένας —</option>
-                            @foreach($userIncomes as $income)
-                                <option value="{{ $income->id }}">
-                                    {{ $income->name }}
-                                    ({{ $income->currency_code }} {{ number_format($income->amount, 2) }})
-                                </option>
-                            @endforeach
-                        </select>
-                        <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">Συνδέει αυτή την πληρωμή με έναν
-                            λογαριασμό εσόδων.</p>
-                    </div>
-                @endif
-
+                </template>
             </div>
+
+            {{-- Date · from income --}}
+            <div class="grid grid-cols-2 gap-2.5 mb-3.5">
+                <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-3.5 py-[11px]">
+                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">{{ __('messages.date') }}</div>
+                    <div class="text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200 mt-0.5">
+                        {{ now()->translatedFormat('j M Y') }}
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-3.5 py-[11px] min-w-0">
+                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">{{ __('messages.from_income') }}</div>
+                    @if($userIncomes->count() > 0)
+                        <select x-model="incomeId"
+                                class="w-full bg-transparent border-0 outline-none p-0 mt-0.5 text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200">
+                            <option value="">—</option>
+                            @foreach($userIncomes as $income)
+                                <option value="{{ $income->id }}">{{ $income->name }}</option>
+                            @endforeach
+                        </select>
+                    @else
+                        <div class="text-[0.84rem] font-semibold text-gray-400 dark:text-slate-500 mt-0.5">—</div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Payment mode --}}
+            <div class="grid grid-cols-2 gap-2.5 mb-3.5">
+                <button type="button" @click="paymentMode = 'full'"
+                        :class="paymentMode === 'full'
+                            ? 'bg-emerald-500/[0.14] border-emerald-500/40 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700'"
+                        class="flex items-center justify-center gap-1.5 border rounded-2xl px-3 py-2.5 text-[0.82rem] font-semibold transition">
+                    <span class="material-icons-round text-base">check_circle</span>{{ __('messages.pay_full') }}
+                </button>
+                <button type="button" @click="paymentMode = 'partial'"
+                        :class="paymentMode === 'partial'
+                            ? 'bg-amber-500/[0.16] border-amber-500/40 text-amber-700 dark:text-amber-300'
+                            : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700'"
+                        class="flex items-center justify-center gap-1.5 border rounded-2xl px-3 py-2.5 text-[0.82rem] font-semibold transition">
+                    <span class="material-icons-round text-base">payments</span>{{ __('messages.pay_partial') }}
+                </button>
+            </div>
+
+            <p x-show="paymentMode === 'partial'" x-cloak
+               class="text-[0.72rem] text-amber-600 dark:text-amber-400 mb-3.5">
+                {{ __('messages.partial_hint') }}
+            </p>
+
+            {{-- Who pays — only with more than one family member --}}
+            @if($familyMembers->count() > 1)
+                <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-3.5 py-[11px] mb-3.5">
+                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">{{ __('messages.who_pays') }}</div>
+                    <select x-model="paidByUserId"
+                            class="w-full bg-transparent border-0 outline-none p-0 mt-0.5 text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200">
+                        @foreach($familyMembers as $member)
+                            <option value="{{ $member->id }}">
+                                {{ $member->name }}{{ $member->id === auth()->id() ? ' (' . __('messages.me') . ')' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
 
             {{-- Footer --}}
-            <div
-                class="px-5 py-4 bg-gray-50 dark:bg-slate-700/30 border-t border-gray-100 dark:border-slate-700 flex items-center gap-3">
-                <button type="button" @click="submit()"
-                        :class="paymentMode === 'partial'
-                            ? 'bg-amber-500 hover:bg-amber-600'
-                            : 'bg-emerald-600 hover:bg-emerald-700'"
-                        class="flex-1 inline-flex items-center justify-center gap-2 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
-                    <span class="material-icons-round text-lg"
-                          x-text="paymentMode === 'partial' ? 'payments' : 'check_circle'"></span>
-                    <span x-text="paymentMode === 'partial' ? 'Μερική Πληρωμή' : 'Επιβεβαίωση Πληρωμής'"></span>
-                </button>
+            <div class="flex gap-2.5">
                 <button type="button" @click="open = false"
-                        class="inline-flex items-center gap-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 text-sm font-medium rounded-xl px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-600 transition">
-                    Ακύρωση
+                        class="shrink-0 h-12 px-[18px] rounded-2xl border border-gray-200 dark:border-slate-700 bg-transparent text-gray-500 dark:text-slate-400 text-[0.88rem] font-semibold transition hover:bg-gray-50 dark:hover:bg-slate-700">
+                    {{ __('messages.cancel') }}
+                </button>
+                <button type="button" @click="submit()"
+                        class="flex-1 h-12 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-[0.92rem] font-bold flex items-center justify-center gap-2.5 transition shadow-[0_8px_22px_rgba(245,158,11,0.4)]">
+                    <span class="material-icons-round text-lg">check</span>
+                    {{ __('messages.record_payment') }}
                 </button>
             </div>
         </div>

@@ -9,8 +9,8 @@
             $isOverdue = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
             $daysUntil = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : null;
             $isSoon    = !$isOverdue && $daysUntil !== null && $daysUntil <= 7 && $bill->is_active;
-            $color     = $bill->category?->color_hex ?? '#6366F1';
-            $statusClass = $isOverdue ? 'bg-red-100 text-red-700' : ($isSoon ? 'bg-orange-100 text-orange-700' : 'bg-indigo-100 text-indigo-700');
+            $color     = $bill->category?->color_hex ?? '#f59e0b';
+            $statusClass = $isOverdue ? 'bg-red-100 text-red-700' : ($isSoon ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700');
         @endphp
 
         <div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
@@ -45,13 +45,13 @@
         <x-card class="mb-4">
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <div
-                    class="{{ $isOverdue ? 'bg-red-50 dark:bg-red-900/20' : ($isSoon ? 'bg-orange-50 dark:bg-orange-900/20' : 'bg-indigo-50 dark:bg-indigo-900/20') }} rounded-xl p-4">
+                    class="{{ $isOverdue ? 'bg-red-50 dark:bg-red-900/20' : ($isSoon ? 'bg-orange-50 dark:bg-orange-900/20' : 'bg-amber-50 dark:bg-amber-500/10') }} rounded-xl p-4">
                     <div
-                        class="text-xs font-semibold {{ $isOverdue ? 'text-red-400' : ($isSoon ? 'text-orange-400' : 'text-indigo-400') }} uppercase tracking-wide mb-1">
+                        class="text-xs font-semibold {{ $isOverdue ? 'text-red-400' : ($isSoon ? 'text-orange-400' : 'text-amber-400') }} uppercase tracking-wide mb-1">
                         Amount
                     </div>
                     <div
-                        class="text-2xl font-extrabold {{ $isOverdue ? 'text-red-600 dark:text-red-400' : ($isSoon ? 'text-orange-600 dark:text-orange-400' : 'text-indigo-600 dark:text-indigo-400') }}">
+                        class="text-2xl font-extrabold {{ $isOverdue ? 'text-red-600 dark:text-red-400' : ($isSoon ? 'text-orange-600 dark:text-orange-400' : 'text-amber-700 dark:text-amber-400') }}">
                         {{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}
                     </div>
                     @if($bill->hasPartialPayment())
@@ -146,7 +146,7 @@
                 <div class="flex items-center py-2.5 border-t border-gray-50 dark:border-slate-700">
                     <span class="w-32 text-xs font-medium text-gray-400 dark:text-slate-500 shrink-0">Website</span>
                     <a href="{{ $bill->url }}" target="_blank"
-                       class="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline break-all">{{ $bill->url }}</a>
+                       class="text-sm text-amber-700 dark:text-amber-400 font-medium hover:underline break-all">{{ $bill->url }}</a>
                 </div>
             @endif
             @if($bill->notes)
@@ -183,7 +183,7 @@
                         <div class="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                             {{ $payment->paid_at->format('d M Y, H:i') }} · {{ $payment->paidBy?->name ?? '—' }}
                             @if($payment->income)
-                                · <span class="text-indigo-500 dark:text-indigo-400">{{ $payment->income->name }}</span>
+                                · <span class="text-amber-500 dark:text-amber-400">{{ $payment->income->name }}</span>
                             @endif
                         </div>
                         @if($payment->notes)

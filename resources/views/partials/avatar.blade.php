@@ -12,11 +12,11 @@
 @endphp
 
 <div
-    class="{{ $size }} {{ $rounded }} overflow-hidden bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+    class="{{ $size }} {{ $rounded }} overflow-hidden bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center shrink-0">
     @if($avatar)
         <img src="{{ $avatar }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
     @else
-        <span class="font-bold text-indigo-600 dark:text-indigo-400 text-sm leading-none select-none">
+        <span class="font-bold text-amber-700 dark:text-amber-400 text-sm leading-none select-none">
             {{ strtoupper(substr($user->name, 0, 1)) }}
         </span>
     @endif

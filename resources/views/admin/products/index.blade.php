@@ -6,7 +6,7 @@
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ __('messages.products') }}</h1>
             <a href="{{ route('admin.products.create') }}"
-               class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+               class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
                 <span class="material-icons-round">add</span> Add Product
             </a>
         </div>

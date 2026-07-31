@@ -5,7 +5,9 @@
             "name": "oikolog",
             "runtimeExecutable": "php",
             "runtimeArgs": ["artisan", "serve", "--port=8000"],
-            "port": 8000
+            "port": 8000,
+            "_comment": "Port 8000 is required, not incidental: .env pins SANCTUM_STATEFUL_DOMAINS to 127.0.0.1:8000, so on any other port every /api/* call returns 401 and the API-backed pages (shopping lists, recipes, meal planner) render empty.",
+            "autoPort": false
         },
         {
             "name": "design-system",

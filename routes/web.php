@@ -42,6 +42,7 @@ Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallen
 
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/month', [DashboardController::class, 'month'])->name('dashboard.month');
     Route::get('/locale/{lang}', [\App\Http\Controllers\Web\DashboardController::class, 'setLocale'])->name('locale.set');
 
     // Calendar events API (used by the inline calendar on the bills page)

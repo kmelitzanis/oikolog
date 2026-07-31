@@ -32,11 +32,26 @@ class IncomeController extends Controller
 
         // Summary stats
         $allActive = Income::forUser($user)->active()->get();
+        $monthlyIncome = round($allActive->sum(fn($i) => $i->monthlyEquivalent()), 2);
+
+        // "Received this month" — there is no income-payments table, so this is
+        // derived from `last_received_date`: a source counts once its most
+        // recent receipt falls inside the current month.
+        $receivedSources = $allActive->filter(
+            fn($i) => $i->last_received_date && $i->last_received_date->isSameMonth(now())
+        );
+        $received = round($receivedSources->sum('amount'), 2);
+
         $stats = [
-            'monthly_income' => round($allActive->sum(fn($i) => $i->monthlyEquivalent()), 2),
-            'yearly_income' => round($allActive->sum(fn($i) => $i->monthlyEquivalent()) * 12, 2),
+            'monthly_income' => $monthlyIncome,
+            'yearly_income' => round($monthlyIncome * 12, 2),
             'total_sources' => $allActive->count(),
             'recurring' => $allActive->filter(fn($i) => $i->frequency !== 'once')->count(),
+            'received_this_month' => $received,
+            'received_count' => $receivedSources->count(),
+            'received_pct' => $monthlyIncome > 0
+                ? min(100, (int) round($received / $monthlyIncome * 100))
+                : 0,
         ];
 
         return view('income.index', compact('incomes', 'stats'));

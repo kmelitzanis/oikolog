@@ -34,16 +34,29 @@ class BillController extends Controller
         }
         if ($request->filled('status')) {
             match ($request->status) {
-                'active'   => $query->where('is_active', true),
-                'overdue'  => $query->where('is_active', true)->whereDate('next_due_date', '<', now()),
-                'inactive' => $query->where('is_active', false),
-                default    => null,
+                'active'     => $query->where('is_active', true),
+                'overdue'    => $query->where('is_active', true)->whereDate('next_due_date', '<', now()),
+                'this_month' => $query->where('is_active', true)
+                    ->whereBetween('next_due_date', [now()->startOfMonth(), now()->endOfMonth()]),
+                'shared'     => $query->where('is_shared', true),
+                'inactive'   => $query->where('is_active', false),
+                default      => null,
             };
         }
 
         $bills = $query->paginate(50);
 
-        return view('bills.index', compact('bills'));
+        // Counts for the filter pills — computed off the unfiltered set so the
+        // pills keep showing the full picture while a filter is applied.
+        $all = Bill::forUser($user)->get(['is_active', 'is_shared', 'next_due_date']);
+        $billCounts = [
+            'all'        => $all->count(),
+            'overdue'    => $all->filter(fn($b) => $b->is_active && $b->next_due_date && $b->next_due_date->isPast())->count(),
+            'this_month' => $all->filter(fn($b) => $b->is_active && $b->next_due_date && $b->next_due_date->isSameMonth(now()))->count(),
+            'shared'     => $all->where('is_shared', true)->count(),
+        ];
+
+        return view('bills.index', compact('bills', 'billCounts'));
     }
 
     public function create()
@@ -375,7 +388,10 @@ class BillController extends Controller
             ]);
         }
 
-        return back()->with('success', $isPartial ? 'Μερική πληρωμή καταγράφηκε.' : 'Πληρωμή καταγράφηκε.');
+        // `undo_route` drives the toast's Undo action.
+        return back()
+            ->with('success', __($isPartial ? 'messages.partial_payment_recorded' : 'messages.payment_recorded'))
+            ->with('undo_route', route('bills.unpay', $bill));
     }
 
     public function undoLastPayment(Bill $bill)

@@ -44,6 +44,11 @@ class Bill extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function provider(): BelongsTo
     {
         return $this->belongsTo(Provider::class);

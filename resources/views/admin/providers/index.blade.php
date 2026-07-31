@@ -4,14 +4,14 @@
     <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Providers</h1>
         <a href="{{ route('admin.providers.create', array_filter(['category_id' => request('category_id')])) }}"
-           class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+           class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
             <span class="material-icons-round text-lg">add</span> Add Provider
         </a>
     </div>
     {{-- Category filter --}}
     <form method="GET" action="{{ route('admin.providers.index') }}" class="mb-5 flex items-center gap-3 flex-wrap">
         <select name="category_id" onchange="this.form.submit()"
-                class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
             <option value="">All categories</option>
             @foreach($categories as $cat)
                 <option value="{{ $cat->id }}" {{ request('category_id') === $cat->id ? 'selected' : '' }}>
@@ -62,7 +62,7 @@
                     <td class="px-5 py-3">
                         @if($provider->website)
                             <a href="{{ $provider->website }}" target="_blank" rel="noopener"
-                               class="text-indigo-600 hover:text-indigo-800 transition truncate max-w-45 inline-block">
+                               class="text-amber-700 hover:text-amber-800 transition truncate max-w-45 inline-block">
                                 {{ parse_url($provider->website, PHP_URL_HOST) ?? $provider->website }}
                             </a>
                         @else
@@ -73,7 +73,7 @@
                     <td class="px-5 py-3 text-right">
                         <div class="inline-flex items-center gap-2">
                             <a href="{{ route('admin.providers.edit', $provider) }}"
-                               class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition">
+                               class="inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:text-amber-800 transition">
                                 <span class="material-icons-round text-base">edit</span> Edit
                             </a>
                             <form action="{{ route('admin.providers.destroy', $provider) }}" method="POST"

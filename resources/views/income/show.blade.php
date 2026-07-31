@@ -111,7 +111,7 @@
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="min-w-0">
                                         <a href="{{ $p->bill ? route('bills.show', $p->bill) : '#' }}"
-                                           class="text-sm font-semibold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition truncate block">
+                                           class="text-sm font-semibold text-gray-900 dark:text-white hover:text-amber-700 dark:hover:text-amber-400 transition truncate block">
                                             {{ $p->bill?->name ?? __('messages.bill') }}
                                         </a>
                                         <div class="text-xs text-gray-400 dark:text-slate-500">

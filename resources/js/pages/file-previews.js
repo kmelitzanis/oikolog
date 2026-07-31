@@ -10,15 +10,15 @@ function bindFileDrop(options) {
     dropArea.addEventListener('click', () => input.click());
     dropArea.addEventListener('dragover', e => {
         e.preventDefault();
-        dropArea.classList.add('border-indigo-400');
+        dropArea.classList.add('border-amber-400');
     });
     dropArea.addEventListener('dragleave', e => {
         e.preventDefault();
-        dropArea.classList.remove('border-indigo-400');
+        dropArea.classList.remove('border-amber-400');
     });
     dropArea.addEventListener('drop', e => {
         e.preventDefault();
-        dropArea.classList.remove('border-indigo-400');
+        dropArea.classList.remove('border-amber-400');
         if (e.dataTransfer.files.length) {
             input.files = e.dataTransfer.files;
             showPreview();

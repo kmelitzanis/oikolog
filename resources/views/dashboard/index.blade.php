@@ -1,285 +1,266 @@
 @extends('layouts.app')
 @section('title', __('messages.dashboard'))
 
+{{--
+    Dashboard — a strict build of mockup 3a.
+
+    The page is exactly three blocks: header, hero + attention queue, and the
+    three-up row. Sizes below are the mockup's own values (1.6rem title, 3rem
+    net, 24px radii, 150px chart, 7px progress bar) rather than the nearest
+    Tailwind step, so the layout matches the design at pixel level.
+
+    Everything on the amber surface takes slate ink — amber-500 is far too
+    light to carry white text.
+--}}
+
 @section('content')
 
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+    @php
+        $currency    = auth()->user()->currency_code;
+        $netPositive = $stats['monthly_net'] >= 0;
+        // 700 · .62rem · .09em tracking — the mockup's section label.
+        $sectionLabel = 'text-[0.62rem] font-bold uppercase tracking-[0.09em] text-gray-400 dark:text-slate-500';
+        $panel = 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[24px]';
+    @endphp
+
+    {{-- ── Header ─────────────────────────────────────────────────────── --}}
+    <div class="flex items-end justify-between gap-5 mb-[22px] flex-wrap">
         <div>
-            <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white leading-tight">
+            <div class="text-[1.6rem] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white leading-tight">
                 {{ __('messages.hello') }}, {{ explode(' ', auth()->user()->name)[0] }} 👋
-            </h1>
-            <p class="text-sm text-gray-400 dark:text-slate-500 mt-0.5">{{ now()->format('l, F j, Y') }}</p>
+            </div>
+            <div class="text-[0.82rem] text-gray-400 dark:text-slate-500 mt-[3px]">
+                {{ now()->translatedFormat('l, j F Y') }}
+            </div>
         </div>
-        <div class="flex gap-2 flex-wrap">
+        <div class="flex gap-[9px] shrink-0">
+            {{-- secondary: outline --}}
             <a href="{{ route('income.create') }}"
-               class="inline-flex flex-1 items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
-                <span class="material-icons-round text-lg">add</span>
-                {{ __('messages.add_income') }}
+               class="h-10 px-[15px] rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 text-[0.82rem] font-semibold whitespace-nowrap flex items-center gap-2 transition hover:bg-gray-50 dark:hover:bg-slate-700">
+                <span class="material-icons-round text-base">add</span>{{ __('messages.add_income') }}
             </a>
+            {{-- primary: amber --}}
             <a href="{{ route('bills.create') }}"
-               class="inline-flex flex-1 items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
-                <span class="material-icons-round text-lg">add</span>
-                {{ __('messages.add_bill') }}
+               class="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-[0.82rem] font-bold whitespace-nowrap flex items-center gap-2 transition shadow-[0_6px_18px_rgba(245,158,11,0.32)]">
+                <span class="material-icons-round text-base">add</span>{{ __('messages.add_bill') }}
             </a>
         </div>
     </div>
 
-    {{-- Stats Row --}}
-    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        {{-- Monthly Spending --}}
-        <div class="bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl p-5 text-white">
-            <div class="flex items-center gap-1.5 text-xs text-indigo-200 font-medium mb-2">
-                <span
-                    class="material-icons-round text-base">account_balance_wallet</span> {{ __('messages.monthly_spend') }}
+    {{-- ── Hero + attention queue (1.15fr / 1fr) ──────────────────────── --}}
+    <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-[18px] mb-[18px] items-start">
+
+        {{-- Hero — tapping it opens the month overview (mockup 2b) --}}
+        <a href="{{ route('dashboard.month') }}"
+           class="block rounded-[24px] bg-amber-500 px-[26px] pt-6 pb-[22px] shadow-[0_14px_34px_rgba(245,158,11,0.26)] transition hover:brightness-[1.03]">
+            <div class="text-[0.68rem] font-semibold uppercase tracking-[0.09em] text-slate-900/70">
+                {{ __('messages.net_this_month') }}
             </div>
-            <div class="text-2xl font-extrabold tracking-tight leading-none">
-                {{ auth()->user()->currency_code }} {{ number_format($stats['monthly_total'], 2) }}
+            {{-- Type scale switches between the two mockups: the phone (2a)
+                 uses 2.5rem / .9rem tiles, the desktop (3a) 3rem / 1.05rem. --}}
+            <div class="text-[2.5rem] sm:text-[3rem] leading-[1.05] font-extrabold tracking-[-0.03em] text-slate-900 mt-1.5">
+                {{ $netPositive ? '+' : '' }}{{ $currency }} {{ number_format($stats['monthly_net'], 2) }}
             </div>
-            <div class="text-xs text-indigo-300 mt-1">
-                {{ auth()->user()->currency_code }} {{ number_format($stats['yearly_total'], 2) }} {{ __('messages.per_year') }}
+
+            <div class="flex gap-2 sm:gap-2.5 mt-4 sm:mt-5">
+                @foreach([
+                    [__('messages.income_singular'), $stats['monthly_income']],
+                    [__('messages.expenses'), $stats['monthly_total']],
+                    [__('messages.yearly'),   $stats['yearly_total']],
+                ] as [$tileLabel, $tileValue])
+                    <div class="flex-1 min-w-0 bg-slate-900/10 rounded-[14px] sm:rounded-2xl px-[11px] py-[9px] sm:px-3.5 sm:py-3">
+                        <div class="text-[0.66rem] sm:text-[0.7rem] text-slate-900/70 truncate">{{ $tileLabel }}</div>
+                        {{-- no `truncate` here: a clipped "EUR 1…" is useless,
+                             so a long amount wraps instead. --}}
+                        <div class="text-[0.9rem] sm:text-[1.05rem] font-bold text-slate-900 mt-0.5 sm:mt-[3px] leading-tight">
+                            {{ $currency }} {{ number_format($tileValue, 2) }}
+                        </div>
+                    </div>
+                @endforeach
             </div>
+
+            <div class="mt-5">
+                <div class="flex justify-between gap-3 text-[0.72rem] font-semibold text-slate-900/70">
+                    <span>{{ __('messages.month_paid', ['percent' => $stats['month_paid_pct']]) }}</span>
+                    <span>{{ __('messages.left_to_pay', ['amount' => $currency . ' ' . number_format($stats['month_outstanding'], 2)]) }}</span>
+                </div>
+                <div class="h-[7px] rounded-full bg-slate-900/[0.16] mt-[7px] overflow-hidden">
+                    <div class="h-full rounded-full bg-slate-900 transition-[width] duration-[400ms] ease-out"
+                         style="width: {{ $stats['month_paid_pct'] }}%"></div>
+                </div>
+            </div>
+        </a>
+
+        {{-- Needs attention --}}
+        <div class="{{ $panel }} overflow-hidden">
+            <div class="flex items-center justify-between px-5 pt-4 pb-2.5">
+                <div class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.needs_attention') }}</div>
+                @if($stats['overdue_count'] > 0)
+                    <span class="text-[0.72rem] font-bold text-red-400">
+                        {{ $stats['overdue_count'] }} {{ __('messages.overdue') }}
+                    </span>
+                @endif
+            </div>
+
+            @forelse($attention as $bill)
+                @php
+                    $isOverdue = $bill->isOverdue();
+                    $daysUntil = (int) $bill->daysUntilDue();
+                    $accent    = $isOverdue ? '#ef4444' : '#f97316';
+                @endphp
+                <div class="flex items-center gap-[13px] px-5 py-[13px] border-t border-gray-100 dark:border-slate-700/70 border-l-[3px]"
+                     style="border-left-color: {{ $accent }}; background: {{ $accent }}0f;">
+                    <div class="w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0"
+                         style="background: {{ $accent }}22; color: {{ $accent }};">
+                        <span class="material-icons-round text-lg">{{ $bill->category?->icon ?? 'receipt' }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[0.9rem] font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</div>
+                        <div class="text-[0.74rem] mt-0.5" style="color: {{ $accent }}">
+                            @if($isOverdue)
+                                {{ __('messages.overdue_by', ['days' => abs($daysUntil)]) }}
+                            @elseif($daysUntil === 0)
+                                {{ __('messages.due_today') }}
+                            @else
+                                {{ __('messages.in_days', ['days' => $daysUntil]) }}
+                            @endif
+                        </div>
+                    </div>
+                    <div class="text-base font-extrabold text-gray-900 dark:text-white shrink-0">
+                        {{ $currency }} {{ number_format($bill->amount, 2) }}
+                    </div>
+                    <button type="button" x-data
+                            @click="$dispatch('open-pay-modal', {
+                                billName:   '{{ addslashes($bill->name) }}',
+                                amount:     '{{ number_format($bill->amount, 2) }}',
+                                currency:   '{{ $currency }}',
+                                payRoute:   '{{ route('bills.pay', $bill) }}',
+                                costVaries: {{ $bill->cost_varies ? 'true' : 'false' }},
+                                defaultIncomeId: '{{ $bill->default_income_id }}'
+                            })"
+                            class="shrink-0 h-[34px] px-3 rounded-xl bg-emerald-500/[0.14] border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[0.76rem] font-bold flex items-center gap-1.5 cursor-pointer transition hover:bg-emerald-500/25">
+                        <span class="material-icons-round text-sm">check</span>
+                        {{ __('messages.pay') }}
+                    </button>
+                </div>
+            @empty
+                <div class="border-t border-gray-100 dark:border-slate-700/70 px-5 py-[26px] text-center">
+                    <div class="text-[0.95rem] font-bold text-gray-900 dark:text-white">{{ __('messages.all_paid') }}</div>
+                    <div class="text-[0.78rem] text-gray-400 dark:text-slate-500 mt-[3px]">{{ __('messages.nothing_overdue') }}</div>
+                </div>
+            @endforelse
         </div>
-
-        {{-- Monthly Income --}}
-        <div class="bg-linear-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 text-white">
-            <div class="flex items-center gap-1.5 text-xs text-emerald-200 font-medium mb-2">
-                <span class="material-icons-round text-base">trending_up</span> {{ __('messages.monthly_income') }}
-            </div>
-            <div class="text-2xl font-extrabold tracking-tight leading-none">
-                {{ auth()->user()->currency_code }} {{ number_format($stats['monthly_income'], 2) }}
-            </div>
-            <div class="text-xs text-emerald-300 mt-1">
-                {{ auth()->user()->currency_code }} {{ number_format($stats['yearly_income'], 2) }} {{ __('messages.per_year') }}
-            </div>
-        </div>
-
-        {{-- Net Balance --}}
-        @php $netPositive = $stats['monthly_net'] >= 0; @endphp
-        <x-card>
-            <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-400 font-medium mb-2">
-                <span
-                    class="material-icons-round text-base {{ $netPositive ? 'text-emerald-500' : 'text-red-500' }}">{{ $netPositive ? 'savings' : 'trending_down' }}</span>
-                {{ __('messages.net_per_month') }}
-            </div>
-            <div class="text-2xl font-extrabold {{ $netPositive ? 'text-emerald-600' : 'text-red-600' }}">
-                {{ $netPositive ? '+' : '' }}{{ auth()->user()->currency_code }} {{ number_format($stats['monthly_net'], 2) }}
-            </div>
-            <div class="text-xs text-gray-400 dark:text-slate-500 mt-1">{{ __('messages.income_minus_exp') }}</div>
-        </x-card>
-
-        @foreach([
-            ['icon'=>'warning', 'color'=>'text-red-500', 'value'=>$stats['overdue_count'], 'label'=>__('messages.overdue')],
-        ] as $stat)
-            <x-card class="flex flex-col gap-1">
-                <span class="material-icons-round {{ $stat['color'] }} text-2xl">{{ $stat['icon'] }}</span>
-                <div class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1">{{ $stat['value'] }}</div>
-                <div class="text-sm text-gray-400 dark:text-slate-400 font-medium">{{ $stat['label'] }}</div>
-            </x-card>
-        @endforeach
     </div>
 
-    {{-- Main content --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    {{-- ── Three-up: next 30 days · last 6 months · by category ─────────
+         No `items-start`: the mockup's grid stretches, so the three cards
+         share a height regardless of how much each has to show. --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-[18px]">
 
-        {{-- Upcoming Bills --}}
-        <x-card flush class="p-6">
-            <div class="flex items-center justify-between mb-5">
-                <h2 class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.upcoming_bills') }}</h2>
+        {{-- Next 30 days --}}
+        <div class="{{ $panel }} px-5 py-[18px]">
+            <div class="flex items-center justify-between mb-3.5">
+                <div class="{{ $sectionLabel }}">{{ __('messages.next_30_days') }}</div>
                 <a href="{{ route('bills.index') }}"
-                   class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">{{ __('messages.view_all') }}
+                   class="text-[0.72rem] font-bold text-amber-600 dark:text-amber-400 hover:underline">{{ __('messages.view_all') }}
                     →</a>
             </div>
 
             @forelse($upcoming as $bill)
-                @php
-                    $isOverdue = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
-                    $daysUntil = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : null;
-                    $isSoon    = !$isOverdue && $daysUntil !== null && $daysUntil <= 7;
-                    $color     = $bill->category?->color_hex ?? '#6366F1';
-                    $amountClass = $isOverdue ? 'text-red-600' : ($isSoon ? 'text-orange-500' : 'text-gray-900 dark:text-white');
-                    $metaClass   = $isOverdue ? 'text-red-500' : ($isSoon ? 'text-orange-500' : 'text-gray-400 dark:text-slate-500');
-                @endphp
-                <div
-                    class="flex items-center gap-3 py-3 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }}">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                         style="background:{{ $color }}1a;">
-                        <span class="material-icons-round text-xl"
-                              style="color:{{ $color }}">{{ $bill->category?->icon ?? 'receipt' }}</span>
+                @php $daysUntil = $bill->next_due_date ? (int) $bill->daysUntilDue() : null; @endphp
+                <div class="flex items-center gap-[11px] py-2.5 border-t border-gray-100 dark:border-slate-700/60">
+                    <div class="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 bg-amber-500/[0.13] text-amber-600 dark:text-amber-400">
+                        <span class="material-icons-round text-base">{{ $bill->category?->icon ?? 'receipt' }}</span>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div
-                            class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</div>
-                        <div class="text-xs {{ $metaClass }} mt-0.5">
-                            @if($isOverdue)
-                                {{ __('messages.overdue') }} {{ abs($daysUntil) }}d
+                        <div class="text-[0.84rem] font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</div>
+                        <div class="text-[0.7rem] text-gray-400 dark:text-slate-500 mt-px">
+                            @if($bill->isOverdue())
+                                {{ __('messages.overdue_by', ['days' => abs($daysUntil)]) }}
                             @elseif($daysUntil === 0)
-                                Due today
+                                {{ __('messages.due_today') }}
                             @elseif($daysUntil !== null)
-                                In {{ $daysUntil }} day{{ $daysUntil !== 1 ? 's' : '' }}
+                                {{ __('messages.in_days', ['days' => $daysUntil]) }}
                             @endif
                         </div>
                     </div>
-                    <div class="text-right shrink-0">
-                        <div
-                            class="text-sm font-bold {{ $amountClass }}">{{ auth()->user()->currency_code }} {{ number_format($bill->amount, 2) }}</div>
-                        <button type="button" x-data
-                                @click="$dispatch('open-pay-modal', {
-                                    billName:   '{{ addslashes($bill->name) }}',
-                                    amount:     '{{ number_format($bill->amount, 2) }}',
-                                    currency:   '{{ auth()->user()->currency_code }}',
-                                    payRoute:   '{{ route('bills.pay', $bill) }}',
-                                    costVaries: {{ $bill->cost_varies ? 'true' : 'false' }},
-                                    defaultIncomeId: '{{ $bill->default_income_id }}'
-                                })"
-                                class="mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline bg-transparent border-0 cursor-pointer p-0">
-                            ✓ Pay
-                        </button>
+                    <div class="text-[0.84rem] font-bold text-gray-600 dark:text-slate-300 shrink-0">
+                        {{ $currency }} {{ number_format($bill->amount, 2) }}
                     </div>
                 </div>
             @empty
-                <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-slate-500">
-                    <span class="material-icons-round text-5xl mb-2">celebration</span>
-                    <span class="text-sm">{{ __('messages.no_upcoming') }}</span>
+                <div class="border-t border-gray-100 dark:border-slate-700/60 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
+                    {{ __('messages.no_upcoming') }}
                 </div>
             @endforelse
-        </x-card>
+        </div>
 
-        {{-- Upcoming Income --}}
-        <x-card flush class="p-6">
-            <div class="flex items-center justify-between mb-5">
-                <h2 class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.upcoming_income') }}</h2>
-                <a href="{{ route('income.index') }}"
-                   class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">{{ __('messages.view_all') }}
-                    →</a>
+        {{-- Last 6 months — paired bars, amber spend against emerald income.
+             Plain divs, not Chart.js: at six points the canvas costs more than
+             it explains, and the mockup draws it exactly this way. --}}
+        @php
+            $barMonths = array_slice($chartData['months'], -6);
+            $barSpend  = array_slice($chartData['spending'], -6);
+            $barIncome = array_slice($chartData['income'], -6);
+            $barMax    = max(array_merge($barSpend, $barIncome)) ?: 1;
+            $lastBar   = count($barMonths) - 1;
+        @endphp
+        <div class="{{ $panel }} px-5 py-[18px]">
+            <div class="{{ $sectionLabel }} mb-3.5">{{ __('messages.last_6_months') }}</div>
+            <div class="flex items-end gap-2.5 h-[150px] border-b border-gray-100 dark:border-slate-700 pb-0.5">
+                @foreach($barMonths as $i => $m)
+                    <div class="flex-1 flex items-end gap-[3px] h-full">
+                        {{-- the current month is drawn a step darker --}}
+                        <div class="flex-1 rounded-t {{ $i === $lastBar ? 'bg-amber-600' : 'bg-amber-500' }}"
+                             style="height: {{ max(1, $barSpend[$i] / $barMax * 100) }}%"
+                             title="{{ $m }} · {{ __('messages.expenses') }} {{ $currency }} {{ number_format($barSpend[$i], 2) }}"></div>
+                        <div class="flex-1 rounded-t {{ $i === $lastBar ? 'bg-emerald-400' : 'bg-emerald-500' }}"
+                             style="height: {{ max(1, $barIncome[$i] / $barMax * 100) }}%"
+                             title="{{ $m }} · {{ __('messages.income') }} {{ $currency }} {{ number_format($barIncome[$i], 2) }}"></div>
+                    </div>
+                @endforeach
             </div>
+            <div class="flex gap-2.5 mt-[7px]">
+                @foreach($barMonths as $i => $m)
+                    <div class="flex-1 text-center text-[0.64rem] {{ $i === $lastBar ? 'font-bold text-amber-500 dark:text-amber-300' : 'font-medium text-gray-400 dark:text-slate-600' }}">
+                        {{ \Illuminate\Support\Str::before($m, ' ') }}
+                    </div>
+                @endforeach
+            </div>
+            <div class="flex gap-4 justify-center mt-3">
+                <span class="flex items-center gap-1.5 text-[0.68rem] font-medium text-gray-500 dark:text-slate-400">
+                    <span class="w-2 h-2 rounded-[2px] bg-amber-500"></span>{{ __('messages.expenses') }}
+                </span>
+                <span class="flex items-center gap-1.5 text-[0.68rem] font-medium text-gray-500 dark:text-slate-400">
+                    <span class="w-2 h-2 rounded-[2px] bg-emerald-500"></span>{{ __('messages.income') }}
+                </span>
+            </div>
+        </div>
 
-            @forelse($upcomingIncomes as $income)
-                @php
-                    $daysUntil = $income->daysUntilNext();
-                    $metaClass = ($daysUntil !== null && $daysUntil <= 3) ? 'text-emerald-500 font-semibold' : 'text-gray-400 dark:text-slate-500';
-                @endphp
-                <div
-                    class="flex items-center gap-3 py-3 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }}">
-                    <div
-                        class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 dark:bg-emerald-900/20">
-                        <span class="material-icons-round text-xl text-emerald-600 dark:text-emerald-400">repeat</span>
+        {{-- By category --}}
+        @php
+            $catTotal  = $byCategory->sum();
+            // The mockup's own rotation, not each category's stored colour:
+            // this panel ranks magnitudes, so the bars want a consistent ramp.
+            $catColors = ['#f59e0b', '#3b82f6', '#d97706', '#34d399', '#f59e0b'];
+        @endphp
+        <div class="{{ $panel }} px-5 py-[18px]">
+            <div class="{{ $sectionLabel }} mb-3">{{ __('messages.by_category') }}</div>
+            @forelse($byCategory->take(5) as $name => $amount)
+                <div class="{{ $loop->first ? 'mt-2.5' : 'mt-3' }}">
+                    <div class="flex justify-between gap-3 text-[0.8rem] font-medium">
+                        <span class="text-gray-600 dark:text-slate-300 truncate">{{ $name }}</span>
+                        <span class="text-gray-900 dark:text-white shrink-0">{{ $currency }} {{ number_format($amount, 2) }}</span>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <div
-                            class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $income->name }}</div>
-                        <div class="text-xs {{ $metaClass }} mt-0.5">
-                            {{ $income->source ?? $income->frequencyLabel() }} ·
-                            @if($daysUntil === 0)
-                                Today
-                            @elseif($daysUntil !== null && $daysUntil > 0)
-                                In {{ $daysUntil }}d
-                            @elseif($daysUntil !== null && $daysUntil < 0)
-                                {{ abs($daysUntil) }}d ago
-                            @endif
-                        </div>
-                    </div>
-                    <div class="text-right shrink-0">
-                        <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                            +{{ auth()->user()->currency_code }} {{ number_format($income->amount, 2) }}</div>
-                        <div
-                            class="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{{ $income->frequencyLabel() }}</div>
-                    </div>
-                </div>
-            @empty
-                <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-slate-500">
-                    <span class="material-icons-round text-5xl mb-2">savings</span>
-                    <span class="text-sm">{{ __('messages.no_incomes') }}</span>
-                    <a href="{{ route('income.create') }}"
-                       class="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">+ {{ __('messages.add_income') }}</a>
-                </div>
-            @endforelse
-        </x-card>
-    </div>
-
-    {{-- Category breakdown + Analytics --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {{-- By Category --}}
-        <x-card flush class="p-6">
-            <h2 class="text-base font-bold text-gray-900 dark:text-white mb-5">{{ __('messages.by_category') }}</h2>
-            @php $total = $byCategory->sum(); @endphp
-            @forelse($byCategory->take(10) as $name => $amount)
-                @php $pct = $total > 0 ? ($amount / $total * 100) : 0; @endphp
-                <div class="mb-4">
-                    <div class="flex justify-between mb-1">
-                        <span class="text-sm text-gray-500 dark:text-slate-400 font-medium">{{ $name }}</span>
-                        <span
-                            class="text-sm text-gray-900 dark:text-white font-semibold">{{ number_format($amount, 2) }}</span>
-                    </div>
-                    <div class="bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                        <div class="bg-indigo-500 h-full rounded-full transition-all" style="width:{{ $pct }}%"></div>
+                    <div class="h-1.5 rounded-full bg-gray-100 dark:bg-slate-700 mt-1.5 overflow-hidden">
+                        <div class="h-full rounded-full transition-all"
+                             style="width: {{ $catTotal > 0 ? ($amount / $catTotal * 100) : 0 }}%; background: {{ $catColors[$loop->index % count($catColors)] }}"></div>
                     </div>
                 </div>
             @empty
                 <p class="text-sm text-gray-400 dark:text-slate-500 text-center py-8">{{ __('messages.no_bills') }}</p>
             @endforelse
-        </x-card>
-
-        {{-- Income by source --}}
-        <x-card flush class="p-6">
-            <h2 class="text-base font-bold text-gray-900 dark:text-white mb-5">{{ __('messages.monthly_income') }}</h2>
-            @php
-                $incomeBySource = $upcomingIncomes->isEmpty()
-                    ? collect()
-                    : \App\Models\Income::forUser(auth()->user())->active()->get()
-                        ->groupBy(fn($i) => $i->source ?: 'Other')
-                        ->map(fn($g) => round($g->sum(fn($i) => $i->monthlyEquivalent()), 2))
-                        ->sortDesc();
-                $totalIncome = $incomeBySource->sum();
-            @endphp
-            @forelse($incomeBySource->take(8) as $srcName => $srcAmount)
-                @php $pct = $totalIncome > 0 ? ($srcAmount / $totalIncome * 100) : 0; @endphp
-                <div class="mb-4">
-                    <div class="flex justify-between mb-1">
-                        <span class="text-sm text-gray-500 dark:text-slate-400 font-medium">{{ $srcName }}</span>
-                        <span class="text-sm text-emerald-600 dark:text-emerald-400 font-semibold">+{{ number_format($srcAmount, 2) }}/mo</span>
-                    </div>
-                    <div class="bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                        <div class="bg-emerald-500 h-full rounded-full transition-all" style="width:{{ $pct }}%"></div>
-                    </div>
-                </div>
-            @empty
-                <p class="text-sm text-gray-400 dark:text-slate-500 text-center py-8">{{ __('messages.no_incomes') }}</p>
-            @endforelse
-        </x-card>
-    </div>
-
-    {{-- Analytics Charts --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <x-card flush class="lg:col-span-2 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">Monthly Overview</h3>
-                <span class="text-xs text-gray-400 dark:text-slate-500">Last 12 months</span>
-            </div>
-            <div class="relative h-48 overflow-hidden">
-                <canvas id="chart-monthly" class="w-full h-full"
-                        style="display:block;width:100% !important;height:100% !important;"></canvas>
-            </div>
-        </x-card>
-        <div class="flex flex-col gap-4">
-            <x-card>
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Spending vs Income</h3>
-                <div class="relative h-32 overflow-hidden">
-                    <canvas id="chart-income-spend" class="w-full h-full"
-                            style="display:block;width:100% !important;height:100% !important;"></canvas>
-                </div>
-            </x-card>
-            <x-card>
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">{{ __('messages.by_category') }}</h3>
-                <div class="relative h-32 overflow-hidden">
-                    <canvas id="chart-category" class="w-full h-full"
-                            style="display:block;width:100% !important;height:100% !important;"></canvas>
-                </div>
-            </x-card>
         </div>
     </div>
 
 @endsection
-
-<div id="dashboard-chart-data" data-chart='@json($chartData)'></div>
-

@@ -101,10 +101,10 @@
                                 with Authentication Code</label>
                             <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"
                                    placeholder="000 000" required
-                                   class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-center tracking-widest outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                                   class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-center tracking-widest outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                         </div>
                         <button type="submit"
-                                class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3 text-sm transition">
+                                class="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-xl py-3 text-sm transition">
                             <span class="material-icons-round text-lg">verified_user</span> Enable 2FA
                         </button>
                     </div>
@@ -115,7 +115,7 @@
 
         <div class="mt-4">
             <a href="{{ route('settings') }}"
-               class="text-sm text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition flex items-center gap-1">
+               class="text-sm text-gray-400 hover:text-amber-700 dark:hover:text-amber-400 transition flex items-center gap-1">
                 <span class="material-icons-round text-base">arrow_back</span> Back to Settings
             </a>
         </div>

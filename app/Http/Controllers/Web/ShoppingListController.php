@@ -22,6 +22,29 @@ class ShoppingListController extends Controller
 
         $list->load('items');
 
-        return view('shopping-list.show', compact('list'));
+        // The mockup puts a list picker beside the open list, so `show` needs
+        // every list the user can see, with enough counts to render each row's
+        // "n of m" summary.
+        $lists = $this->visibleListsFor($request->user());
+
+        return view('shopping-list.show', compact('list', 'lists'));
+    }
+
+    /**
+     * Lists the given user can see, with item counts for the picker.
+     */
+    private function visibleListsFor($user)
+    {
+        // Shopping lists are strictly per-user — ShoppingListPolicy::view()
+        // only allows the owner, so this deliberately does not follow the
+        // family sharing that bills and incomes use.
+        return ShoppingList::query()
+            ->where('user_id', $user->id)
+            ->withCount([
+                'items',
+                'items as checked_items_count' => fn($q) => $q->where('checked', true),
+            ])
+            ->orderByDesc('updated_at')
+            ->get();
     }
 }

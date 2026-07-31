@@ -10,13 +10,13 @@
         <div class="flex items-center gap-2">
             <button type="button"
                     @click="calOpen = !calOpen"
-                    :class="calOpen ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700'"
+                    :class="calOpen ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-600' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700'"
                     class="inline-flex items-center gap-2 border rounded-xl px-4 py-2.5 text-sm font-medium transition">
                 <span class="material-icons-round text-base">calendar_month</span>
                 <span x-text="calOpen ? 'Hide Calendar' : 'Show Calendar'"></span>
             </button>
             <a href="{{ route('bills.create') }}"
-               class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+               class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
                 <span class="material-icons-round text-lg">add</span> {{ __('messages.add_bill') }}
             </a>
         </div>
@@ -36,11 +36,11 @@
                     class="flex flex-col gap-3 border-b border-gray-100 dark:border-slate-700 pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-2">
                         <button @click="prevMonth()"
-                                class="w-8 h-8 flex items-center justify-center rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white transition">
+                                class="w-8 h-8 flex items-center justify-center rounded-2xl bg-amber-500 hover:bg-amber-500 text-slate-900 transition">
                             <span class="material-icons-round text-sm">chevron_left</span>
                         </button>
                         <button @click="nextMonth()"
-                                class="w-8 h-8 flex items-center justify-center rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white transition">
+                                class="w-8 h-8 flex items-center justify-center rounded-2xl bg-amber-500 hover:bg-amber-500 text-slate-900 transition">
                             <span class="material-icons-round text-sm">chevron_right</span>
                         </button>
                         <span class="ml-1 text-sm font-bold text-gray-800 dark:text-white"
@@ -59,7 +59,7 @@
                                 <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span> Paid
                             </div>
                             <div class="flex items-center gap-1.5">
-                                <span class="inline-block w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span> Upcoming
+                                <span class="inline-block w-2 h-2 rounded-full bg-amber-500 shrink-0"></span> Upcoming
                             </div>
                         </div>
                         <button @click="goToday()"
@@ -71,7 +71,9 @@
                 <div class="pt-4">
                     {{-- Day headers --}}
                     <div class="grid grid-cols-7 gap-1 mb-1">
-                        <template x-for="d in ['M','T','W','T','F','S','S']" :key="d">
+                        {{-- Keyed by index: 'T' and 'S' each appear twice, and
+                             keying by the letter made Alpine drop duplicates. --}}
+                        <template x-for="(d, i) in ['M','T','W','T','F','S','S']" :key="i">
                             <div
                                 class="text-center text-[10px] font-bold text-gray-400 dark:text-slate-500 py-1 uppercase tracking-[0.24em]"
                                 x-text="d"></div>
@@ -89,7 +91,7 @@
                                 <div class="flex justify-center">
                                     <span
                                         :class="{
-                                            'bg-indigo-500 text-white shadow-sm': cell.isToday,
+                                            'bg-amber-500 text-slate-900 shadow-sm': cell.isToday,
                                             'text-gray-700 dark:text-slate-300': !cell.isToday
                                         }"
                                         class="w-7 h-7 flex items-center justify-center rounded-full text-[11px] font-bold"
@@ -113,7 +115,7 @@
                                     </template>
                                     <template
                                             x-if="cell.events.some(e => !e.extendedProps?.paid && !e.extendedProps?.overdue && !e.extendedProps?.soon)">
-                                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"
+                                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"
                                               title="Upcoming"></span>
                                     </template>
                                     {{-- Fallback: show count when many events --}}
@@ -128,20 +130,47 @@
                 </div>
                 <template x-if="loading">
                     <div class="flex items-center justify-center pt-4">
-                        <span class="material-icons-round text-indigo-400 animate-spin text-xl">refresh</span>
+                        <span class="material-icons-round text-amber-400 animate-spin text-xl">refresh</span>
                     </div>
                 </template>
             </x-card>
         </div>
     </div>
 
+    {{-- Status pills — the design's primary cut of the list. Each is a link so
+         the current filter survives a reload and stays shareable; the selects
+         below narrow further. --}}
+    @php
+        $statusPills = [
+            ''           => [__('messages.filter_all'),      $billCounts['all']],
+            'overdue'    => [__('messages.overdue'),         $billCounts['overdue']],
+            'this_month' => [__('messages.this_month'),      $billCounts['this_month']],
+            'shared'     => [__('messages.shared'),          $billCounts['shared']],
+        ];
+    @endphp
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+        @foreach($statusPills as $value => [$label, $count])
+            @php $isActive = (string) request('status') === (string) $value; @endphp
+            <a href="{{ route('bills.index', array_merge(request()->except('status', 'page'), $value === '' ? [] : ['status' => $value])) }}"
+               class="px-3.5 py-2 rounded-full text-[0.78rem] font-semibold transition
+                      {{ $isActive
+                          ? 'bg-amber-500 text-slate-900'
+                          : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700' }}">
+                {{ $label }} · {{ $count }}
+            </a>
+        @endforeach
+    </div>
+
     {{-- Filters --}}
     <form method="GET" action="{{ route('bills.index') }}"
           class="flex flex-wrap gap-3 mb-6" x-data>
+        @if(request('status'))
+            <input type="hidden" name="status" value="{{ request('status') }}">
+        @endif
         <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('messages.search') }}…"
-               class="flex-1 min-w-40 bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+               class="flex-1 min-w-40 bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
         <select name="category_id" @change="$el.form.submit()"
-                class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+                class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 transition">
             <option value="">{{ __('messages.filter_all') }} {{ __('messages.categories') }}</option>
             @foreach(\App\Models\Category::orderBy('name')->get() as $cat)
                 <option
@@ -149,7 +178,7 @@
             @endforeach
         </select>
         <select name="frequency" @change="$el.form.submit()"
-                class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+                class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 transition">
             <option value="">{{ __('messages.filter_all') }} {{ __('messages.frequency') }}</option>
             @foreach([
                 'once'      => __('messages.once'),
@@ -161,15 +190,6 @@
             ] as $f => $fl)
                 <option value="{{ $f }}" {{ request('frequency')===$f ? 'selected' : '' }}>{{ $fl }}</option>
             @endforeach
-        </select>
-        <select name="status" @change="$el.form.submit()"
-                class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
-            <option value="">{{ __('messages.filter_all') }}</option>
-            <option
-                value="active" {{ request('status')==='active'   ? 'selected' : '' }}>{{ __('messages.filter_active') }}</option>
-            <option
-                value="overdue" {{ request('status')==='overdue'  ? 'selected' : '' }}>{{ __('messages.filter_overdue') }}</option>
-            <option value="inactive" {{ request('status')==='inactive' ? 'selected' : '' }}>Inactive</option>
         </select>
         <button type="submit"
                 class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
@@ -183,8 +203,22 @@
         @endif
     </form>
 
-    {{-- Bills --}}
+    {{-- Bills.
+         From lg up this is the design's six-column table; below that the same
+         markup collapses to the stacked row the phone mockup uses, with the
+         column values folded into a meta line under the name. --}}
+    @php
+        $billGrid = 'lg:grid lg:grid-cols-[minmax(0,2.2fr)_1fr_1fr_1fr_0.9fr_150px] lg:gap-4 lg:items-center';
+    @endphp
     <x-card flush class="overflow-hidden">
+        <div class="{{ $billGrid }} hidden px-5 py-3 bg-gray-50 dark:bg-slate-900/50 text-[0.64rem] font-bold uppercase tracking-[0.07em] text-gray-400 dark:text-slate-500">
+            <div>{{ __('messages.bill_name') }}</div>
+            <div>{{ __('messages.category') }}</div>
+            <div>{{ __('messages.frequency') }}</div>
+            <div>{{ __('messages.next_date') }}</div>
+            <div class="text-right">{{ __('messages.amount') }}</div>
+            <div></div>
+        </div>
         @forelse($bills as $bill)
             @php
                 $isOverdue    = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
@@ -198,97 +232,98 @@
                 $isRecurring       = $bill->frequency !== 'once';
                 $currentCyclePaid  = (bool)$bill->last_paid_date
                     && (!$isRecurring || ($bill->next_due_date && $bill->next_due_date->isFuture()));
-                $color        = $bill->category?->color_hex ?? '#6366F1';
+                $color        = $bill->category?->color_hex ?? '#f59e0b';
                 $rowClass     = $isOverdue ? 'bg-red-50 dark:bg-red-900/10' : ($isSoon ? 'bg-orange-50 dark:bg-orange-900/10' : ($isUpcoming ? 'bg-blue-50/40 dark:bg-blue-900/5' : ($isPaid ? 'bg-green-50 dark:bg-green-900/10' : 'bg-white dark:bg-slate-800')));
                 $amountClass  = $isOverdue ? 'text-red-600 font-bold' : ($isSoon ? 'text-orange-600 font-bold' : ($isUpcoming ? 'text-blue-600 dark:text-blue-400 font-bold' : ($isPaid ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-gray-900 dark:text-white font-bold')));
             @endphp
             <div x-data="{ paid: {{ $currentCyclePaid ? 'true' : 'false' }}, hasPayments: {{ $lastPayment ? 'true' : 'false' }} }"
-                 class="flex items-center gap-3 sm:gap-4 px-4 py-4 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }} {{ $rowClass }} hover:brightness-95 transition cursor-pointer"
+                 class="flex items-center gap-3 sm:gap-4 {{ $billGrid }} px-4 lg:px-5 py-4 lg:py-3 border-t border-gray-50 dark:border-slate-700 {{ $rowClass }} hover:brightness-95 transition cursor-pointer"
                  @click.self="window.location='{{ route('bills.show', $bill) }}'">
 
-                {{-- Category icon --}}
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                     style="background:{{ $color }}1a;" @click="window.location='{{ route('bills.show', $bill) }}'">
-                    @if($bill->provider && $bill->provider->logo_url)
-                        <img src="{{ $bill->provider->logo_url }}" alt="{{ $bill->provider->name }}"
-                             class="w-8 h-8 object-contain rounded-lg bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600">
-                    @else
-                        <span class="material-icons-round text-xl"
-                              style="color:{{ $color }}">{{ $bill->category?->icon ?? 'receipt' }}</span>
-                    @endif
-                </div>
+                @php
+                    $dueClass = $isOverdue ? 'text-red-500'
+                        : ($isSoon ? 'text-orange-500'
+                        : ($isUpcoming ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'));
+                    $dueRelative = $isOverdue
+                        ? __('messages.overdue_by', ['days' => abs($daysUntil)])
+                        : ($daysUntil === 0
+                            ? __('messages.due_today')
+                            : ($daysUntil !== null ? __('messages.in_days', ['days' => $daysUntil]) : '—'));
+                @endphp
 
-                {{-- Info --}}
-                <div class="flex-1 min-w-0" @click="window.location='{{ route('bills.show', $bill) }}'">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
-                        {{ $bill->name }}
-                        @if($bill->is_shared)
-                            <span class="material-icons-round text-gray-300 dark:text-slate-500"
-                                  style="font-size:14px;">group</span>
-                        @endif
-                    </div>
-                    <div
-                        class="text-xs mt-0.5 {{ $isOverdue ? 'text-red-500' : ($isSoon ? 'text-orange-500' : ($isUpcoming ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500')) }}">
-                        {{ $bill->category?->name ?? '—' }}
-                        @if($bill->provider)
-                            · <span
-                                class="font-medium text-gray-500 dark:text-slate-400">{{ $bill->provider->name }}</span>
-                        @endif
-                        ·
-                        @if($isOverdue)
-                            {{ __('messages.overdue') }} {{ abs($daysUntil) }}d
-                        @elseif($daysUntil === 0)
-                            Due today
-                        @elseif($daysUntil !== null)
-                            In {{ $daysUntil }}d
+                {{-- 1 · Bill: icon + name (the meta line only exists below lg,
+                     where the columns to its right are hidden) --}}
+                <div class="flex items-center gap-3 flex-1 min-w-0 lg:flex-none"
+                     @click="window.location='{{ route('bills.show', $bill) }}'">
+                    <div class="w-10 h-10 lg:w-9 lg:h-9 rounded-xl flex items-center justify-center shrink-0"
+                         style="background:{{ $color }}1a;">
+                        @if($bill->provider && $bill->provider->logo_url)
+                            <img src="{{ $bill->provider->logo_url }}" alt="{{ $bill->provider->name }}"
+                                 class="w-8 h-8 object-contain rounded-lg bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600">
                         @else
-                            —
+                            <span class="material-icons-round text-xl"
+                                  style="color:{{ $color }}">{{ $bill->category?->icon ?? 'receipt' }}</span>
                         @endif
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
+                            {{ $bill->name }}
+                            @if($bill->is_shared)
+                                <span class="material-icons-round text-gray-300 dark:text-slate-500"
+                                      style="font-size:14px;">group</span>
+                            @endif
+                        </div>
+                        {{-- below lg: the columns folded into one line --}}
+                        <div class="lg:hidden text-xs mt-0.5 {{ $dueClass }}">
+                            {{ $bill->category?->name ?? '—' }}
+                            @if($bill->provider)
+                                · <span class="font-medium text-gray-500 dark:text-slate-400">{{ $bill->provider->name }}</span>
+                            @endif
+                            · {{ $dueRelative }}
+                        </div>
+                        {{-- from lg: the monthly equivalent, as in the mockup --}}
+                        @unless($bill->cost_varies)
+                            <div class="hidden lg:block text-[0.7rem] text-gray-400 dark:text-slate-500 mt-px">
+                                {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
+                            </div>
+                        @endunless
                     </div>
                 </div>
 
-                {{-- Badges (hidden on mobile) --}}
-                <span
-                    class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
-                {{ ucfirst($bill->frequency) }}
-            </span>
+                {{-- 2 · Category --}}
+                <div class="hidden lg:block text-sm font-medium text-gray-600 dark:text-slate-300 truncate">
+                    {{ $bill->category?->name ?? '—' }}
+                </div>
 
-                @if($isOverdue)
-                    <span
-                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">{{ __('messages.overdue') }}</span>
-                @elseif($isSoon)
-                    <span
-                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">Soon</span>
-                @elseif($isUpcoming)
-                    <span
-                        class="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                        <span class="material-icons-round" style="font-size:11px">schedule</span>
-                        In {{ $daysUntil }}d
-                    </span>
-                @elseif($isPaid)
-                    <span
-                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">{{ __('messages.paid') }}</span>
-                @else
-                    <span
-                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300">{{ __('messages.filter_active') }}</span>
-                @endif
+                {{-- 3 · Frequency — plain muted text, as in the mockup's bills
+                     table; the amber pill is the income table's treatment. --}}
+                <div class="hidden lg:block text-sm font-medium text-gray-500 dark:text-slate-400">
+                    {{ __('messages.' . $bill->frequency) }}
+                </div>
 
-                {{-- Amount --}}
+                {{-- 4 · Next due --}}
+                <div class="hidden lg:block">
+                    <div class="text-sm font-semibold {{ $dueClass }}">
+                        {{ $bill->next_due_date?->translatedFormat('j M Y') ?? '—' }}
+                    </div>
+                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 mt-px">{{ $dueRelative }}</div>
+                </div>
+
+                {{-- 5 · Amount --}}
                 <div class="text-right shrink-0" @click="window.location='{{ route('bills.show', $bill) }}'">
                     @if($bill->cost_varies)
                         <div class="text-sm text-gray-400 dark:text-slate-500 font-medium italic">varies</div>
                     @else
-                        <div
-                            class="text-sm {{ $amountClass }}">{{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}</div>
-                        <div
-                            class="text-xs text-gray-400 dark:text-slate-500">{{ number_format($bill->monthlyEquivalent(), 2) }}
-                            /mo
+                        <div class="text-sm {{ $amountClass }}">{{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}</div>
+                        {{-- the /mo line moved into the name cell from lg up --}}
+                        <div class="lg:hidden text-xs text-gray-400 dark:text-slate-500">
+                            {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
                         </div>
                     @endif
                 </div>
 
-                {{-- Actions --}}
-                <div class="flex items-center gap-1.5 shrink-0" @click.stop>
+                {{-- 6 · Actions --}}
+                <div class="flex items-center justify-end gap-1.5 shrink-0" @click.stop>
 
                     {{-- Pay --}}
                     <button type="button" x-show="!paid" x-cloak
@@ -340,7 +375,7 @@
                         Try adjusting your filters
                     @else
                         <a href="{{ route('bills.create') }}"
-                           class="text-indigo-600 dark:text-indigo-400 hover:underline">{{ __('messages.add_bill') }}</a>
+                           class="text-amber-700 dark:text-amber-400 hover:underline">{{ __('messages.add_bill') }}</a>
                     @endif
                 </div>
             </div>

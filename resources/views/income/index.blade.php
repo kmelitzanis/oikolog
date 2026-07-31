@@ -1,183 +1,206 @@
 @extends('layouts.app')
-@section('title', 'Income')
+@section('title', __('messages.income'))
+
+{{--
+    Income — a strict build of the `atIncome` panel in mockup 3a.
+
+    A 1fr / 2fr split: the "received this month" card on the left, the source
+    table on the right. Emerald carries income throughout; amber appears only
+    on the frequency pill, exactly as the mockup has it.
+--}}
 
 @section('content')
 
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Income</h1>
+    @php
+        $currency = auth()->user()->currency_code;
+        // The mockup's four columns plus a fifth for row actions, which the
+        // table in 3a doesn't show but the app needs.
+        $incomeGrid = 'lg:grid lg:grid-cols-[minmax(0,1.9fr)_1.2fr_0.8fr_1fr_110px] lg:gap-3.5 lg:items-center';
+
+        // Greek needs the genitive after "Εισπραχθέντα" — Ιουλίου, not Ιούλιος.
+        // Carbon only produces it when a day number precedes the month, so take
+        // the month off a day-and-month format. English is unaffected ("July").
+        $monthName = \Illuminate\Support\Str::after(now()->isoFormat('D MMMM'), ' ');
+    @endphp
+
+    {{-- ── Header ─────────────────────────────────────────────────────── --}}
+    <div class="flex items-end justify-between gap-5 mb-[22px] flex-wrap">
+        <div>
+            <div class="text-[1.6rem] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white leading-tight">
+                {{ __('messages.income') }}
+            </div>
+            <div class="text-[0.82rem] text-gray-400 dark:text-slate-500 mt-[3px]">
+                {{ __('messages.received_summary', [
+                    'count' => $stats['received_count'],
+                    'total' => $stats['total_sources'],
+                ]) }}
+            </div>
+        </div>
         <a href="{{ route('income.create') }}"
-           class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
-            <span class="material-icons-round text-lg">add</span> Add Income
+           class="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-[0.82rem] font-bold whitespace-nowrap flex items-center gap-2 transition shadow-[0_6px_18px_rgba(245,158,11,0.32)]">
+            <span class="material-icons-round text-base">add</span>{{ __('messages.add_income') }}
         </a>
     </div>
-    {{-- Stats --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div
-            class="bg-linear-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 text-white col-span-2 lg:col-span-1">
-            <div class="flex items-center gap-1.5 text-xs text-emerald-200 font-medium mb-2">
-                <span class="material-icons-round text-base">trending_up</span> Monthly Income
+
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-[18px] items-start">
+
+        {{-- ── Received this month ────────────────────────────────────── --}}
+        <div class="rounded-[24px] p-[22px] border border-emerald-500/[0.26]
+                    bg-linear-to-br from-emerald-500/[0.18] to-amber-500/[0.12]">
+            <div class="text-[0.66rem] font-semibold uppercase tracking-[0.09em] text-emerald-600 dark:text-emerald-400">
+                {{ __('messages.received_this_month', ['month' => $monthName]) }}
             </div>
-            <div class="text-2xl font-extrabold leading-tight">
-                {{ auth()->user()->currency_code }} {{ number_format($stats['monthly_income'], 2) }}
+            <div class="text-[2.2rem] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white mt-1.5">
+                {{ $currency }} {{ number_format($stats['received_this_month'], 2) }}
             </div>
-            <div class="text-xs text-emerald-300 mt-1">
-                {{ auth()->user()->currency_code }} {{ number_format($stats['yearly_income'], 2) }} / year
+            <div class="h-2 rounded-full bg-gray-200/70 dark:bg-slate-900/50 mt-3.5 overflow-hidden">
+                <div class="h-full rounded-full bg-emerald-500 transition-[width] duration-[350ms] ease-out"
+                     style="width: {{ $stats['received_pct'] }}%"></div>
+            </div>
+            <div class="text-[0.74rem] text-gray-500 dark:text-slate-400 mt-2.5">
+                {{ __('messages.received_summary', [
+                    'count' => $stats['received_count'],
+                    'total' => $stats['total_sources'],
+                ]) }}
+                · {{ $currency }} {{ number_format($stats['monthly_income'], 2) }}/mo
             </div>
         </div>
 
-        @foreach([
-            ['icon'=>'account_balance','color'=>'text-emerald-500','value'=>$stats['total_sources'],'label'=>'Total Sources'],
-            ['icon'=>'repeat',         'color'=>'text-indigo-500', 'value'=>$stats['recurring'],    'label'=>'Recurring'],
-            ['icon'=>'payments',       'color'=>'text-amber-500',  'value'=>$stats['total_sources'] - $stats['recurring'], 'label'=>'One-time'],
-        ] as $s)
-            <x-card class="flex flex-col gap-1">
-                <span class="material-icons-round {{ $s['color'] }} text-2xl">{{ $s['icon'] }}</span>
-                <div class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1">{{ $s['value'] }}</div>
-                <div class="text-sm text-gray-400 dark:text-gray-300 font-medium">{{ $s['label'] }}</div>
-            </x-card>
-        @endforeach
+        {{-- ── Sources ────────────────────────────────────────────────── --}}
+        <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[24px] overflow-hidden">
+
+            {{-- Filters --}}
+            <form method="GET" action="{{ route('income.index') }}"
+                  class="flex flex-wrap gap-2.5 p-4 border-b border-gray-100 dark:border-slate-700" x-data>
+                <input type="text" name="search" value="{{ request('search') }}"
+                       placeholder="{{ __('messages.search_income') }}"
+                       class="flex-1 min-w-40 bg-gray-50 dark:bg-slate-900/50 dark:text-white border border-gray-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-500/30 transition">
+                <select name="frequency" @change="$el.form.submit()"
+                        class="bg-gray-50 dark:bg-slate-900/50 dark:text-white border border-gray-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-emerald-500 transition">
+                    <option value="">{{ __('messages.all_frequencies') }}</option>
+                    @foreach(['once','weekly','biweekly','monthly','quarterly','yearly'] as $fv)
+                        <option value="{{ $fv }}" {{ request('frequency')===$fv ? 'selected' : '' }}>{{ __('messages.' . $fv) }}</option>
+                    @endforeach
+                </select>
+                <select name="status" @change="$el.form.submit()"
+                        class="bg-gray-50 dark:bg-slate-900/50 dark:text-white border border-gray-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-emerald-500 transition">
+                    <option value="">{{ __('messages.all_status') }}</option>
+                    <option value="active" {{ request('status')==='active' ? 'selected' : '' }}>{{ __('messages.filter_active') }}</option>
+                    <option value="inactive" {{ request('status')==='inactive' ? 'selected' : '' }}>{{ __('messages.inactive') }}</option>
+                </select>
+                @if(request()->hasAny(['search','frequency','status']))
+                    <a href="{{ route('income.index') }}"
+                       class="inline-flex items-center px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                        <span class="material-icons-round text-base">close</span>
+                    </a>
+                @endif
+            </form>
+
+            {{-- Column header (lg and up) --}}
+            <div class="{{ $incomeGrid }} hidden px-5 py-3 bg-gray-50 dark:bg-slate-900/50 text-[0.64rem] font-bold uppercase tracking-[0.07em] text-gray-400 dark:text-slate-500">
+                <div>{{ __('messages.source') }}</div>
+                <div>{{ __('messages.next_payment') }}</div>
+                <div>{{ __('messages.frequency') }}</div>
+                <div class="text-right">{{ __('messages.amount') }}</div>
+                <div></div>
+            </div>
+
+            @forelse($incomes as $income)
+                @php
+                    $daysUntil = $income->daysUntilNext();
+                    $isOnce    = $income->frequency === 'once';
+                    $isLate    = !$isOnce && $income->is_active && $daysUntil !== null && $daysUntil < 0;
+                    $isSoon    = !$isOnce && !$isLate && $daysUntil !== null && $daysUntil <= 7;
+
+                    [$stateLabel, $stateClass] = match (true) {
+                        ! $income->is_active => [__('messages.inactive'), 'text-gray-400 dark:text-slate-500'],
+                        $isLate => [__('messages.income_late'), 'text-red-500'],
+                        $isSoon => [__('messages.income_soon'), 'text-amber-600 dark:text-amber-400'],
+                        default => [$income->source ?: __('messages.income'), 'text-gray-400 dark:text-slate-500'],
+                    };
+
+                    $nextLabel = match (true) {
+                        $isOnce => $income->start_date?->translatedFormat('j M Y') ?? '—',
+                        $isLate => __('messages.expected_ago', ['days' => abs($daysUntil)]),
+                        $daysUntil === 0 => __('messages.expected_today'),
+                        $daysUntil !== null => __('messages.in_days', ['days' => $daysUntil]),
+                        default => '—',
+                    };
+                @endphp
+                <div class="flex items-center gap-3 sm:gap-4 {{ $incomeGrid }} px-4 lg:px-5 py-3.5 border-t border-gray-100 dark:border-slate-700/60 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition"
+                     x-data>
+
+                    {{-- 1 · Source --}}
+                    <div class="flex items-center gap-3 flex-1 min-w-0 lg:flex-none cursor-pointer"
+                         @click="window.location='{{ route('income.show', $income) }}'">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/[0.14] text-emerald-600 dark:text-emerald-400">
+                            <span class="material-icons-round text-lg">{{ $isOnce ? 'attach_money' : 'repeat' }}</span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-[0.88rem] font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
+                                {{ $income->name }}
+                                @if($income->is_shared)
+                                    <span class="material-icons-round text-gray-300 dark:text-slate-500" style="font-size:14px;">group</span>
+                                @endif
+                            </div>
+                            <div class="text-[0.68rem] font-semibold {{ $stateClass }} mt-px truncate">
+                                {{ $stateLabel }}
+                                <span class="lg:hidden font-normal">· {{ $nextLabel }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 2 · Next payment --}}
+                    <div class="hidden lg:block text-[0.8rem] font-medium text-gray-600 dark:text-slate-300">
+                        {{ $nextLabel }}
+                    </div>
+
+                    {{-- 3 · Frequency — the mockup's amber pill --}}
+                    <div class="hidden lg:block">
+                        <span class="inline-flex px-2.5 py-1 rounded-full bg-amber-500/[0.16] text-amber-700 dark:text-amber-300 text-[0.72rem] font-semibold">
+                            {{ __('messages.' . $income->frequency) }}
+                        </span>
+                    </div>
+
+                    {{-- 4 · Amount --}}
+                    <div class="text-right shrink-0 cursor-pointer"
+                         @click="window.location='{{ route('income.show', $income) }}'">
+                        <div class="text-[0.92rem] font-extrabold text-emerald-600 dark:text-emerald-400">
+                            {{ $currency }} {{ number_format($income->amount, 2) }}
+                        </div>
+                        <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
+                            {{ number_format($income->monthlyEquivalent(), 2) }}/mo
+                        </div>
+                    </div>
+
+                    {{-- 5 · Actions --}}
+                    <div class="flex items-center gap-1.5 shrink-0 lg:justify-end" @click.stop>
+                        @unless($isOnce)
+                            <form method="POST" action="{{ route('income.receive', $income) }}">
+                                @csrf
+                                <x-icon-btn tone="pay" icon="check_circle" title="{{ __('messages.mark_received') }}" />
+                            </form>
+                        @endunless
+                        <x-icon-btn tone="neutral" icon="edit" :href="route('income.edit', $income)"
+                                    title="{{ __('messages.edit') }}" />
+                        <form method="POST" action="{{ route('income.destroy', $income) }}">
+                            @csrf @method('DELETE')
+                            <x-icon-btn tone="danger" icon="delete" type="submit"
+                                        title="{{ __('messages.delete') }}"
+                                        @click="if(!confirm('{{ addslashes(__('messages.confirm_delete')) }}')) $event.preventDefault()" />
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <x-empty-state icon="savings" :title="__('messages.no_incomes')">
+                    <x-btn :href="route('income.create')" icon="add">{{ __('messages.add_first_income') }}</x-btn>
+                </x-empty-state>
+            @endforelse
+        </div>
     </div>
 
-    {{-- Filters --}}
-    <form method="GET" action="{{ route('income.index') }}" class="flex flex-wrap gap-3 mb-6" x-data>
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search income…"
-               class="flex-1 min-w-40 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:text-gray-100 transition">
-        <select name="frequency" @change="$el.form.submit()"
-                class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-500 dark:text-gray-100 transition">
-            <option value="">All frequencies</option>
-            @foreach(['once'=>'One-time','weekly'=>'Weekly','biweekly'=>'Bi-weekly','monthly'=>'Monthly','quarterly'=>'Quarterly','yearly'=>'Yearly'] as $fv => $fl)
-                <option value="{{ $fv }}" {{ request('frequency')===$fv ? 'selected' : '' }}>{{ $fl }}</option>
-            @endforeach
-        </select>
-        <select name="status" @change="$el.form.submit()"
-                class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-500 dark:text-gray-100 transition">
-            <option value="">All status</option>
-            <option value="active" {{ request('status')==='active'   ? 'selected' : '' }}>Active</option>
-            <option value="inactive" {{ request('status')==='inactive' ? 'selected' : '' }}>Inactive</option>
-        </select>
-        <button type="submit"
-                class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-            <span class="material-icons-round text-base">search</span> Filter
-        </button>
-        @if(request()->hasAny(['search','frequency','status']))
-            <a href="{{ route('income.index') }}"
-               class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">Clear</a>
-        @endif
-    </form>
-
-    {{-- Income List --}}
-    <x-card flush class="overflow-hidden">
-        @forelse($incomes as $income)
-            @php
-                $daysUntil = $income->daysUntilNext();
-                $isOverdue = $daysUntil !== null && $daysUntil < 0 && $income->is_active && $income->frequency !== 'once';
-                $isSoon    = !$isOverdue && $daysUntil !== null && $daysUntil <= 7 && $income->frequency !== 'once';
-                $rowClass  = $isOverdue ? 'bg-red-50 dark:bg-red-900/30' : ($isSoon ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-white dark:bg-slate-800');
-                $amtClass  = 'text-emerald-600 dark:text-emerald-400 font-bold';
-            @endphp
-            <div
-                class="flex items-center gap-3 sm:gap-4 px-4 py-4 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }} {{ $rowClass }} hover:brightness-95 transition"
-                x-data>
-
-                {{-- Icon --}}
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50">
-                    <span class="material-icons-round text-xl text-emerald-600">
-                        {{ $income->frequency === 'once' ? 'attach_money' : 'repeat' }}
-                    </span>
-                </div>
-
-                {{-- Info --}}
-                <div class="flex-1 min-w-0 cursor-pointer"
-                     @click="window.location='{{ route('income.show', $income) }}'">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
-                        {{ $income->name }}
-                        @if($income->is_shared)
-                            <span class="material-icons-round text-gray-300" style="font-size:14px;">group</span>
-                        @endif
-                    </div>
-                    <div
-                        class="text-xs mt-0.5 {{ $isOverdue ? 'text-red-500 dark:text-red-300' : ($isSoon ? 'text-amber-500 dark:text-amber-300' : 'text-gray-400 dark:text-gray-300') }}">
-                        {{ $income->source ?? 'Income' }} ·
-                        @if($income->frequency === 'once')
-                            {{ $income->start_date->format('d M Y') }}
-                        @elseif($isOverdue)
-                            Expected {{ abs($daysUntil) }}d ago
-                        @elseif($daysUntil === 0)
-                            Expected today
-                        @elseif($daysUntil !== null)
-                            In {{ $daysUntil }}d
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Frequency badge --}}
-                <span
-                    class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                    {{ $income->frequencyLabel() }}
-                </span>
-
-                {{-- Status badge --}}
-                @if(!$income->is_active)
-                    <span
-                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">Inactive</span>
-                @elseif($isOverdue)
-                    <span
-                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">Late</span>
-                @elseif($isSoon)
-                    <span
-                        class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">Soon</span>
-                @endif
-
-                {{-- Amount --}}
-                <div class="text-right shrink-0 cursor-pointer"
-                     @click="window.location='{{ route('income.show', $income) }}'">
-                    <div
-                        class="text-sm {{ $amtClass }}">{{ auth()->user()->currency_code }} {{ number_format($income->amount, 2) }}</div>
-                    <div class="text-xs text-gray-400 dark:text-gray-300">{{ number_format($income->monthlyEquivalent(), 2) }}/mo</div>
-                </div>
-
-                {{-- Actions --}}
-                <div class="flex items-center gap-1.5 shrink-0" @click.stop>
-                    @if($income->frequency !== 'once')
-                        <form method="POST" action="{{ route('income.receive', $income) }}">
-                            @csrf
-                            <button type="submit" title="Mark received"
-                                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-800 transition">
-                                <span class="material-icons-round text-base">check_circle</span>
-                            </button>
-                        </form>
-                    @endif
-                    <a href="{{ route('income.edit', $income) }}" title="Edit"
-                        class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                        <span class="material-icons-round text-base">edit</span>
-                    </a>
-                    <form method="POST" action="{{ route('income.destroy', $income) }}">
-                        @csrf @method('DELETE')
-                        <button type="submit" title="Delete"
-                                @click="if(!confirm('Delete {{ addslashes($income->name) }}?')) $event.preventDefault()"
-                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 dark:bg-red-900/30 text-red-400 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-800 transition">
-                            <span class="material-icons-round text-base">delete</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        @empty
-            <div class="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-300">
-                <span class="material-icons-round text-6xl mb-3">savings</span>
-                <p class="text-sm font-medium mb-4">No income sources yet</p>
-                <a href="{{ route('income.create') }}"
-                   class="inline-flex items-center gap-2 bg-emerald-600 text-white text-sm font-semibold rounded-xl px-4 py-2.5 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 transition">
-                    <span class="material-icons-round text-lg">add</span> Add your first income
-                </a>
-            </div>
-        @endforelse
-    </x-card>
-
-    {{-- Pagination --}}
     @if($incomes->hasPages())
-        <div class="mt-4">{{ $incomes->links() }}</div>
+        <div class="mt-4">{{ $incomes->appends(request()->query())->links() }}</div>
     @endif
 
 @endsection
-

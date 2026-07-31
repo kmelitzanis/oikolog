@@ -12,11 +12,11 @@
             <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                 <div class="flex items-center gap-2">
                     <button @click="prevMonth()"
-                            class="w-10 h-10 flex items-center justify-center rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm transition">
+                            class="w-10 h-10 flex items-center justify-center rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-900 shadow-sm transition">
                         <span class="material-icons-round text-lg">chevron_left</span>
                     </button>
                     <button @click="nextMonth()"
-                            class="w-10 h-10 flex items-center justify-center rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm transition">
+                            class="w-10 h-10 flex items-center justify-center rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-900 shadow-sm transition">
                         <span class="material-icons-round text-lg">chevron_right</span>
                     </button>
                 </div>
@@ -46,18 +46,18 @@
                         <span>Paid</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                         <span>Upcoming</span>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5 self-start lg:self-auto">
                     <button @click="view='month'"
-                            :class="view==='month' ? 'bg-indigo-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'"
+                            :class="view==='month' ? 'bg-amber-500 text-slate-900 shadow-sm' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'"
                             class="px-3 py-1.5 rounded-xl text-xs font-semibold transition">
                         Month
                     </button>
                     <button @click="view='list'"
-                            :class="view==='list' ? 'bg-indigo-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'"
+                            :class="view==='list' ? 'bg-amber-500 text-slate-900 shadow-sm' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'"
                             class="px-3 py-1.5 rounded-xl text-xs font-semibold transition">
                         List
                     </button>
@@ -83,7 +83,7 @@
                         <div
                             :class="{
                                 'opacity-30': !cell.currentMonth,
-                                'ring-2 ring-indigo-400 ring-offset-1 dark:ring-offset-slate-800': cell.isToday,
+                                'ring-2 ring-amber-400 ring-offset-1 dark:ring-offset-slate-800': cell.isToday,
                                 'bg-red-50/60 dark:bg-red-900/10': cell.hasOverdue && cell.currentMonth,
                             }"
                             class="relative min-h-[72px] md:min-h-[96px] rounded-2xl p-1.5 md:p-2.5 transition hover:bg-gray-50 dark:hover:bg-slate-700/40 flex flex-col"
@@ -92,7 +92,7 @@
                             <div class="flex justify-center md:justify-start">
                                 <span
                                         :class="{
-                                        'bg-indigo-500 text-white shadow-sm': cell.isToday,
+                                        'bg-amber-500 text-slate-900 shadow-sm': cell.isToday,
                                         'text-gray-800 dark:text-white font-semibold': !cell.isToday
                                     }"
                                         class="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full text-xs font-bold transition"
@@ -119,7 +119,7 @@
                                 </template>
                                 {{-- Upcoming dot --}}
                                 <template x-if="cell.hasUpcoming">
-                                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-200 dark:shadow-indigo-900 shrink-0"
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-200 dark:shadow-amber-900 shrink-0"
                                           title="Upcoming"></span>
                                 </template>
                                 {{-- Count badge when more than 3 events --}}
@@ -241,7 +241,7 @@
                 </template>
                 <template x-if="loading">
                     <div class="flex items-center justify-center py-10">
-                        <span class="material-icons-round text-indigo-400 animate-spin text-2xl">refresh</span>
+                        <span class="material-icons-round text-amber-400 animate-spin text-2xl">refresh</span>
                     </div>
                 </template>
             </x-card>

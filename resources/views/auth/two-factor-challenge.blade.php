@@ -15,14 +15,14 @@
         <script defer src="{{ asset('build/'.$e['file']) }}"></script>
     @endif
 </head>
-<body class="min-h-screen bg-linear-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-6">
+<body class="min-h-screen bg-linear-to-br from-amber-50 to-amber-50 flex items-center justify-center p-6">
 
 <div class="w-full max-w-md bg-white rounded-3xl border border-gray-200 shadow-xl p-10">
 
     <div class="text-center mb-8">
         <div
-            class="w-14 h-14 bg-linear-to-br from-indigo-600 to-indigo-500 rounded-2xl inline-flex items-center justify-center mb-4 shadow-lg">
-            <span class="material-icons-round text-white text-3xl">lock</span>
+            class="w-14 h-14 bg-linear-to-br from-amber-500 to-amber-400 rounded-2xl inline-flex items-center justify-center mb-4 shadow-lg">
+            <span class="material-icons-round text-slate-900 text-3xl">lock</span>
         </div>
         <h1 class="text-2xl font-extrabold text-gray-900">Two-Factor Authentication</h1>
         <p class="text-sm text-gray-400 mt-1">Enter the code from your authenticator app</p>
@@ -40,10 +40,10 @@
             <label class="block text-sm font-medium text-gray-600 mb-1.5">Authentication Code</label>
             <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"
                    placeholder="000 000" required autofocus
-                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-center tracking-widest outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
+                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-center tracking-widest outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition">
         </div>
         <button type="submit"
-                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3 text-sm transition">
+                class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-xl py-3 text-sm transition">
             Verify
         </button>
         <a href="{{ route('login') }}"

@@ -19,7 +19,9 @@
         'danger'  => 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-transparent',
         'ghost'   => 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 border border-transparent',
         'outline' => 'bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-700',
-        default   => 'bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent',
+        // Amber carries slate ink, never white — #f59e0b is far too light for
+        // white text to clear contrast.
+        default   => 'bg-amber-500 hover:bg-amber-400 text-slate-900 border border-transparent shadow-sm shadow-amber-500/30',
     };
 
     $sizeClass = match ($size) {

@@ -45,7 +45,7 @@
                     {{-- Emoji picker --}}
                     <div x-data="{ open: false }" class="relative shrink-0">
                         <button type="button" @click="open = !open"
-                                class="w-16 h-16 rounded-2xl bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-3xl shadow-sm hover:scale-105 transition">
+                                class="w-16 h-16 rounded-2xl bg-linear-to-br from-amber-500 to-amber-400 flex items-center justify-center text-3xl shadow-sm hover:scale-105 transition">
                             <span x-text="form.emoji"></span>
                         </button>
                         <div x-show="open" x-cloak @click.outside="open = false"
@@ -61,10 +61,10 @@
                     <div class="flex-1 min-w-0">
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.recipe_name') }} *</label>
                         <input type="text" x-model="form.name" required
-                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/40 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 mt-3">{{ __('messages.description') }}</label>
                         <textarea x-model="form.description" rows="2"
-                                  class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 resize-none transition"></textarea>
+                                  class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 resize-none transition"></textarea>
                     </div>
                 </div>
 
@@ -73,22 +73,22 @@
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.servings') }}</label>
                         <input type="number" min="1" max="50" x-model="form.servings"
-                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.prep_time') }} ({{ __('messages.min_short') }})</label>
                         <input type="number" min="0" x-model="form.prep_minutes"
-                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.cook_time') }} ({{ __('messages.min_short') }})</label>
                         <input type="number" min="0" x-model="form.cook_minutes"
-                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.difficulty') }}</label>
                         <select x-model="form.difficulty"
-                                class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+                                class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                             <option value="easy">{{ __('messages.easy') }}</option>
                             <option value="medium">{{ __('messages.medium') }}</option>
                             <option value="hard">{{ __('messages.hard') }}</option>
@@ -101,10 +101,10 @@
             <x-card class="sm:p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <span class="material-icons-round text-indigo-500 text-xl">restaurant</span>{{ __('messages.ingredients') }}
+                        <span class="material-icons-round text-amber-500 text-xl">restaurant</span>{{ __('messages.ingredients') }}
                     </h3>
                     <button type="button" @click="addIngredient()"
-                            class="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 text-sm font-semibold hover:text-indigo-700 transition">
+                            class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 text-sm font-semibold hover:text-amber-700 transition">
                         <span class="material-icons-round text-lg">add</span>{{ __('messages.add_ingredient') }}
                     </button>
                 </div>
@@ -112,13 +112,13 @@
                 <div class="space-y-2">
                     <template x-for="(ing, idx) in form.ingredients" :key="idx">
                         <div class="flex items-center gap-2">
-                            <span class="w-7 h-7 shrink-0 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 text-xs font-bold flex items-center justify-center" x-text="idx + 1"></span>
+                            <span class="w-7 h-7 shrink-0 rounded-lg bg-amber-50 dark:bg-amber-500/15 text-amber-500 dark:text-amber-400 text-xs font-bold flex items-center justify-center" x-text="idx + 1"></span>
                             <input type="text" x-model="ing.name" data-ing-name placeholder="{{ __('messages.ingredient') }}"
-                                   class="flex-1 min-w-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+                                   class="flex-1 min-w-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                             <input type="number" step="0.01" min="0" x-model="ing.quantity"
-                                   class="w-16 shrink-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-2 py-2.5 text-sm text-center outline-none focus:border-indigo-500 transition">
+                                   class="w-16 shrink-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-2 py-2.5 text-sm text-center outline-none focus:border-amber-500 transition">
                             <input type="text" x-model="ing.unit" placeholder="{{ __('messages.unit') }}"
-                                   class="w-20 shrink-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-2 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+                                   class="w-20 shrink-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-2 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                             <button type="button" @click="removeIngredient(idx)"
                                     class="w-9 h-9 shrink-0 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition">
                                 <span class="material-icons-round text-lg">close</span>
@@ -131,18 +131,18 @@
             {{-- Instructions card --}}
             <x-card class="sm:p-6">
                 <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-                    <span class="material-icons-round text-indigo-500 text-xl">menu_book</span>{{ __('messages.instructions') }}
+                    <span class="material-icons-round text-amber-500 text-xl">menu_book</span>{{ __('messages.instructions') }}
                 </h3>
                 <p class="text-xs text-gray-400 dark:text-slate-500 mb-3">{{ __('messages.instructions_hint') }}</p>
                 <textarea x-model="form.instructions" rows="6"
-                          class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 resize-y leading-relaxed transition"
+                          class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 resize-y leading-relaxed transition"
                           placeholder="1. …&#10;2. …"></textarea>
             </x-card>
 
             {{-- Actions --}}
             <div class="flex gap-3 pb-2">
                 <button type="submit" :disabled="submitting"
-                        class="flex-1 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-xl py-3 text-sm shadow-sm transition">
+                        class="flex-1 inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-slate-900 font-semibold rounded-xl py-3 text-sm shadow-sm transition">
                     <span class="material-icons-round text-lg" x-show="!submitting">check</span>
                     <span class="material-icons-round text-lg animate-spin" x-show="submitting" x-cloak>refresh</span>
                     <span x-text="submitting ? '…' : '{{ __('messages.save_recipe') }}'"></span>

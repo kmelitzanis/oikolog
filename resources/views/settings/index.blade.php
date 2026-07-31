@@ -13,7 +13,7 @@
                     <label
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">{{ __('messages.avatar') }}</label>
                     <div id="avatar-drop-area"
-                         class="w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-4 bg-gray-50 dark:bg-slate-700 cursor-pointer transition hover:border-indigo-400 mb-2">
+                         class="w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-4 bg-gray-50 dark:bg-slate-700 cursor-pointer transition hover:border-amber-400 mb-2">
                         <span id="avatar-drop-text"
                               class="text-gray-400 dark:text-slate-500 text-sm mb-2">{{ __('messages.drag_and_drop_avatar') }}</span>
                         <input id="avatar-input" type="file" name="avatar" accept="image/*" class="hidden">
@@ -33,21 +33,21 @@
                     <label
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.name') }}</label>
                     <input type="text" name="name" value="{{ old('name', $user->name) }}" required
-                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                 </div>
                 {{-- Email --}}
                 <div>
                     <label
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.email') }}</label>
                     <input type="email" name="email" value="{{ old('email', $user->email) }}" required
-                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                 </div>
                 {{-- Currency --}}
                 <div>
                     <label
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.currency') }}</label>
                     <select name="currency_code"
-                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                         @foreach(['EUR'=>'€ EUR — Euro','USD'=>'$ USD — US Dollar','GBP'=>'£ GBP — British Pound','CHF'=>'Fr CHF — Swiss Franc','CAD'=>'CA$ CAD — Canadian Dollar','AUD'=>'A$ AUD — Australian Dollar'] as $code=>$label)
                             <option
                                 value="{{ $code }}" {{ old('currency_code',$user->currency_code)===$code?'selected':'' }}>{{ $label }}</option>
@@ -59,7 +59,7 @@
                     <label
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.language') }}</label>
                     <select name="locale"
-                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                         @php
                             $labels  = ['en' => 'English', 'el' => 'Ελληνικά'];
                             $current = old('locale', $user->locale ?? app()->getLocale() ?? 'en');
@@ -78,7 +78,7 @@
                         @foreach(['light' => ['light_mode', __('messages.light')], 'dark' => ['dark_mode', __('messages.dark')]] as $t => [$icon, $tlabel])
                             <button type="button"
                                     @click="isDark = '{{ $t }}' === 'dark'; document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('theme', isDark ? 'dark' : 'light')"
-                                    :class="(isDark === ('{{ $t }}' === 'dark')) ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' : 'border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400'"
+                                    :class="(isDark === ('{{ $t }}' === 'dark')) ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400'"
                                     class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition">
                                 <span class="material-icons-round text-base">{{ $icon }}</span> {{ $tlabel }}
                             </button>
@@ -92,18 +92,18 @@
                         {{ __('messages.new_password') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.leave_blank') }})</span>
                     </label>
                     <input type="password" name="password" autocomplete="new-password"
-                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                 </div>
                 <div>
                     <label
                         class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.confirm_password') }}</label>
                     <input type="password" name="password_confirmation" autocomplete="new-password"
-                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                           class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                 </div>
                 {{-- Submit --}}
                 <div class="flex gap-3 pt-2">
                     <button type="submit"
-                            class="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3 text-sm transition">
+                            class="flex-1 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-xl py-3 text-sm transition">
                         <span class="material-icons-round text-lg">save</span> {{ __('messages.save_changes') }}
                     </button>
                 </div>
@@ -129,7 +129,7 @@
                     </div>
                 </div>
                 <a href="{{ route('2fa.setup') }}"
-                   class="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition">
+                   class="text-sm font-medium text-amber-700 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 transition">
                     {{ $user->two_factor_enabled ? 'Manage' : 'Set up' }}
                 </a>
             </div>

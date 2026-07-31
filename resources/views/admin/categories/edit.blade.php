@@ -17,7 +17,7 @@
         <div>
             <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Name *</label>
             <input type="text" name="name" value="{{ old('name', $category->name) }}" required
-                   class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                   class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
             @error('name')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
         </div>
 
@@ -27,8 +27,8 @@
             <div class="flex items-center gap-3"
                  x-data="{ iconVal: '{{ old('icon', $category->icon) }}' }">
                 <input type="text" name="icon" x-model="iconVal"
-                       class="flex-1 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
-                <span class="material-icons-round text-3xl text-indigo-500" x-text="iconVal"></span>
+                       class="flex-1 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
+                <span class="material-icons-round text-3xl text-amber-500" x-text="iconVal"></span>
             </div>
             <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">e.g. bolt, water_drop, home,
                 local_fire_department</p>
@@ -41,7 +41,7 @@
                 <input type="color" x-model="colorVal"
                        class="w-12 h-10 rounded-xl border border-gray-200 dark:border-slate-600 cursor-pointer bg-transparent p-1">
                 <input type="text" x-model="colorVal"
-                       class="flex-1 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm font-mono text-gray-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition">
+                       class="flex-1 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm font-mono text-gray-900 dark:text-white outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                 <input type="hidden" name="color_hex" x-bind:value="colorVal">
             </div>
             @error('color_hex')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
@@ -64,7 +64,7 @@
 
         <div class="flex items-center gap-3 pt-2">
             <button type="submit"
-                    class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-5 py-2.5 transition">
+                    class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-5 py-2.5 transition">
                 <span class="material-icons-round text-lg">save</span> Update Category
             </button>
             <a href="{{ route('admin.categories.index') }}"

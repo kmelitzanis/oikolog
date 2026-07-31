@@ -12,14 +12,56 @@ class FamilyController extends Controller
 {
     public function index(Request $request)
     {
-        $user   = $request->user();
-        $family = null;
+        $user     = $request->user();
+        $family   = null;
+        $activity = collect();
+        $sharedBills = collect();
 
         if ($user->family_id) {
             $family = $user->family()->with('members')->first();
+
+            $sharedBills = \App\Models\Bill::forUser($user)
+                ->where('is_shared', true)
+                ->orderByDesc('amount')
+                ->get(['id', 'name', 'amount', 'currency_code']);
+
+            // The mockup shows a "recent activity" feed. There is no activity
+            // log in the schema, so this is assembled from the two events the
+            // app actually records: payments made, and bills added.
+            $familyBillIds = \App\Models\Bill::forUser($user)->pluck('id');
+
+            $payments = \App\Models\Payment::whereIn('bill_id', $familyBillIds)
+                ->with(['bill:id,name', 'paidBy:id,name'])
+                ->latest('paid_at')
+                ->take(6)
+                ->get()
+                ->map(fn($p) => [
+                    'type'  => 'paid',
+                    'actor' => $p->paidBy?->name,
+                    'subject' => $p->bill?->name,
+                    'at'    => $p->paid_at,
+                ]);
+
+            $addedBills = \App\Models\Bill::forUser($user)
+                ->with('creator:id,name')
+                ->latest('created_at')
+                ->take(6)
+                ->get()
+                ->map(fn($b) => [
+                    'type'  => 'added',
+                    'actor' => $b->creator?->name,
+                    'subject' => $b->name,
+                    'at'    => $b->created_at,
+                ]);
+
+            $activity = $payments->concat($addedBills)
+                ->filter(fn($a) => $a['at'] !== null)
+                ->sortByDesc('at')
+                ->take(6)
+                ->values();
         }
 
-        return view('family.index', compact('family'));
+        return view('family.index', compact('family', 'activity', 'sharedBills'));
     }
 
     public function create(Request $request)

@@ -5,7 +5,7 @@
     <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Categories</h1>
         <a href="{{ route('admin.categories.create') }}"
-           class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
+           class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
             <span class="material-icons-round text-lg">add</span> Add Category
         </a>
     </div>
@@ -40,7 +40,7 @@
                     <td class="px-5 py-3">
                         @if($cat->is_system)
                             <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">System</span>
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">System</span>
                         @else
                             <span
                                 class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Custom</span>
@@ -49,7 +49,7 @@
                     <td class="px-5 py-3 text-right">
                         <div class="inline-flex items-center gap-2">
                             <a href="{{ route('admin.categories.edit', $cat) }}"
-                               class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition">
+                               class="inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:text-amber-800 transition">
                                 <span class="material-icons-round text-base">edit</span> Edit
                             </a>
                             <form action="{{ route('admin.categories.destroy', $cat) }}" method="POST"

@@ -4,7 +4,9 @@
 //  - Build assets & icons (hashed/static): cache-first.
 //  - Everything else (API, POST, events feed): network only — financial data
 //    must never be served stale.
-const VERSION = 'oikolog-v1';
+// Bumped for the beam-stack icon set: /icons/* and /favicon.ico are served
+// cache-first, so installed PWAs would otherwise keep showing the old mark.
+const VERSION = 'oikolog-v2';
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 

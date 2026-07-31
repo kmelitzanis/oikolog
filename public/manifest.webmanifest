@@ -9,7 +9,7 @@
     "orientation": "portrait-primary",
     "lang": "el",
     "background_color": "#0f172a",
-    "theme_color": "#4f46e5",
+    "theme_color": "#f59e0b",
     "icons": [
         {
             "src": "/icons/icon-192.png",

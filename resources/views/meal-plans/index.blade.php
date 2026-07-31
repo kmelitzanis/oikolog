@@ -3,11 +3,13 @@
 
 @php
     use Carbon\Carbon;
+    // The mockup marks each meal with a small coloured dot rather than an
+    // emoji — an amber ramp running through the day.
     $mealTypes = [
-        'breakfast' => ['label' => __('messages.breakfast'), 'icon' => '☕'],
-        'lunch'     => ['label' => __('messages.lunch'),     'icon' => '🥗'],
-        'dinner'    => ['label' => __('messages.dinner'),    'icon' => '🍽️'],
-        'snack'     => ['label' => __('messages.snack'),     'icon' => '🍎'],
+        'breakfast' => ['label' => __('messages.breakfast'), 'icon' => '☕',   'dot' => '#fcd34d'],
+        'lunch'     => ['label' => __('messages.lunch'),     'icon' => '🥗',  'dot' => '#f59e0b'],
+        'dinner'    => ['label' => __('messages.dinner'),    'icon' => '🍽️', 'dot' => '#fbbf24'],
+        'snack'     => ['label' => __('messages.snack'),     'icon' => '🍎',  'dot' => '#d97706'],
     ];
     $today = Carbon::today();
     $days = [];
@@ -54,71 +56,75 @@
             </div>
             <div class="flex items-center gap-2">
                 <div class="flex items-center bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                    <button @click="gotoWeek(-7)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-indigo-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition" title="{{ __('messages.prev_week') }}">
+                    <button @click="gotoWeek(-7)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-amber-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition" title="{{ __('messages.prev_week') }}">
                         <span class="material-icons-round">chevron_left</span>
                     </button>
                     <button @click="gotoToday()" class="px-3 h-10 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 border-x border-gray-200 dark:border-slate-700 transition">{{ __('messages.today') }}</button>
-                    <button @click="gotoWeek(7)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-indigo-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition" title="{{ __('messages.next_week') }}">
+                    <button @click="gotoWeek(7)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-amber-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition" title="{{ __('messages.next_week') }}">
                         <span class="material-icons-round">chevron_right</span>
                     </button>
                 </div>
-                <button @click="openBuildList()"
-                        class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 shadow-sm transition">
-                    <span class="material-icons-round text-lg">add_shopping_cart</span>
-                    <span class="hidden sm:inline">{{ __('messages.build_shopping_list') }}</span>
-                </button>
             </div>
         </div>
 
-        {{-- Week grid: 7 columns on desktop (full week, no trailing gap), 2 on tablet, 1 on mobile --}}
+        {{-- Week grid — the mockup's seven day cards at 24px radius / 12px gap.
+             Its header is centred: a tracked weekday label over a large day
+             number, with today inverted to amber. --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
             @foreach($days as $day)
-                <x-card flush class="flex flex-col overflow-hidden {{ $day['isToday'] ? 'border-indigo-300 dark:border-indigo-600 ring-1 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-100 dark:border-slate-700' }}">
+                <div class="flex flex-col overflow-hidden rounded-[24px] border bg-white dark:bg-slate-800
+                            {{ $day['isToday'] ? 'border-amber-400 dark:border-amber-500' : 'border-gray-100 dark:border-slate-700' }}">
                     {{-- Day header --}}
-                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-slate-700/60 {{ $day['isToday'] ? 'bg-indigo-50/60 dark:bg-indigo-900/20' : '' }}">
-                        <div>
-                            <div class="text-xs font-bold uppercase tracking-wide {{ $day['isToday'] ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-slate-500' }}">{{ $day['weekday'] }}</div>
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $day['label'] }}</div>
+                    <div class="p-3 text-center {{ $day['isToday'] ? 'bg-amber-500' : 'bg-gray-50 dark:bg-slate-900/50' }}">
+                        <div class="text-[0.6rem] font-bold uppercase tracking-[0.08em]
+                                    {{ $day['isToday'] ? 'text-slate-900/70' : 'text-gray-400 dark:text-slate-500' }}">
+                            {{ $day['weekday'] }}
                         </div>
-                        @if($day['isToday'])
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">{{ __('messages.today') }}</span>
-                        @endif
+                        <div class="text-[1.2rem] font-extrabold mt-0.5
+                                    {{ $day['isToday'] ? 'text-slate-900' : 'text-gray-900 dark:text-white' }}">
+                            {{ \Carbon\Carbon::parse($day['date'])->day }}
+                        </div>
                     </div>
 
                     {{-- Meal slots --}}
-                    <div class="flex-1 p-2.5 space-y-2.5">
+                    <div class="flex-1 p-3 space-y-2.5">
                         @foreach($mealTypes as $key => $meal)
                             <div>
-                                <div class="flex items-center gap-1.5 mb-1 px-0.5">
-                                    <span class="text-sm">{{ $meal['icon'] }}</span>
-                                    <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">{{ $meal['label'] }}</span>
+                                <div class="flex items-center gap-1.5 mb-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background: {{ $meal['dot'] }}"></span>
+                                    <span class="text-[0.58rem] font-bold uppercase tracking-[0.07em] text-gray-400 dark:text-slate-500">{{ $meal['label'] }}</span>
                                 </div>
 
                                 {{-- Existing meals --}}
+                                {{-- The mockup renders the dish as plain text
+                                     under its label, not as a tinted chip. --}}
                                 <template x-for="plan in planFor('{{ $day['date'] }}', '{{ $key }}')" :key="plan.id">
                                     <div @click="openEdit(plan)"
-                                         class="group flex items-center gap-1.5 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-900/40 rounded-lg px-2 py-1.5 mb-1 cursor-pointer hover:shadow-sm transition">
-                                        <span class="text-sm shrink-0" x-show="plan.emoji" x-text="plan.emoji"></span>
-                                        <span class="material-icons-round text-indigo-400 text-sm shrink-0" x-show="!plan.emoji">restaurant</span>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="text-xs font-medium text-gray-800 dark:text-slate-100 truncate" x-text="plan.name"></div>
-                                            <div class="text-[10px] text-gray-400 dark:text-slate-500" x-text="`${plan.servings} {{ __('messages.servings') }}`"></div>
-                                        </div>
+                                         class="text-[0.8rem] leading-[1.35] font-semibold text-gray-900 dark:text-white mb-1.5 cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition">
+                                        <span x-show="plan.emoji" x-text="plan.emoji"></span><span x-text="plan.name"></span>
                                     </div>
                                 </template>
 
                                 {{-- Add slot (compact, icon-only to fit 7-column layout) --}}
                                 <button @click="openAdd('{{ $day['date'] }}', '{{ $key }}')" type="button"
                                         :title="'{{ __('messages.add_meal') }}'"
-                                        class="w-full flex items-center justify-center gap-1 border border-dashed border-gray-200 dark:border-slate-600 rounded-lg py-1.5 text-[11px] font-medium text-gray-400 dark:text-slate-500 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition">
+                                        class="w-full flex items-center justify-center gap-1 border border-dashed border-gray-200 dark:border-slate-700 rounded-lg py-1 text-[11px] font-medium text-gray-300 dark:text-slate-600 hover:border-amber-400 hover:text-amber-500 hover:bg-amber-50/40 dark:hover:bg-amber-500/10 transition">
                                     <span class="material-icons-round text-sm">add</span>
                                 </button>
                             </div>
                         @endforeach
                     </div>
-                </x-card>
+                </div>
             @endforeach
         </div>
+
+        {{-- The mockup's week action sits below the grid as an outline button
+             with amber text, rather than beside the title. --}}
+        <button @click="openBuildList()" type="button"
+                class="mt-4 h-11 px-[18px] rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 text-[0.84rem] font-semibold whitespace-nowrap flex items-center gap-2.5 transition hover:bg-gray-50 dark:hover:bg-slate-700">
+            <span class="material-icons-round text-base">shopping_cart</span>
+            {{ __('messages.send_week_to_list') }}
+        </button>
 
         {{-- ── Meal modal ─────────────────────────────────────────────────── --}}
         <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" x-transition.opacity>
@@ -139,19 +145,19 @@
                         <div class="relative mb-2" x-show="recipes.length > 4">
                             <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
                             <input type="text" x-model="recipeSearch" placeholder="{{ __('messages.search') }}…"
-                                   class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-3 py-2 text-sm outline-none focus:border-indigo-500">
+                                   class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-3 py-2 text-sm outline-none focus:border-amber-500">
                         </div>
                         <div class="max-h-44 overflow-y-auto space-y-1 -mx-1 px-1">
                             <template x-if="recipes.length === 0">
-                                <a href="{{ route('recipes.create') }}" class="block text-center py-4 text-sm text-indigo-600 dark:text-indigo-400 font-semibold">+ {{ __('messages.create_recipe') }}</a>
+                                <a href="{{ route('recipes.create') }}" class="block text-center py-4 text-sm text-amber-700 dark:text-amber-400 font-semibold">+ {{ __('messages.create_recipe') }}</a>
                             </template>
                             <template x-for="r in filteredRecipes" :key="r.id">
                                 <button type="button" @click="pickRecipe(r)"
-                                        :class="form.recipe_id === r.id ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600'"
+                                        :class="form.recipe_id === r.id ? 'border-amber-400 bg-amber-50 dark:bg-amber-500/15' : 'border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600'"
                                         class="w-full flex items-center gap-3 border rounded-xl px-3 py-2 text-left transition">
                                     <span class="text-lg" x-text="r.emoji || '🍽️'"></span>
                                     <span class="flex-1 text-sm font-medium text-gray-800 dark:text-slate-100 truncate" x-text="r.name"></span>
-                                    <span class="material-icons-round text-indigo-500 text-lg" x-show="form.recipe_id === r.id">check_circle</span>
+                                    <span class="material-icons-round text-amber-500 text-lg" x-show="form.recipe_id === r.id">check_circle</span>
                                 </button>
                             </template>
                         </div>
@@ -162,26 +168,26 @@
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.or_custom_meal') }}</label>
                         <input type="text" x-model="form.title" @input="if(form.title) form.recipe_id = null"
                                placeholder="{{ __('messages.custom_meal') }}"
-                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500">
+                               class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500">
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.servings') }}</label>
                             <input type="number" min="1" max="50" x-model="form.servings"
-                                   class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500">
+                                   class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.meal_notes') }}</label>
                             <input type="text" x-model="form.notes"
-                                   class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500">
+                                   class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500">
                         </div>
                     </div>
                 </div>
 
                 <div class="flex gap-3 px-5 py-4 border-t border-gray-100 dark:border-slate-700">
                     <button @click="saveMeal()" :disabled="working"
-                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-xl py-2.5 text-sm transition">
+                            class="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-slate-900 font-semibold rounded-xl py-2.5 text-sm transition">
                         <span x-text="working ? '…' : '{{ __('messages.save') }}'"></span>
                     </button>
                     <button x-show="editing" @click="removeMeal(editing)" type="button"
@@ -208,18 +214,18 @@
                 </div>
 
                 <select x-show="listForm.mode==='existing' && lists.length" x-model="listForm.shopping_list_id"
-                        class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500">
+                        class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500">
                     <template x-for="l in lists" :key="l.id">
                         <option :value="l.id" x-text="l.name"></option>
                     </template>
                 </select>
                 <input x-show="listForm.mode==='new' || !lists.length" type="text" x-model="listForm.new_list_name"
                        placeholder="{{ __('messages.new_list_name') }}"
-                       class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500">
+                       class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500">
 
                 <div class="flex gap-3 mt-5">
                     <button @click="buildList()" :disabled="working"
-                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-xl py-2.5 text-sm transition">
+                            class="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-slate-900 font-semibold rounded-xl py-2.5 text-sm transition">
                         <span x-text="working ? '…' : '{{ __('messages.build_shopping_list') }}'"></span>
                     </button>
                     <button @click="listModalOpen = false" class="px-5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 font-semibold rounded-xl py-2.5 text-sm">{{ __('messages.cancel') }}</button>

@@ -44,12 +44,12 @@
 
         {{-- Back --}}
         <a href="{{ route('recipes.index') }}"
-           class="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 text-sm font-semibold mb-4 hover:gap-2 transition-all">
+           class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 text-sm font-semibold mb-4 hover:gap-2 transition-all">
             <span class="material-icons-round text-lg">arrow_back</span>{{ __('messages.recipes') }}
         </a>
 
         {{-- Hero --}}
-        <div class="relative overflow-hidden rounded-3xl bg-linear-to-br from-indigo-600 via-indigo-500 to-purple-600 p-6 sm:p-8 mb-6 shadow-lg">
+        <div class="relative overflow-hidden rounded-3xl bg-linear-to-br from-amber-500 via-amber-500 to-amber-400 p-6 sm:p-8 mb-6 shadow-lg">
             <div class="absolute -right-6 -top-8 text-[10rem] opacity-20 select-none leading-none">{{ $recipe->emoji ?: '🍽️' }}</div>
             <div class="relative">
                 <div class="flex items-start justify-between gap-4">
@@ -57,29 +57,29 @@
                         <div class="flex items-center gap-3 mb-2">
                             <span class="text-4xl">{{ $recipe->emoji ?: '🍽️' }}</span>
                             @if($recipe->difficulty)
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-sm">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-900/10 text-slate-900 backdrop-blur-sm">
                                     {{ __('messages.' . $recipe->difficulty) }}
                                 </span>
                             @endif
                             @if($recipe->is_favorite)
-                                <span class="material-icons-round text-red-300 text-xl">favorite</span>
+                                <span class="material-icons-round text-red-700 text-xl">favorite</span>
                             @endif
                         </div>
-                        <h1 class="text-2xl sm:text-3xl font-extrabold text-white">{{ $recipe->name }}</h1>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $recipe->name }}</h1>
                         @if($recipe->description)
-                            <p class="text-indigo-100 text-sm mt-2 max-w-xl">{{ $recipe->description }}</p>
+                            <p class="text-slate-900/70 text-sm mt-2 max-w-xl">{{ $recipe->description }}</p>
                         @endif
                     </div>
                     <div class="flex gap-2 shrink-0">
                         <a href="{{ route('recipes.edit', $recipe) }}"
-                           class="w-10 h-10 rounded-xl bg-white/15 hover:bg-white/25 text-white flex items-center justify-center backdrop-blur-sm transition" title="{{ __('messages.edit') }}">
+                           class="w-10 h-10 rounded-xl bg-slate-900/10 hover:bg-slate-900/20 text-slate-900 flex items-center justify-center backdrop-blur-sm transition" title="{{ __('messages.edit') }}">
                             <span class="material-icons-round text-lg">edit</span>
                         </a>
                         <form method="POST" action="{{ route('recipes.destroy', $recipe) }}"
                               onsubmit="return confirm('{{ __('messages.delete') }}?')">
                             @csrf @method('DELETE')
                             <button type="submit"
-                                    class="w-10 h-10 rounded-xl bg-white/15 hover:bg-red-500/70 text-white flex items-center justify-center backdrop-blur-sm transition" title="{{ __('messages.delete') }}">
+                                    class="w-10 h-10 rounded-xl bg-slate-900/10 hover:bg-red-500/70 text-slate-900 flex items-center justify-center backdrop-blur-sm transition" title="{{ __('messages.delete') }}">
                                 <span class="material-icons-round text-lg">delete</span>
                             </button>
                         </form>
@@ -89,19 +89,19 @@
                 {{-- Stat pills --}}
                 <div class="flex flex-wrap gap-2.5 mt-5">
                     @if($recipe->prep_minutes)
-                        <div class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-1.5 text-white text-sm">
+                        <div class="inline-flex items-center gap-1.5 bg-slate-900/10 backdrop-blur-sm rounded-xl px-3 py-1.5 text-slate-900 text-sm">
                             <span class="material-icons-round text-base">timer</span>
-                            <span class="font-semibold">{{ $recipe->prep_minutes }}'</span><span class="text-indigo-100">{{ __('messages.prep_time') }}</span>
+                            <span class="font-semibold">{{ $recipe->prep_minutes }}'</span><span class="text-slate-900/70">{{ __('messages.prep_time') }}</span>
                         </div>
                     @endif
                     @if($recipe->cook_minutes)
-                        <div class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-1.5 text-white text-sm">
+                        <div class="inline-flex items-center gap-1.5 bg-slate-900/10 backdrop-blur-sm rounded-xl px-3 py-1.5 text-slate-900 text-sm">
                             <span class="material-icons-round text-base">local_fire_department</span>
-                            <span class="font-semibold">{{ $recipe->cook_minutes }}'</span><span class="text-indigo-100">{{ __('messages.cook_time') }}</span>
+                            <span class="font-semibold">{{ $recipe->cook_minutes }}'</span><span class="text-slate-900/70">{{ __('messages.cook_time') }}</span>
                         </div>
                     @endif
                     @if($total)
-                        <div class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-1.5 text-white text-sm">
+                        <div class="inline-flex items-center gap-1.5 bg-slate-900/10 backdrop-blur-sm rounded-xl px-3 py-1.5 text-slate-900 text-sm">
                             <span class="material-icons-round text-base">schedule</span>
                             <span class="font-semibold">{{ $total }} {{ __('messages.min_short') }}</span>
                         </div>
@@ -119,12 +119,12 @@
                         {{-- Servings stepper --}}
                         <div class="flex items-center gap-1 bg-gray-100 dark:bg-slate-700 rounded-xl p-1">
                             <button @click="servings = Math.max(1, servings - 1)"
-                                    class="w-7 h-7 rounded-lg bg-white dark:bg-slate-600 text-gray-600 dark:text-slate-200 flex items-center justify-center hover:text-indigo-600 transition shadow-sm">
+                                    class="w-7 h-7 rounded-lg bg-white dark:bg-slate-600 text-gray-600 dark:text-slate-200 flex items-center justify-center hover:text-amber-700 transition shadow-sm">
                                 <span class="material-icons-round text-base">remove</span>
                             </button>
                             <span class="w-9 text-center text-sm font-bold text-gray-900 dark:text-white" x-text="servings"></span>
                             <button @click="servings = Math.min(50, servings + 1)"
-                                    class="w-7 h-7 rounded-lg bg-white dark:bg-slate-600 text-gray-600 dark:text-slate-200 flex items-center justify-center hover:text-indigo-600 transition shadow-sm">
+                                    class="w-7 h-7 rounded-lg bg-white dark:bg-slate-600 text-gray-600 dark:text-slate-200 flex items-center justify-center hover:text-amber-700 transition shadow-sm">
                                 <span class="material-icons-round text-base">add</span>
                             </button>
                         </div>
@@ -145,7 +145,7 @@
                     </ul>
 
                     <button @click="listModal = true" type="button"
-                            class="w-full mt-4 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-2.5 text-sm transition shadow-sm">
+                            class="w-full mt-4 inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-xl py-2.5 text-sm transition shadow-sm">
                         <span class="material-icons-round text-lg">add_shopping_cart</span>{{ __('messages.add_to_list') }}
                     </button>
                 </x-card>
@@ -155,13 +155,13 @@
             <div class="lg:col-span-2">
                 <x-card class="sm:p-6">
                     <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-5">
-                        <span class="material-icons-round text-indigo-500">menu_book</span>{{ __('messages.instructions') }}
+                        <span class="material-icons-round text-amber-500">menu_book</span>{{ __('messages.instructions') }}
                     </h3>
                     @if(count($steps))
                         <ol class="space-y-4">
                             @foreach($steps as $i => $step)
                                 <li class="flex gap-4">
-                                    <span class="w-8 h-8 shrink-0 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 text-white text-sm font-bold flex items-center justify-center shadow-sm">{{ $i + 1 }}</span>
+                                    <span class="w-8 h-8 shrink-0 rounded-full bg-linear-to-br from-amber-500 to-amber-400 text-slate-900 text-sm font-bold flex items-center justify-center shadow-sm">{{ $i + 1 }}</span>
                                     <p class="text-sm text-gray-700 dark:text-slate-200 leading-relaxed pt-1">{{ preg_replace('/^\s*\d+[\.\)]\s*/', '', $step) }}</p>
                                 </li>
                             @endforeach
@@ -170,7 +170,7 @@
                         <div class="text-center py-10">
                             <span class="material-icons-round text-4xl text-gray-300 dark:text-slate-600">description</span>
                             <p class="text-sm text-gray-400 dark:text-slate-500 mt-2">{{ __('messages.no_instructions') }}</p>
-                            <a href="{{ route('recipes.edit', $recipe) }}" class="text-indigo-600 dark:text-indigo-400 text-sm font-semibold mt-2 inline-block">{{ __('messages.edit_recipe') }}</a>
+                            <a href="{{ route('recipes.edit', $recipe) }}" class="text-amber-700 dark:text-amber-400 text-sm font-semibold mt-2 inline-block">{{ __('messages.edit_recipe') }}</a>
                         </div>
                     @endif
                 </x-card>
@@ -194,18 +194,18 @@
                                 class="flex-1 rounded-lg py-1.5 text-xs font-semibold transition">{{ __('messages.create_new_list') }}</button>
                     </div>
                     <select x-show="listMode==='existing'" x-model="listId"
-                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 mb-1">
+                            class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 mb-1">
                         @foreach($shoppingLists as $l)
                             <option value="{{ $l->id }}">{{ $l->name }}</option>
                         @endforeach
                     </select>
                 @endif
                 <input x-show="listMode==='new'" type="text" x-model="newListName" placeholder="{{ __('messages.new_list_name') }}"
-                       class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 mb-1">
+                       class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 mb-1">
 
                 <div class="flex gap-3 mt-5">
                     <button @click="sendToList()" :disabled="working"
-                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-xl py-2.5 text-sm transition">
+                            class="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-slate-900 font-semibold rounded-xl py-2.5 text-sm transition">
                         <span x-text="working ? '…' : '{{ __('messages.send_to_list') }}'"></span>
                     </button>
                     <button @click="listModal = false" class="px-5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 font-semibold rounded-xl py-2.5 text-sm">{{ __('messages.cancel') }}</button>

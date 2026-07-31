@@ -18,16 +18,16 @@
     @if($emoji || $icon)
         <div @class([
             'mx-auto mb-4 flex items-center justify-center rounded-2xl',
-            'w-16 h-16 bg-linear-to-br from-indigo-500 to-purple-500' => ! $quiet,
-            'w-14 h-14 bg-indigo-50 dark:bg-indigo-900/30' => $quiet,
+            'w-16 h-16 bg-linear-to-br from-amber-500 to-amber-400' => ! $quiet,
+            'w-14 h-14 bg-amber-50 dark:bg-amber-900/30' => $quiet,
         ])>
             @if($emoji)
                 <span class="text-3xl">{{ $emoji }}</span>
             @else
                 <span @class([
                     'material-icons-round text-3xl',
-                    'text-white' => ! $quiet,
-                    'text-indigo-400' => $quiet,
+                    'text-slate-900' => ! $quiet,
+                    'text-amber-500' => $quiet,
                 ])>{{ $icon }}</span>
             @endif
         </div>

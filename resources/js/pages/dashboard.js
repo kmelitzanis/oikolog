@@ -12,8 +12,8 @@ function makeLineChart(ctx, labels, income, spending, currency) {
                 {
                     label: 'Spending',
                     data: spending,
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239,68,68,.07)',
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245,158,11,.07)',
                     tension: .35,
                     fill: true,
                     pointRadius: 3
@@ -62,13 +62,13 @@ function initDashboardCharts() {
         if (isCtx) {
             const ts = (chartData.spending || []).reduce((a, b) => a + b, 0);
             const ti = (chartData.income || []).reduce((a, b) => a + b, 0);
-            makeDoughnutChart(isCtx, ['Spending', 'Income'], [ts, ti], ['#ef4444', '#10b981'], '65%');
+            makeDoughnutChart(isCtx, ['Spending', 'Income'], [ts, ti], ['#f59e0b', '#10b981'], '65%');
         }
 
         const catCtx = document.getElementById('chart-category')?.getContext('2d');
         if (catCtx && chartData.by_category && Object.keys(chartData.by_category).length > 0) {
             const entries = Object.entries(chartData.by_category).slice(0, 8);
-            const palette = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#f97316', '#ec4899'];
+            const palette = ['#f59e0b', '#3b82f6', '#d97706', '#34d399', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
             makeDoughnutChart(catCtx, entries.map(e => e[0]), entries.map(e => e[1]), palette, '55%');
         }
     } catch (e) {

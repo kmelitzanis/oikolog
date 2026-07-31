@@ -37,11 +37,36 @@ class DashboardController extends Controller
         $stats['monthly_net'] = round($incomeStats['monthly_income'] - $stats['monthly_total'], 2);
 
         $upcoming = Bill::forUser($user)->dueWithin(30)->with('category')->orderBy('next_due_date')->take(8)->get();
-        $upcomingIncomes = Income::forUser($user)->active()
-            ->where('frequency', '!=', 'once')
-            ->orderBy('next_date')
-            ->take(5)
-            ->get();
+
+        // ── Month progress ────────────────────────────────────────────────────
+        // The hero answers "am I OK this month" with one line: how much of the
+        // outstanding bill load is already settled. `paid` comes from real
+        // payment records. Outstanding is this month's unpaid bills *plus*
+        // anything already overdue — an overdue bill is still owed, and leaving
+        // it out let the hero read "100% paid" while bills sat overdue.
+        $billIds = $bills->pluck('id');
+        $monthPaid = (float) \App\Models\Payment::whereIn('bill_id', $billIds)
+            ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->sum('amount');
+        $monthOutstanding = (float) $bills
+            ->filter(fn($b) => $b->isOverdue()
+                || ($b->next_due_date && $b->next_due_date->isSameMonth(now())))
+            ->sum('amount');
+        $monthLoad = $monthPaid + $monthOutstanding;
+
+        $stats['month_paid']        = round($monthPaid, 2);
+        $stats['month_outstanding'] = round($monthOutstanding, 2);
+        $stats['month_paid_pct']    = $monthLoad > 0 ? (int) round($monthPaid / $monthLoad * 100) : 100;
+
+        // Bills that need action now — overdue first, then due within a week.
+        // Drawn from every active bill rather than from `$upcoming`: that list
+        // is `dueWithin(30)`, so a bill overdue by more than a month never
+        // appeared in it and the queue claimed "all paid" against a red count.
+        $attention = $bills
+            ->filter(fn($b) => $b->isOverdue() || ($b->daysUntilDue() !== null && $b->daysUntilDue() <= 7))
+            ->sortBy(fn($b) => $b->next_due_date)
+            ->take(4)
+            ->values();
         $byCategory = $bills->groupBy('category.name')
             ->map(fn($g) => round($g->sum(fn($b) => $b->monthlyEquivalent()), 2))
             ->sortDesc();
@@ -65,7 +90,10 @@ class DashboardController extends Controller
         $monthlyIncomeAmt = round($allIncomes->sum(fn($i) => $i->monthlyEquivalent()), 2);
 
         for ($i = 11; $i >= 0; $i--) {
-            $month = now()->subMonths($i);
+            // Anchor to the 1st before stepping back: subMonths() from a 31st
+            // overflows short months (July 31 − 5 lands in March, not February),
+            // which dropped a month from the series and repeated another.
+            $month = now()->startOfMonth()->subMonths($i);
             $ym = $month->format('Y-m');
             $chartMonths[] = $month->format('M y');
             $chartSpending[] = (float)($payments12[$ym] ?? 0);
@@ -80,7 +108,50 @@ class DashboardController extends Controller
             'by_category' => $byCategory->toArray(),
         ];
 
-        return view('dashboard.index', compact('user', 'stats', 'upcoming', 'upcomingIncomes', 'byCategory', 'chartData'));
+        return view('dashboard.index', compact('user', 'stats', 'upcoming', 'attention', 'byCategory', 'chartData'));
+    }
+
+    /**
+     * Month overview (mockup 2b) — the month as a countdown line.
+     * Reached by tapping the dashboard hero.
+     */
+    public function month()
+    {
+        $user  = Auth::user();
+        $bills = Bill::forUser($user)->active()->with('category')->orderBy('next_due_date')->get();
+
+        $billIds  = $bills->pluck('id');
+        $paid     = (float) \App\Models\Payment::whereIn('bill_id', $billIds)
+            ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->sum('amount');
+        $outstanding = (float) $bills
+            ->filter(fn($b) => $b->isOverdue() || ($b->next_due_date && $b->next_due_date->isSameMonth(now())))
+            ->sum('amount');
+        $load = $paid + $outstanding;
+
+        $attention = $bills
+            ->filter(fn($b) => $b->isOverdue() || ($b->daysUntilDue() !== null && $b->daysUntilDue() <= 7))
+            ->sortBy(fn($b) => $b->next_due_date)
+            ->values();
+
+        // Everything due after this month — the mockup's "then, nothing until".
+        $later = $bills
+            ->filter(fn($b) => $b->next_due_date && $b->next_due_date->gt(now()->endOfMonth()))
+            ->sortBy(fn($b) => $b->next_due_date)
+            ->take(5)
+            ->values();
+
+        $month = [
+            'paid'        => round($paid, 2),
+            'outstanding' => round($outstanding, 2),
+            'load'        => round($load, 2),
+            'pct'         => $load > 0 ? (int) round($paid / $load * 100) : 100,
+            'day'         => now()->day,
+            'days'        => now()->daysInMonth,
+            'day_pct'     => (int) round(now()->day / now()->daysInMonth * 100),
+        ];
+
+        return view('dashboard.month', compact('user', 'month', 'attention', 'later'));
     }
 
     public function login(Request $request)
