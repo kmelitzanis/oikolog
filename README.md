@@ -141,10 +141,10 @@ Translations live in `resources/lang/{en,el}/messages.php`, and database entries
 Admins can edit them at `/translations` — useful for fixing wording without a deploy. The admin account is the one
 whose email matches `ADMIN_EMAIL` in `.env`.
 
-### Design system
+### Visual design
 
-The UI follows a documented design system: **amber-500 `#f59e0b` on slate**, with the status colours mapped 1:1 to
-bill state. Anything on an amber surface takes slate-900 ink — amber is far too light to carry white text.
+The UI runs on **amber-500 `#f59e0b` on slate**, with the status colours mapped 1:1 to bill state. Anything on an
+amber surface takes slate-900 ink — amber is far too light to carry white text.
 
 The logo is the "beam stack": there is no separate icon mark, the wordmark *is* the logo, and the `l` of *log* is
 redrawn as four ledger beams of unequal length. It lives in `resources/views/components/logo.blade.php`, sized in
@@ -159,10 +159,7 @@ app/Models/                  Eloquent models (Bill, Income, ShoppingList, Recipe
 app/Policies/                Authorisation rules
 resources/views/             Blade templates and components
 resources/js/pages/          Per-page Alpine components
-design-system/               Generated design-system previews
 ```
-
-More detail for contributors — and for AI coding agents — lives in [AGENTS.md](AGENTS.md).
 
 ## License
 
