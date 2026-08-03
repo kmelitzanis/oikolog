@@ -148,7 +148,24 @@ Route::middleware('auth')->group(function () {
         });
 
     // Products catalog
-    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    // Products — the shared catalogue behind shopping list items.
+    Route::controller(ProductController::class)
+        ->prefix('products')
+        ->name('products.')
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{product}', 'show')->name('show');
+            Route::get('/{product}/edit', 'edit')->name('edit');
+            Route::put('/{product}', 'update')->name('update');
+            Route::delete('/{product}', 'destroy')->name('destroy');
+            Route::post('/{product}/refresh', 'refresh')->name('refresh');
+        });
+
+    // Turn a hand-typed shopping list line into a catalogue entry.
+    Route::post('/shopping-list/items/{item}/promote', [ProductController::class, 'promote'])
+        ->name('products.promote');
 
     // Recipes
     // Import must be declared before the resource routes so `/recipes/import`

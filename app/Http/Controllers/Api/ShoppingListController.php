@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
 use App\Services\NutritionApiService;
+use App\Services\ProductCatalog;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -16,8 +17,10 @@ class ShoppingListController extends Controller
 
     protected NutritionApiService $nutritionService;
 
-    public function __construct(NutritionApiService $nutritionService)
-    {
+    public function __construct(
+        NutritionApiService $nutritionService,
+        private ProductCatalog $catalog,
+    ) {
         $this->nutritionService = $nutritionService;
     }
 
@@ -53,7 +56,7 @@ class ShoppingListController extends Controller
     {
         $this->authorize('view', $list);
 
-        $list->load('items');
+        $list->load('items.product');
 
         return response()->json($list);
     }
@@ -94,15 +97,31 @@ class ShoppingListController extends Controller
             'quantity' => 'nullable|numeric|min:0.1',
             'unit'     => 'nullable|string|max:50',
             'barcode'  => 'nullable|string|max:50',
+            'product_id' => 'nullable|exists:products,id',
         ]);
 
         $validated['shopping_list_id'] = $list->id;
         $validated['quantity'] ??= 1;
         $validated['unit'] ??= 'piece';
 
+        // A barcode identifies a catalogue entry: reuse it, or create it from
+        // the API the first time it is seen. Failing that the line stays free
+        // text rather than blocking the add.
+        if (empty($validated['product_id']) && !empty($validated['barcode'])) {
+            $product = $this->catalog->findOrCreateByBarcode($validated['barcode'], $request->user());
+            $validated['product_id'] = $product?->id;
+        }
+
         $item = ShoppingListItem::create($validated);
 
-        return response()->json($item, 201);
+        // Anything typed by hand joins the catalogue too, matched by name so
+        // "milk" written twice is one product with one history — that is what
+        // makes the suggestions while typing worth anything.
+        if (!$item->product_id) {
+            $this->catalog->linkByName($item, $request->user());
+        }
+
+        return response()->json($item->load('product'), 201);
     }
 
     /**
@@ -157,7 +176,12 @@ class ShoppingListController extends Controller
 
         $item->update(['checked' => !$item->checked]);
 
-        return response()->json($item);
+        // Ticking an item is the moment it was bought; un-ticking takes it back.
+        $item->checked
+            ? $this->catalog->recordPurchase($item, $request->user())
+            : $this->catalog->undoPurchase($item);
+
+        return response()->json($item->load('product'));
     }
 
     /**

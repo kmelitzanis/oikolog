@@ -62,7 +62,7 @@
             @if($targets->count() > 0)
                 <button type="button" @click="transferOpen = !transferOpen; movementOpen = false"
                         class="h-11 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-bold flex items-center gap-2 transition shadow-[0_6px_18px_rgba(245,158,11,0.32)]">
-                    <span class="material-icons-round text-lg">swap_horiz</span>{{ __('messages.transfer') }}
+                    <span class="material-icons-round text-lg">swap_horiz</span>{{ __('messages.account_transfer') }}
                 </button>
             @endif
             <button type="button" @click="movementOpen = !movementOpen; transferOpen = false"

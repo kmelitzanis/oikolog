@@ -7,10 +7,17 @@
     {{-- Header --}}
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ __('messages.shopping_lists') }}</h1>
+        <div class="flex items-center gap-2">
+        {{-- The catalogue lives behind the lists, not beside them in the menu. --}}
+        <a href="{{ route('products.index') }}"
+           class="inline-flex items-center gap-2 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 text-sm font-semibold rounded-xl px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+            <span class="material-icons-round text-lg">inventory_2</span><span class="hidden sm:inline">{{ __('messages.bought_products') }}</span>
+        </a>
         <button @click="openCreate()"
                 class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-4 py-2.5 shadow-sm transition">
             <span class="material-icons-round text-lg">add</span><span class="hidden sm:inline">{{ __('messages.new_list') }}</span>
         </button>
+        </div>
     </div>
 
     {{-- Search --}}

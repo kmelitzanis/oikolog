@@ -20,7 +20,7 @@ class ShoppingListController extends Controller
     {
         $this->authorize('view', $list);
 
-        $list->load('items');
+        $list->load('items.product');
 
         // The mockup puts a list picker beside the open list, so `show` needs
         // every list the user can see, with enough counts to render each row's

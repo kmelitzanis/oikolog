@@ -19,7 +19,11 @@ class NutritionApiService
                 ->get(self::OPEN_FOOD_FACTS_API . "/{$barcode}.json");
 
             if ($response->successful() && $response->json('product')) {
-                return $this->parseOpenFoodFactsProduct($response->json('product'));
+                $parsed = $this->parseOpenFoodFactsProduct($response->json('product'));
+                // Trust the barcode we asked for over whatever came back.
+                $parsed['barcode'] = $parsed['barcode'] ?: $barcode;
+
+                return $parsed;
             }
 
             return null;
@@ -65,7 +69,8 @@ class NutritionApiService
 
         return [
             'source' => 'open_food_facts',
-            'barcode' => $product['barcode'] ?? null,
+            // Open Food Facts returns the barcode as `code`.
+            'barcode' => $product['code'] ?? $product['barcode'] ?? null,
             'name' => $product['product_name'] ?? 'Unknown',
             'brand' => $product['brands'] ?? null,
             'image_url' => $product['image_url'] ?? null,
@@ -74,12 +79,34 @@ class NutritionApiService
                 'protein' => $nutrients['proteins_100g'] ?? null,
                 'carbs' => $nutrients['carbohydrates_100g'] ?? null,
                 'fat' => $nutrients['fat_100g'] ?? null,
+                'saturated_fat' => $nutrients['saturated-fat_100g'] ?? null,
                 'fiber' => $nutrients['fiber_100g'] ?? null,
                 'sugar' => $nutrients['sugars_100g'] ?? null,
+                'salt' => $nutrients['salt_100g'] ?? null,
                 'sodium' => $nutrients['sodium_100g'] ?? null,
             ],
             'nutri_score' => $product['nutriscore_grade'] ?? null,
             'eco_score' => $product['ecoscore_grade'] ?? null,
+            // How processed the food is, 1–4. Comes free with the same call.
+            'nova_group' => isset($product['nova_group']) ? (int) $product['nova_group'] : null,
+            'ingredients_text' => $product['ingredients_text'] ?? null,
+            'allergens' => $this->tagList($product['allergens_tags'] ?? []),
+            'category' => $this->tagList($product['categories_tags'] ?? [])[0] ?? null,
+            'net_quantity' => $product['quantity'] ?? null,
+            'serving_size' => $product['serving_size'] ?? null,
         ];
+    }
+
+    /**
+     * Open Food Facts tags come language-prefixed ("en:milk"); strip the prefix
+     * and tidy them into readable words.
+     */
+    private function tagList(array $tags): array
+    {
+        return array_values(array_filter(array_map(function ($tag) {
+            $value = str_contains($tag, ':') ? substr($tag, strpos($tag, ':') + 1) : $tag;
+
+            return trim(str_replace('-', ' ', $value));
+        }, $tags)));
     }
 }

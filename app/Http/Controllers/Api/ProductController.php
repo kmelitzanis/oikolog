@@ -21,6 +21,43 @@ class ProductController extends Controller
         return response()->json($query->paginate($request->integer('per_page', 50)));
     }
 
+    /**
+     * Type-ahead for the shopping list: the few products whose name starts
+     * with, or contains, what has been typed so far.
+     *
+     * Ordered by how often they have actually been bought, so the milk you buy
+     * every week beats the one you tried once.
+     */
+    public function suggest(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->input('q'));
+
+        if (mb_strlen($term) < 2) {
+            return response()->json([]);
+        }
+
+        $products = Product::query()
+            ->withCount('purchases')
+            ->where('name', 'like', '%' . $term . '%')
+            // Prefix matches first — they are what the user is most likely typing.
+            ->orderByRaw('CASE WHEN name LIKE ? THEN 0 ELSE 1 END', [$term . '%'])
+            ->orderByDesc('purchases_count')
+            ->orderBy('name')
+            ->limit(6)
+            ->get(['id', 'name', 'brand', 'unit', 'default_quantity', 'nutri_score', 'image_url', 'image_path']);
+
+        return response()->json($products->map(fn(Product $p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'brand' => $p->brand,
+            'unit' => $p->unit,
+            'default_quantity' => $p->default_quantity,
+            'nutri_score' => $p->nutri_score,
+            'image' => $p->imageUrl(),
+            'purchases_count' => $p->purchases_count,
+        ]));
+    }
+
     public function categories(Request $request): JsonResponse
     {
         $categories = Product::forUser($request->user())

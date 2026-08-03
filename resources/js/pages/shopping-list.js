@@ -22,6 +22,9 @@ window.shoppingListApp = function () {
             return (window.__unitLabels || {})[unit] || unit;
         },
         products: [],
+        suggestions: [],
+        suggestionIndex: -1,
+        suggestTimer: null,
         selectedProductId: null,
         barcodeInput: '',
         barcodeResult: null,
@@ -61,6 +64,45 @@ window.shoppingListApp = function () {
             return `${c * this.progress / 100} ${c}`;
         },
 
+        // ── Products ───────────────────────────────────────────────────────
+
+        /**
+         * The Nutri-Score grade behind a line, or null. Items typed by hand have
+         * no product and therefore no grade — the badge still renders, muted, so
+         * rows keep the same shape.
+         */
+        grade(item) {
+            const g = (item.product && item.product.nutri_score || '').toLowerCase();
+            return ['a', 'b', 'c', 'd', 'e'].includes(g) ? g : null;
+        },
+        gradeClass(item) {
+            return {
+                a: 'bg-[#038141] text-white',
+                b: 'bg-[#85bb2f] text-white',
+                c: 'bg-[#fecb02] text-slate-900',
+                d: 'bg-[#ee8100] text-white',
+                e: 'bg-[#e63e11] text-white',
+            }[this.grade(item)] || 'bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500';
+        },
+        gradeLabel(item) {
+            const g = this.grade(item);
+            return g ? g.toUpperCase() : '—';
+        },
+
+        /** Open the product's page, creating one first for a hand-typed line. */
+        async openProduct(item) {
+            if (item.product_id) {
+                window.location = `/products/${item.product_id}`;
+                return;
+            }
+            const res = await fetch(`/shopping-list/items/${item.id}/promote`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            });
+            if (res.ok) window.location = res.url;
+            else this.flash('Could not open the product', true);
+        },
+
         // ── Item mutations (optimistic) ────────────────────────────────────
         async toggleItem(item) {
             item.checked = !item.checked; // optimistic
@@ -82,11 +124,66 @@ window.shoppingListApp = function () {
             this.addItemModalOpen = true;
         },
 
+        // ── Type-ahead on the quick-add input ──────────────────────────────
+
+        /**
+         * Ask for suggestions after a short pause, so a fast typist makes one
+         * request instead of one per keystroke.
+         */
+        suggest() {
+            clearTimeout(this.suggestTimer);
+            this.suggestionIndex = -1;
+
+            const term = this.quickName.trim();
+            if (term.length < 2) { this.suggestions = []; return; }
+
+            this.suggestTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(term)}`, {
+                        headers: { 'Accept': 'application/json' },
+                    });
+                    this.suggestions = res.ok ? await res.json() : [];
+                } catch (e) { this.suggestions = []; }
+            }, 180);
+        },
+
+        moveSuggestion(step) {
+            if (!this.suggestions.length) return;
+            const next = this.suggestionIndex + step;
+            this.suggestionIndex = next < -1 ? this.suggestions.length - 1
+                : next >= this.suggestions.length ? -1 : next;
+        },
+
+        dismissSuggestions() {
+            this.suggestions = [];
+            this.suggestionIndex = -1;
+        },
+
+        /** Add a suggested product, keeping the link to the catalogue entry. */
+        async addSuggestion(p) {
+            this.quickName = '';
+            this.dismissSuggestions();
+            await this.postItem({
+                name: p.name,
+                quantity: p.default_quantity || 1,
+                unit: p.unit || 'piece',
+                product_id: p.id,
+            });
+            await this.loadItems();
+        },
+
         // Quick add straight from the header input
         async quickAdd() {
+            // Enter with a highlighted suggestion takes it rather than the
+            // half-typed text.
+            if (this.suggestionIndex >= 0 && this.suggestions[this.suggestionIndex]) {
+                return this.addSuggestion(this.suggestions[this.suggestionIndex]);
+            }
+
             const name = this.quickName.trim();
             if (!name) return;
             this.quickName = '';
+            this.dismissSuggestions();
             await this.postItem({ name, quantity: 1, unit: 'piece' });
             await this.loadItems();
         },

@@ -50,6 +50,20 @@
            class="w-full mt-1.5 h-[42px] rounded-2xl border border-dashed border-gray-200 dark:border-slate-700 text-amber-600 dark:text-amber-400 text-[0.82rem] font-semibold flex items-center justify-center transition hover:bg-amber-50 dark:hover:bg-amber-500/10">
             + {{ __('messages.new_list') }}
         </a>
+
+        {{-- The catalogue is not a place of its own: it is the history behind
+             these lists, so it is reached from here. --}}
+        <a href="{{ route('products.index') }}"
+           class="flex items-center gap-3 p-3 mt-1.5 rounded-2xl border-t border-gray-100 dark:border-slate-700/60 transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
+            <span class="w-[34px] h-[34px] rounded-xl shrink-0 flex items-center justify-center bg-emerald-500/[0.14] text-emerald-600 dark:text-emerald-400">
+                <span class="material-icons-round text-lg">inventory_2</span>
+            </span>
+            <span class="flex-1 min-w-0">
+                <span class="block text-[0.84rem] font-semibold text-gray-900 dark:text-white truncate">{{ __('messages.bought_products') }}</span>
+                <span class="block text-[0.68rem] text-gray-400 dark:text-slate-500 mt-px">{{ __('messages.bought_products_hint') }}</span>
+            </span>
+            <span class="material-icons-round text-gray-300 dark:text-slate-600" style="font-size:18px;">chevron_right</span>
+        </a>
     </div>
 
     {{-- ── Open list ──────────────────────────────────────────────────── --}}
@@ -136,12 +150,24 @@
                             : 'border-gray-300 dark:border-slate-500 hover:border-amber-500'">
                     <span class="material-icons-round text-sm" x-show="item.checked">check</span>
                 </button>
+                {{-- Nutri-Score of the product behind this line. Muted "—" when
+                     there is no product or no grade, so rows stay aligned. --}}
+                <button type="button" @click="openProduct(item)"
+                        class="shrink-0 w-6 h-6 rounded-md inline-flex items-center justify-center text-[0.72rem] font-extrabold uppercase transition hover:scale-110"
+                        :class="gradeClass(item)"
+                        :title="'{{ __('messages.nutri_score') }}'"
+                        x-text="gradeLabel(item)"></button>
+
                 <div class="flex-1 min-w-0">
-                    <div class="text-[0.88rem] font-semibold truncate"
-                         :class="item.checked
-                            ? 'text-gray-400 dark:text-slate-500 line-through'
-                            : 'text-gray-900 dark:text-white'"
-                         x-text="item.name"></div>
+                    <button type="button" @click="openProduct(item)"
+                            class="block w-full text-left text-[0.88rem] font-semibold truncate hover:underline"
+                            :class="item.checked
+                                ? 'text-gray-400 dark:text-slate-500 line-through'
+                                : 'text-gray-900 dark:text-white'"
+                            x-text="item.name"></button>
+                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 truncate"
+                         x-show="item.product && item.product.brand" x-cloak
+                         x-text="item.product && item.product.brand"></div>
                 </div>
                 {{-- Quantity stepper --}}
                 <div class="flex items-center gap-2 shrink-0">
@@ -163,11 +189,50 @@
             </div>
         </template>
 
-        {{-- Add row --}}
-        <form @submit.prevent="quickAdd()"
-              class="flex items-center gap-2.5 px-5 py-3.5 border-t border-gray-100 dark:border-slate-700/60">
+        {{-- Add row, with type-ahead over the product catalogue --}}
+        <form @submit.prevent="quickAdd()" @click.outside="dismissSuggestions()"
+              class="relative flex items-center gap-2.5 px-5 py-3.5 border-t border-gray-100 dark:border-slate-700/60">
             <input type="text" x-model="quickName" placeholder="{{ __('messages.add_product_ph') }}"
+                   @input="suggest()"
+                   @keydown.arrow-down.prevent="moveSuggestion(1)"
+                   @keydown.arrow-up.prevent="moveSuggestion(-1)"
+                   @keydown.escape="dismissSuggestions()"
+                   autocomplete="off"
                    class="flex-1 min-w-0 bg-transparent border-0 outline-none p-0 text-[0.8rem] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600">
+
+            {{-- Suggestions from what has been bought before. Above the row, so
+                 it doesn't cover the list while you read it. --}}
+            <div x-show="suggestions.length" x-cloak x-transition.opacity
+                 class="absolute left-4 right-4 bottom-full mb-2 z-20 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-600 rounded-2xl shadow-[0_12px_40px_rgba(2,6,23,0.25)] overflow-hidden">
+                <template x-for="(p, i) in suggestions" :key="p.id">
+                    <button type="button" @click="addSuggestion(p)" @mouseenter="suggestionIndex = i"
+                            class="w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition"
+                            :class="suggestionIndex === i ? 'bg-amber-50 dark:bg-amber-500/10' : ''">
+                        <span class="w-8 h-8 rounded-lg overflow-hidden bg-gray-50 dark:bg-slate-900 shrink-0 flex items-center justify-center">
+                            <template x-if="p.image">
+                                <img :src="p.image" alt="" class="w-full h-full object-contain">
+                            </template>
+                            <template x-if="!p.image">
+                                <span class="material-icons-round text-base text-gray-300 dark:text-slate-600">shopping_basket</span>
+                            </template>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-[0.82rem] font-semibold text-gray-900 dark:text-white truncate" x-text="p.name"></span>
+                            <span class="block text-[0.68rem] text-gray-400 dark:text-slate-500 truncate">
+                                <span x-text="p.brand || ''"></span>
+                                <template x-if="p.purchases_count > 0">
+                                    <span x-text="(p.brand ? ' · ' : '') + (p.purchases_count === 1
+                                        ? '{{ __('messages.bought_once') }}'
+                                        : '{{ __('messages.bought_times', ['count' => ':n']) }}'.replace(':n', p.purchases_count))"></span>
+                                </template>
+                            </span>
+                        </span>
+                        <span class="shrink-0 w-6 h-6 rounded-md inline-flex items-center justify-center text-[0.72rem] font-extrabold uppercase"
+                              :class="gradeClass({ product: p })"
+                              x-text="gradeLabel({ product: p })"></span>
+                    </button>
+                </template>
+            </div>
             <button type="button" @click="openAdd()" title="{{ __('messages.add_item') }}"
                     class="shrink-0 w-8 h-8 rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 flex items-center justify-center transition">
                 <span class="material-icons-round text-base">tune</span>
