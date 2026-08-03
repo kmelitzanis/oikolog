@@ -17,7 +17,7 @@
     <div x-data="{ transferOpen: false, movementOpen: false }">
 
         <div class="flex items-center gap-3 mb-6">
-            <a href="{{ route('accounts.index') }}"
+            <a href="{{ route('income.index', ['tab' => 'accounts']) }}"
                class="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition shrink-0">
                 <span class="material-icons-round">arrow_back</span>
             </a>

@@ -62,8 +62,7 @@
                 $navLinks = [
                     ['route' => 'dashboard',         'icon' => 'dashboard',    'label' => __('messages.dashboard'),    'match' => 'dashboard'],
                     ['route' => 'bills.index',       'icon' => 'receipt_long', 'label' => __('messages.bills'),        'match' => 'bills.*'],
-                    ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => 'income.*'],
-                    ['route' => 'accounts.index',    'icon' => 'account_balance', 'label' => __('messages.accounts'),  'match' => 'accounts.*'],
+                    ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => ['income.*', 'accounts.*']],
                     ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
                     ['route' => 'shopping-list.index', 'icon' => 'shopping_cart', 'label' => __('messages.shopping_lists'), 'match' => 'shopping-list.*'],
                     ['route' => 'recipes.index',     'icon' => 'restaurant_menu','label' => __('messages.recipes'),      'match' => 'recipes.*'],
@@ -73,7 +72,7 @@
             @foreach($navLinks as $link)
                 <a href="{{ route($link['route']) }}" @click="sidebarOpen=false"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
-                          {{ request()->routeIs($link['match'])
+                          {{ request()->routeIs(...(array) $link['match'])
                               ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
                               : 'text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white' }}">
                     <span class="material-icons-round text-xl">{{ $link['icon'] }}</span>
@@ -316,8 +315,7 @@
                 ['route' => 'dashboard',    'icon' => 'dashboard',    'match' => 'dashboard'],
                 ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*'],
                 ['route' => 'recipes.index','icon' => 'restaurant_menu','match' => 'recipes.*'],
-                ['route' => 'income.index', 'icon' => 'trending_up',  'match' => 'income.*'],
-                ['route' => 'accounts.index', 'icon' => 'account_balance', 'match' => 'accounts.*'],
+                ['route' => 'income.index', 'icon' => 'trending_up',  'match' => ['income.*', 'accounts.*']],
             ];
         @endphp
 
@@ -334,10 +332,10 @@
                 @foreach(array_slice($bottomNavLinks, 0, 2) as $link)
                     <a href="{{ route($link['route']) }}"
                        class="flex flex-col items-center justify-center gap-1 w-12
-                                  {{ request()->routeIs($link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
+                                  {{ request()->routeIs(...(array) $link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
                         <span class="material-icons-round" style="font-size:22px;">{{ $link['icon'] }}</span>
                         <span
-                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs($link['match']) ? 'bg-amber-500' : 'bg-transparent' }}"></span>
+                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs(...(array) $link['match']) ? 'bg-amber-500' : 'bg-transparent' }}"></span>
                     </a>
                 @endforeach
 
@@ -347,10 +345,10 @@
                 @foreach(array_slice($bottomNavLinks, 2, 2) as $link)
                     <a href="{{ route($link['route']) }}"
                        class="flex flex-col items-center justify-center gap-1 w-12
-                                  {{ request()->routeIs($link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
+                                  {{ request()->routeIs(...(array) $link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
                         <span class="material-icons-round" style="font-size:22px;">{{ $link['icon'] }}</span>
                         <span
-                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs($link['match']) ? 'bg-amber-500' : 'bg-transparent' }}"></span>
+                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs(...(array) $link['match']) ? 'bg-amber-500' : 'bg-transparent' }}"></span>
                     </a>
                 @endforeach
             </div>

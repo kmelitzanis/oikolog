@@ -23,7 +23,7 @@
     <div class="max-w-3xl">
 
         <div class="flex items-center gap-3 mb-6">
-            <a href="{{ $editing ? route('accounts.show', $account) : route('accounts.index') }}"
+            <a href="{{ $editing ? route('accounts.show', $account) : route('income.index', ['tab' => 'accounts']) }}"
                class="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition shrink-0">
                 <span class="material-icons-round">arrow_back</span>
             </a>
@@ -138,7 +138,7 @@
                         class="h-11 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-bold transition shadow-[0_6px_18px_rgba(245,158,11,0.32)]">
                     {{ $editing ? __('messages.save') : __('messages.add_account') }}
                 </button>
-                <a href="{{ $editing ? route('accounts.show', $account) : route('accounts.index') }}"
+                <a href="{{ $editing ? route('accounts.show', $account) : route('income.index', ['tab' => 'accounts']) }}"
                    class="h-11 px-5 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 text-sm font-semibold flex items-center hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                     {{ __('messages.cancel') }}
                 </a>

@@ -75,6 +75,37 @@ class Account extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Every account the user can see, each with its balance and this month's
+     * movements, plus the totals across the active ones.
+     *
+     * @return array{rows: \Illuminate\Support\Collection, stats: array}
+     */
+    public static function summaryFor($user): array
+    {
+        $from = now()->startOfMonth();
+        $to   = now()->endOfMonth();
+
+        $rows = static::forUser($user)->orderByDesc('is_active')->orderBy('name')->get()
+            ->map(fn(self $a) => [
+                'account'   => $a,
+                'balance'   => $a->balance(),
+                'movements' => $a->movementsBetween($from, $to),
+            ]);
+
+        $active = $rows->filter(fn($r) => $r['account']->is_active);
+
+        return [
+            'rows' => $rows,
+            'stats' => [
+                'total' => round($active->sum('balance'), 2),
+                'in'    => round($active->sum(fn($r) => $r['movements']['in']), 2),
+                'out'   => round($active->sum(fn($r) => $r['movements']['out']), 2),
+                'count' => $active->count(),
+            ],
+        ];
+    }
+
     // ── Balance ────────────────────────────────────────────────────────────────
 
     /** Opening balance plus every movement recorded against this account. */

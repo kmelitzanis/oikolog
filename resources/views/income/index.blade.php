@@ -23,25 +23,68 @@
         $monthName = \Illuminate\Support\Str::after(now()->isoFormat('D MMMM'), ' ');
     @endphp
 
+    {{-- The page carries two tabs: where money comes from, and where it sits.
+         They are one subject, and in Greek "λογαριασμοί" would otherwise be
+         the same menu word as bills. --}}
+    <div x-data="{
+            tab: '{{ $tab }}',
+            select(name) {
+                this.tab = name;
+                // Keep the tab in the URL so a reload, or a redirect back from
+                // an account page, lands where the user was.
+                const url = new URL(window.location);
+                name === 'income' ? url.searchParams.delete('tab') : url.searchParams.set('tab', name);
+                history.replaceState({}, '', url);
+            },
+         }">
+
     {{-- ── Header ─────────────────────────────────────────────────────── --}}
-    <div class="flex items-end justify-between gap-5 mb-[22px] flex-wrap">
+    <div class="flex items-end justify-between gap-5 mb-4 flex-wrap">
         <div>
             <div class="text-[1.6rem] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white leading-tight">
                 {{ __('messages.income') }}
             </div>
             <div class="text-[0.82rem] text-gray-400 dark:text-slate-500 mt-[3px]">
-                {{ __('messages.received_summary', [
-                    'count' => $stats['received_count'],
-                    'total' => $stats['total_sources'],
-                ]) }}
+                <span x-show="tab === 'income'">
+                    {{ __('messages.received_summary', [
+                        'count' => $stats['received_count'],
+                        'total' => $stats['total_sources'],
+                    ]) }}
+                </span>
+                <span x-show="tab === 'accounts'" x-cloak>
+                    {{ __('messages.accounts_count', ['count' => $accountStats['count']]) }}
+                </span>
             </div>
         </div>
-        <a href="{{ route('income.create') }}"
+
+        <a x-show="tab === 'income'" href="{{ route('income.create') }}"
            class="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-[0.82rem] font-bold whitespace-nowrap flex items-center gap-2 transition shadow-[0_6px_18px_rgba(245,158,11,0.32)]">
             <span class="material-icons-round text-base">add</span>{{ __('messages.add_income') }}
         </a>
+        <a x-show="tab === 'accounts'" x-cloak href="{{ route('accounts.create') }}"
+           class="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-[0.82rem] font-bold whitespace-nowrap flex items-center gap-2 transition shadow-[0_6px_18px_rgba(245,158,11,0.32)]">
+            <span class="material-icons-round text-base">add</span>{{ __('messages.add_account') }}
+        </a>
     </div>
 
+    {{-- ── Tabs ───────────────────────────────────────────────────────── --}}
+    <div class="flex gap-1.5 mb-[18px] border-b border-gray-100 dark:border-slate-700">
+        @foreach([
+            ['key' => 'income',   'icon' => 'trending_up',     'label' => __('messages.income_sources')],
+            ['key' => 'accounts', 'icon' => 'account_balance', 'label' => __('messages.accounts')],
+        ] as $t)
+            <button type="button" @click="select('{{ $t['key'] }}')"
+                    :class="tab === '{{ $t['key'] }}'
+                        ? 'border-amber-500 text-gray-900 dark:text-white'
+                        : 'border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'"
+                    class="flex items-center gap-2 px-3.5 py-2.5 -mb-px border-b-2 text-[0.85rem] font-semibold transition">
+                <span class="material-icons-round text-base">{{ $t['icon'] }}</span>{{ $t['label'] }}
+            </button>
+        @endforeach
+    </div>
+
+    {{-- ── Income sources ─────────────────────────────────────────────── --}}
+    <div x-show="tab === 'income'" @if($tab === 'accounts') style="display:none" @endif>
     <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-[18px] items-start">
 
         {{-- ── Received this month ────────────────────────────────────── --}}
@@ -209,4 +252,12 @@
         <div class="mt-4">{{ $incomes->appends(request()->query())->links() }}</div>
     @endif
 
+    </div>
+
+    {{-- ── Accounts ───────────────────────────────────────────────────── --}}
+    <div x-show="tab === 'accounts'" @if($tab !== 'accounts') style="display:none" @endif>
+        @include('accounts._panel', ['rows' => $accountRows, 'stats' => $accountStats])
+    </div>
+
+    </div>
 @endsection

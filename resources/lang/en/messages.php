@@ -407,6 +407,7 @@ return [
     'add_step' => 'Add step',
     'step_placeholder' => 'Describe the step…',
     'image_too_large' => 'That image’s dimensions are too large.',
+    'income_sources' => 'Income sources',
     // ── Accounts, ledger and transfers ───────────────────────────────────
     'accounts' => 'Accounts',
     'account' => 'Account',

@@ -14,29 +14,14 @@ class AccountController extends Controller
 {
     public function __construct(private Ledger $ledger) {}
 
-    public function index(Request $request)
+    /**
+     * Accounts live on the income page: in Greek "λογαριασμοί" means both a
+     * bill and a bank account, and the two concepts belong together anyway.
+     * This route stays only so existing links and bookmarks land somewhere.
+     */
+    public function index()
     {
-        $user = $request->user();
-        $accounts = Account::forUser($user)->orderByDesc('is_active')->orderBy('name')->get();
-
-        $from = now()->startOfMonth();
-        $to   = now()->endOfMonth();
-
-        $rows = $accounts->map(fn(Account $a) => [
-            'account'   => $a,
-            'balance'   => $a->balance(),
-            'movements' => $a->movementsBetween($from, $to),
-        ]);
-
-        $active = $rows->filter(fn($r) => $r['account']->is_active);
-        $stats = [
-            'total'    => round($active->sum('balance'), 2),
-            'in'       => round($active->sum(fn($r) => $r['movements']['in']), 2),
-            'out'      => round($active->sum(fn($r) => $r['movements']['out']), 2),
-            'count'    => $active->count(),
-        ];
-
-        return view('accounts.index', compact('rows', 'stats'));
+        return redirect()->route('income.index', ['tab' => 'accounts']);
     }
 
     public function create()
@@ -55,7 +40,7 @@ class AccountController extends Controller
             'family_id' => $data['is_shared'] ? $request->user()->family_id : null,
         ]);
 
-        return redirect()->route('accounts.index')->with('success', __('messages.account_created'));
+        return redirect()->route('income.index', ['tab' => 'accounts'])->with('success', __('messages.account_created'));
     }
 
     public function show(Request $request, Account $account)
@@ -112,12 +97,12 @@ class AccountController extends Controller
         if ($account->transactions()->exists()) {
             $account->update(['is_active' => false]);
 
-            return redirect()->route('accounts.index')->with('success', __('messages.account_archived'));
+            return redirect()->route('income.index', ['tab' => 'accounts'])->with('success', __('messages.account_archived'));
         }
 
         $account->delete();
 
-        return redirect()->route('accounts.index')->with('success', __('messages.account_deleted'));
+        return redirect()->route('income.index', ['tab' => 'accounts'])->with('success', __('messages.account_deleted'));
     }
 
     /** Move money to another account. */

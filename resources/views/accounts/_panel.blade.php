@@ -1,33 +1,15 @@
-@extends('layouts.app')
-@section('title', __('messages.accounts'))
-
 {{--
-    Accounts overview: the total across every active account, and one row per
-    account with its balance and this month's in/out.
+    The accounts panel: total balance across the active accounts, and one row
+    per account. Rendered inside the income page — accounts and income are the
+    same subject, and "λογαριασμοί" already means bills in the Greek menu.
+
+    Expects: $rows (account / balance / movements), $stats.
 --}}
-
-@section('content')
-    @php
-        $currency = auth()->user()->currency_code;
-        $symbols = ['EUR'=>'€','USD'=>'$','GBP'=>'£','CHF'=>'Fr','CAD'=>'CA$','AUD'=>'A$','JPY'=>'¥'];
-        $symbol  = $symbols[$currency] ?? $currency;
-    @endphp
-
-    {{-- ── Header ─────────────────────────────────────────────────────── --}}
-    <div class="flex items-end justify-between gap-5 mb-[22px] flex-wrap">
-        <div>
-            <div class="text-[1.6rem] font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white leading-tight">
-                {{ __('messages.accounts') }}
-            </div>
-            <div class="text-[0.82rem] text-gray-400 dark:text-slate-500 mt-[3px]">
-                {{ __('messages.accounts_count', ['count' => $stats['count']]) }}
-            </div>
-        </div>
-        <a href="{{ route('accounts.create') }}"
-           class="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-[0.82rem] font-bold whitespace-nowrap flex items-center gap-2 transition shadow-[0_6px_18px_rgba(245,158,11,0.32)]">
-            <span class="material-icons-round text-base">add</span>{{ __('messages.add_account') }}
-        </a>
-    </div>
+@php
+    $currency = auth()->user()->currency_code;
+    $symbols = ['EUR'=>'€','USD'=>'$','GBP'=>'£','CHF'=>'Fr','CAD'=>'CA$','AUD'=>'A$','JPY'=>'¥'];
+    $symbol  = $symbols[$currency] ?? $currency;
+@endphp
 
     <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-[18px] items-start">
 
@@ -118,4 +100,3 @@
             @endforelse
         </div>
     </div>
-@endsection
