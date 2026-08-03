@@ -63,6 +63,7 @@
                     ['route' => 'dashboard',         'icon' => 'dashboard',    'label' => __('messages.dashboard'),    'match' => 'dashboard'],
                     ['route' => 'bills.index',       'icon' => 'receipt_long', 'label' => __('messages.bills'),        'match' => 'bills.*'],
                     ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => 'income.*'],
+                    ['route' => 'accounts.index',    'icon' => 'account_balance', 'label' => __('messages.accounts'),  'match' => 'accounts.*'],
                     ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
                     ['route' => 'shopping-list.index', 'icon' => 'shopping_cart', 'label' => __('messages.shopping_lists'), 'match' => 'shopping-list.*'],
                     ['route' => 'recipes.index',     'icon' => 'restaurant_menu','label' => __('messages.recipes'),      'match' => 'recipes.*'],
@@ -316,6 +317,7 @@
                 ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*'],
                 ['route' => 'recipes.index','icon' => 'restaurant_menu','match' => 'recipes.*'],
                 ['route' => 'income.index', 'icon' => 'trending_up',  'match' => 'income.*'],
+                ['route' => 'accounts.index', 'icon' => 'account_balance', 'match' => 'accounts.*'],
             ];
         @endphp
 

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Account;
 use App\Models\Income;
+use App\Services\Ledger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -42,16 +44,8 @@ class IncomeController extends Controller
         );
         $received = round($receivedSources->sum('amount'), 2);
 
-        // Bill payments funded from these sources reduce what is still
-        // available — the totals must reflect that, not just the gross amounts.
-        $totalSpent = round($allActive->sum(fn($i) => $i->spentThisPeriod()), 2);
-        $totalGross = round((float) $allActive->sum('amount'), 2);
-
         $stats = [
             'monthly_income' => $monthlyIncome,
-            'total_gross' => $totalGross,
-            'total_spent' => $totalSpent,
-            'total_remaining' => round($totalGross - $totalSpent, 2),
             'yearly_income' => round($monthlyIncome * 12, 2),
             'total_sources' => $allActive->count(),
             'recurring' => $allActive->filter(fn($i) => $i->frequency !== 'once')->count(),
@@ -65,9 +59,11 @@ class IncomeController extends Controller
         return view('income.index', compact('incomes', 'stats'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('income.form');
+        $accounts = Account::forUser($request->user())->active()->orderBy('name')->get();
+
+        return view('income.form', compact('accounts'));
     }
 
     public function store(Request $request)
@@ -77,6 +73,7 @@ class IncomeController extends Controller
             'description' => ['nullable', 'string'],
             'source' => ['nullable', 'string', 'max:80'],
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'account_id' => ['nullable', 'exists:accounts,id'],
             'frequency' => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date' => ['required', 'date'],
@@ -102,35 +99,22 @@ class IncomeController extends Controller
     {
         $this->authorizeAccess($income);
 
-        $periodStart = $income->currentPeriodStart();
-        $periodEnd   = $income->currentPeriodEnd();
+        $income->load('account');
 
-        $query = $income->payments()
-            ->with(['bill:id,name,category_id', 'bill.category:id,name,icon,color_hex', 'paidBy:id,name'])
-            ->whereNotNull('paid_at')
-            ->orderByDesc('paid_at');
+        $deposits = $income->deposits()->with('account:id,name,icon,color_hex')
+            ->orderByDesc('occurred_at')->limit(24)->get();
 
-        if ($periodStart) {
-            $query->where('paid_at', '>=', $periodStart->copy()->startOfDay());
-            if ($periodEnd) $query->where('paid_at', '<', $periodEnd->copy()->startOfDay());
-        }
+        $receivedTotal = round((float) $income->deposits()->sum('amount'), 2);
 
-        $periodPayments = $query->get();
-        $spent          = round((float) $periodPayments->sum('amount'), 2);
-        $remaining      = round((float) $income->amount - $spent, 2);
-        $spentPercent   = (float) $income->amount > 0
-            ? (int) min(100, round($spent / (float) $income->amount * 100))
-            : 0;
-
-        return view('income.show', compact(
-            'income', 'periodStart', 'periodEnd', 'periodPayments', 'spent', 'remaining', 'spentPercent'
-        ));
+        return view('income.show', compact('income', 'deposits', 'receivedTotal'));
     }
 
     public function edit(Income $income)
     {
         $this->authorizeAccess($income);
-        return view('income.form', compact('income'));
+        $accounts = Account::forUser(request()->user())->active()->orderBy('name')->get();
+
+        return view('income.form', compact('income', 'accounts'));
     }
 
     public function update(Request $request, Income $income)
@@ -142,6 +126,7 @@ class IncomeController extends Controller
             'description' => ['nullable', 'string'],
             'source' => ['nullable', 'string', 'max:80'],
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'account_id' => ['nullable', 'exists:accounts,id'],
             'frequency' => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date' => ['required', 'date'],
@@ -169,18 +154,47 @@ class IncomeController extends Controller
         return redirect()->route('income.index')->with('success', 'Income deleted.');
     }
 
-    /** Mark the income as received today and advance next_date */
-    public function markReceived(Request $request, Income $income)
+    /**
+     * Mark the income as received: advance the schedule and, when the source
+     * has a destination account, deposit the money there. The amount and date
+     * can be overridden — a salary rarely lands on exactly the planned day or
+     * to the cent.
+     */
+    public function markReceived(Request $request, Income $income, Ledger $ledger)
     {
         $this->authorizeAccess($income);
 
+        $data = $request->validate([
+            'amount' => ['nullable', 'numeric', 'min:0.01'],
+            'received_at' => ['nullable', 'date', 'before_or_equal:today'],
+            'account_id' => ['nullable', 'exists:accounts,id'],
+        ]);
+
+        $receivedAt = isset($data['received_at'])
+            ? \Carbon\Carbon::parse($data['received_at'])->setTimeFrom(now())
+            : now();
+        $amount = (float) ($data['amount'] ?? $income->amount);
+
+        $account = null;
+        if (!empty($data['account_id'])) {
+            $account = Account::forUser($request->user())->find($data['account_id']);
+        } elseif ($income->account_id) {
+            $account = Account::forUser($request->user())->find($income->account_id);
+        }
+
         $nextDate = $income->calculateNextDate();
         $income->update([
-            'last_received_date' => now()->toDateString(),
+            'last_received_date' => $receivedAt->toDateString(),
             'next_date' => $nextDate ? $nextDate->toDateString() : $income->next_date,
         ]);
 
-        return back()->with('success', 'Income marked as received.');
+        if ($account) {
+            $ledger->deposit($account, $amount, $receivedAt, $request->user()->id, $income->name, $income);
+        }
+
+        return back()->with('success', $account
+            ? __('messages.income_deposited', ['account' => $account->name])
+            : __('messages.income_received_no_account'));
     }
 
     private function authorizeAccess(Income $income): void

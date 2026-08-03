@@ -136,7 +136,7 @@
                                 currency:   '{{ $currency }}',
                                 payRoute:   '{{ route('bills.pay', $bill) }}',
                                 costVaries: {{ $bill->cost_varies ? 'true' : 'false' }},
-                                defaultIncomeId: '{{ $bill->default_income_id }}'
+                                defaultAccountId: '{{ $bill->default_account_id }}'
                             })"
                             class="shrink-0 h-[34px] px-3 rounded-xl bg-emerald-500/[0.14] border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[0.76rem] font-bold flex items-center gap-1.5 cursor-pointer transition hover:bg-emerald-500/25">
                         <span class="material-icons-round text-sm">check</span>

@@ -13,7 +13,7 @@
 --}}
 @php
     $familyMembers = collect();
-    $userIncomes   = collect();
+    $userAccounts  = collect();
 
     if (auth()->check()) {
         $authUser = auth()->user();
@@ -24,9 +24,9 @@
                 ->get(['id', 'name']);
         }
 
-        // Full models: the picker labels each source with what is still left
-        // of it, which needs the frequency/date fields to compute the period.
-        $userIncomes = \App\Models\Income::forUser($authUser)
+        // The picker labels each account with its live balance, so you can see
+        // what you are about to spend against before you spend it.
+        $userAccounts = \App\Models\Account::forUser($authUser)
             ->active()
             ->orderBy('name')
             ->get();
@@ -44,7 +44,7 @@
         customAmount: '',
         partialAmount: '',
         paidByUserId: '{{ auth()->id() }}',
-        incomeId: '',
+        accountId: '',
         paidAt: '{{ now()->toDateString() }}',
         paymentMode: 'full',
         remainingBalance: null,
@@ -68,7 +68,7 @@
             this.remainingBalance = data.remainingBalance ?? null;
             this.partialAmount   = '';
             this.paidByUserId    = '{{ auth()->id() }}';
-            this.incomeId        = data.defaultIncomeId ?? '';
+            this.accountId       = data.defaultAccountId || '{{ optional($userAccounts->first())->id }}';
             this.paidAt          = '{{ now()->toDateString() }}';
             this.paymentMode     = 'full';
             this.open            = true;
@@ -184,23 +184,26 @@
                            class="w-full bg-transparent border-0 outline-none p-0 mt-0.5 text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]">
                 </div>
                 <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-3.5 py-[11px] min-w-0">
-                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">{{ __('messages.from_income') }}</div>
-                    @if($userIncomes->count() > 0)
-                        <select x-model="incomeId"
+                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">{{ __('messages.from_account') }}</div>
+                    @if($userAccounts->count() > 0)
+                        {{-- Required: the money has to leave a real account, or
+                             the balances stop describing reality. --}}
+                        <select x-model="accountId" required
                                 class="w-full bg-transparent border-0 outline-none p-0 mt-0.5 text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200">
-                            <option value="">—</option>
-                            @foreach($userIncomes as $income)
+                            @foreach($userAccounts as $acc)
                                 @php
-                                    $incRemaining = $income->remainingThisPeriod();
-                                    $incSymbol = ['EUR'=>'€','USD'=>'$','GBP'=>'£'][$income->currency_code] ?? $income->currency_code;
+                                    $accSymbol = ['EUR'=>'€','USD'=>'$','GBP'=>'£'][$acc->currency_code] ?? $acc->currency_code;
                                 @endphp
-                                <option value="{{ $income->id }}">
-                                    {{ $income->name }} · {{ $incSymbol }}{{ number_format($incRemaining, 2) }}
+                                <option value="{{ $acc->id }}">
+                                    {{ $acc->name }} · {{ $accSymbol }}{{ number_format($acc->balance(), 2) }}
                                 </option>
                             @endforeach
                         </select>
                     @else
-                        <div class="text-[0.84rem] font-semibold text-gray-400 dark:text-slate-500 mt-0.5">—</div>
+                        <a href="{{ route('accounts.create') }}"
+                           class="block text-[0.8rem] font-semibold text-amber-600 dark:text-amber-400 mt-0.5 truncate">
+                            {{ __('messages.add_account') }}
+                        </a>
                     @endif
                 </div>
             </div>
@@ -263,7 +266,7 @@
         @csrf
         <input type="hidden" name="payment_mode" :value="paymentMode">
         <input type="hidden" name="paid_by_user_id" :value="paidByUserId">
-        <input type="hidden" name="income_id" :value="incomeId">
+        <input type="hidden" name="account_id" :value="accountId">
         <input type="hidden" name="paid_at" :value="paidAt">
         <input type="hidden" name="custom_amount" :value="customAmount">
         <input type="hidden" name="partial_amount" :value="partialAmount">

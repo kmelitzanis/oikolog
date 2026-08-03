@@ -69,6 +69,31 @@
                     </div>
                 </div>
 
+                {{-- Destination account: where the money lands when received. --}}
+                <div>
+                    <label for="account_id" class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
+                        {{ __('messages.deposit_account') }}
+                    </label>
+                    @if(isset($accounts) && $accounts->count() > 0)
+                        <select name="account_id" id="account_id"
+                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
+                            <option value="">{{ __('messages.no_deposit_account') }}</option>
+                            @foreach($accounts as $acc)
+                                <option value="{{ $acc->id }}"
+                                    {{ (string) old('account_id', $income->account_id ?? '') === (string) $acc->id ? 'selected' : '' }}>
+                                    {{ $acc->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1.5 text-xs text-gray-400 dark:text-slate-500">{{ __('messages.deposit_account_hint') }}</p>
+                    @else
+                        <a href="{{ route('accounts.create') }}"
+                           class="inline-flex items-center gap-2 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                            <span class="material-icons-round text-base">add</span>{{ __('messages.add_account') }}
+                        </a>
+                    @endif
+                </div>
+
                 {{-- Frequency --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Frequency *</label>

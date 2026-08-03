@@ -112,7 +112,7 @@
                                currency:         '{{ $bill->currency_code }}',
                                payRoute:         '{{ route('bills.pay', $bill) }}',
                                costVaries:       {{ $bill->cost_varies ? 'true' : 'false' }},
-                               defaultIncomeId:  '{{ $bill->default_income_id }}',
+                               defaultAccountId: '{{ $bill->default_account_id }}',
                                lastPaidAmount:   '{{ $bill->cost_varies && $lastPayment ? number_format((float)$lastPayment->amount, 2, '.', '') : '' }}',
                                remainingBalance: {{ $bill->hasPartialPayment() ? number_format($bill->getEffectiveRemainingBalance(), 2, '.', '') : 'null' }}
                            })">

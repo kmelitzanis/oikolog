@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Income;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +11,7 @@ class Payment extends Model
     use HasUlids;
 
     protected $fillable = [
-        'bill_id', 'paid_by', 'income_id', 'amount', 'is_partial', 'currency_code',
+        'bill_id', 'paid_by', 'account_id', 'amount', 'is_partial', 'currency_code',
         'exchange_rate', 'paid_at', 'notes',
     ];
 
@@ -31,9 +30,9 @@ class Payment extends Model
         return $this->belongsTo(Bill::class);
     }
 
-    public function income(): BelongsTo
+    public function account(): BelongsTo
     {
-        return $this->belongsTo(Income::class);
+        return $this->belongsTo(Account::class);
     }
 
     public function paidBy(): BelongsTo

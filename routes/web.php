@@ -70,6 +70,24 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{bill}/payments/{payment}', 'destroyPayment')->name('payments.destroy');
         });
 
+    // Accounts — where money actually sits. Incomes deposit into them, bill
+    // payments withdraw from them, transfers move between them.
+    Route::controller(App\Http\Controllers\Web\AccountController::class)
+        ->prefix('accounts')
+        ->name('accounts.')
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{account}', 'show')->name('show');
+            Route::get('/{account}/edit', 'edit')->name('edit');
+            Route::put('/{account}', 'update')->name('update');
+            Route::delete('/{account}', 'destroy')->name('destroy');
+            Route::post('/{account}/transfer', 'transfer')->name('transfer');
+            Route::post('/{account}/movements', 'storeTransaction')->name('movements.store');
+            Route::delete('/{account}/movements/{transaction}', 'destroyTransaction')->name('movements.destroy');
+        });
+
     // Income
     Route::controller(IncomeController::class)
         ->prefix('income')

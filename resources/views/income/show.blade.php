@@ -29,14 +29,12 @@
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <div class="text-sm text-emerald-200 mb-1">{{ $income->source ?? 'Income' }}</div>
-                    {{-- The headline is what's still available, not the gross
-                         amount — bill payments funded from here reduce it. --}}
                     <div
-                        class="text-4xl font-extrabold tracking-tight">{{ $symbol }}{{ number_format($remaining, 2) }}</div>
-                    @if($spent > 0)
-                        <div class="text-sm text-emerald-200 mt-1">
-                            {{ __('messages.income_of') }} {{ $symbol }}{{ number_format($income->amount, 2) }}
-                            · −{{ $symbol }}{{ number_format($spent, 2) }} {{ __('messages.income_spent') }}
+                        class="text-4xl font-extrabold tracking-tight">{{ $symbol }}{{ number_format($income->amount, 2) }}</div>
+                    @if($income->account)
+                        <div class="text-sm text-emerald-200 mt-1 flex items-center gap-1">
+                            <span class="material-icons-round" style="font-size:15px;">south_east</span>
+                            {{ __('messages.deposits_into', ['account' => $income->account->name]) }}
                         </div>
                     @endif
                     <div class="text-sm text-emerald-300 mt-1">{{ $income->frequencyLabel() }}</div>
@@ -68,72 +66,47 @@
             @endif
         </div>
 
-        {{-- Allocation: how much of this income has been spent on bills --}}
+        {{-- Where this income lands, and what it has actually deposited. --}}
         <x-card class="mb-6">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-sm font-bold text-gray-900 dark:text-white">{{ __('messages.income_allocation') }}</h2>
-                @if($periodStart)
-                    <span class="text-xs text-gray-400 dark:text-slate-500">
-                        {{ $periodStart->format('d M') }}@if($periodEnd) – {{ $periodEnd->copy()->subDay()->format('d M') }}@endif
-                    </span>
-                @endif
+            <div class="flex items-center justify-between mb-3 gap-3">
+                <h2 class="text-sm font-bold text-gray-900 dark:text-white">{{ __('messages.deposits') }}</h2>
+                <span class="text-xs text-gray-400 dark:text-slate-500">
+                    {{ __('messages.received_total') }}: {{ $symbol }}{{ number_format($receivedTotal, 2) }}
+                </span>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 mb-4">
-                <div class="text-center bg-gray-50 dark:bg-slate-700/40 rounded-xl py-3">
-                    <div class="text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">{{ __('messages.income_received') }}</div>
-                    <div class="text-base font-extrabold text-gray-900 dark:text-white mt-0.5">{{ $symbol }}{{ number_format($income->amount, 2) }}</div>
+            @if(!$income->account)
+                <div class="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-[0.8rem] text-amber-800 dark:text-amber-300">
+                    {{ __('messages.income_without_account') }}
+                    <a href="{{ route('income.edit', $income) }}" class="font-semibold underline">{{ __('messages.edit') }}</a>
                 </div>
-                <div class="text-center bg-red-50 dark:bg-red-900/15 rounded-xl py-3">
-                    <div class="text-[11px] font-semibold text-red-400 uppercase tracking-wide">{{ __('messages.income_spent') }}</div>
-                    <div class="text-base font-extrabold text-red-500 dark:text-red-400 mt-0.5">{{ $symbol }}{{ number_format($spent, 2) }}</div>
-                </div>
-                <div class="text-center bg-emerald-50 dark:bg-emerald-900/15 rounded-xl py-3">
-                    <div class="text-[11px] font-semibold text-emerald-500 uppercase tracking-wide">{{ __('messages.income_remaining') }}</div>
-                    <div class="text-base font-extrabold {{ $remaining < 0 ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400' }} mt-0.5">{{ $symbol }}{{ number_format($remaining, 2) }}</div>
-                </div>
-            </div>
+            @endif
 
-            {{-- Progress bar --}}
-            <div class="h-2.5 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
-                <div class="h-full rounded-full transition-all duration-500 {{ $spentPercent >= 100 ? 'bg-red-500' : 'bg-linear-to-r from-emerald-500 to-emerald-400' }}"
-                     style="width: {{ $spentPercent }}%"></div>
-            </div>
-            <div class="text-[11px] text-gray-400 dark:text-slate-500 mt-1.5 text-right">{{ $spentPercent }}% {{ __('messages.income_spent') }}</div>
-
-            {{-- Spending timeline --}}
-            <div class="mt-5">
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-slate-500 mb-2">{{ __('messages.spending_timeline') }}</div>
-                @if($periodPayments->isEmpty())
-                    <div class="text-center py-6 text-sm text-gray-400 dark:text-slate-500">
-                        <span class="material-icons-round text-3xl block mb-1 text-gray-300 dark:text-slate-600">savings</span>
-                        {{ __('messages.no_spending_yet') }}
-                    </div>
-                @else
-                    <ol class="relative border-l border-gray-100 dark:border-slate-700 ml-2 space-y-4">
-                        @foreach($periodPayments as $p)
-                            @php $cat = $p->bill?->category; @endphp
-                            <li class="ml-4">
-                                <span class="absolute -left-[7px] w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-800"
-                                      style="background: {{ $cat?->color_hex ?? '#ef4444' }}"></span>
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <a href="{{ $p->bill ? route('bills.show', $p->bill) : '#' }}"
-                                           class="text-sm font-semibold text-gray-900 dark:text-white hover:text-amber-700 dark:hover:text-amber-400 transition truncate block">
-                                            {{ $p->bill?->name ?? __('messages.bill') }}
-                                        </a>
-                                        <div class="text-xs text-gray-400 dark:text-slate-500">
-                                            {{ $p->paid_at->format('d M Y') }}
-                                            @if($p->is_partial) · {{ __('messages.partial') ?? 'partial' }} @endif
-                                        </div>
-                                    </div>
-                                    <div class="text-sm font-bold text-red-500 dark:text-red-400 shrink-0">− {{ $symbol }}{{ number_format((float)$p->amount, 2) }}</div>
+            @if($deposits->isEmpty())
+                <div class="text-center py-6 text-sm text-gray-400 dark:text-slate-500">
+                    <span class="material-icons-round text-3xl block mb-1 text-gray-300 dark:text-slate-600">savings</span>
+                    {{ __('messages.no_deposits_yet') }}
+                </div>
+            @else
+                <ol class="relative border-l border-gray-100 dark:border-slate-700 ml-2 space-y-4">
+                    @foreach($deposits as $d)
+                        <li class="ml-4">
+                            <span class="absolute -left-[7px] w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-800"
+                                  style="background: {{ $d->account?->color_hex ?? '#10b981' }}"></span>
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                    <a href="{{ $d->account ? route('accounts.show', $d->account) : '#' }}"
+                                       class="text-sm font-semibold text-gray-900 dark:text-white hover:text-amber-700 dark:hover:text-amber-400 transition truncate block">
+                                        {{ $d->account?->name ?? __('messages.accounts') }}
+                                    </a>
+                                    <div class="text-xs text-gray-400 dark:text-slate-500">{{ $d->occurred_at->format('d M Y') }}</div>
                                 </div>
-                            </li>
-                        @endforeach
-                    </ol>
-                @endif
-            </div>
+                                <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400 shrink-0">+ {{ $symbol }}{{ number_format((float) $d->amount, 2) }}</div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ol>
+            @endif
         </x-card>
 
         {{-- Details card --}}

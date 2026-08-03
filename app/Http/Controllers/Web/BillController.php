@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
 use App\Models\Category;
-use App\Models\Income;
+use App\Models\Account;
 use App\Models\Payment;
 use App\Models\Provider;
+use App\Services\Ledger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -70,10 +71,9 @@ class BillController extends Controller
                 'logo_url' => $p->logo_url,
                 'category_ids' => $p->categories->pluck('id')->all(),
             ]);
-        $incomes = Income::forUser(request()->user())->active()->orderBy('name')
-            ->get(['id', 'name', 'currency_code', 'amount']);
+        $accounts = Account::forUser(request()->user())->active()->orderBy('name')->get();
 
-        return view('bills.form', compact('categories', 'providers', 'incomes'));
+        return view('bills.form', compact('categories', 'providers', 'accounts'));
     }
 
     public function store(Request $request)
@@ -83,7 +83,7 @@ class BillController extends Controller
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
             'provider_id' => ['nullable', 'exists:providers,id'],
-            'default_income_id' => ['nullable', 'exists:incomes,id'],
+            'default_account_id' => ['nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'cost_varies' => ['nullable', 'boolean'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
@@ -124,8 +124,8 @@ class BillController extends Controller
     public function show(Bill $bill)
     {
         $this->authorizeView($bill);
-        $bill->load(['category', 'provider', 'payments.paidBy', 'payments.income']);
-        $payments = $bill->payments()->with(['paidBy', 'income'])->orderByDesc('paid_at')->get();
+        $bill->load(['category', 'provider', 'payments.paidBy', 'payments.account']);
+        $payments = $bill->payments()->with(['paidBy', 'account'])->orderByDesc('paid_at')->get();
 
         return view('bills.show', compact('bill', 'payments'));
     }
@@ -237,10 +237,9 @@ class BillController extends Controller
                 'logo_url' => $p->logo_url,
                 'category_ids' => $p->categories->pluck('id')->all(),
             ]);
-        $incomes = Income::forUser(request()->user())->active()->orderBy('name')
-            ->get(['id', 'name', 'currency_code', 'amount']);
+        $accounts = Account::forUser(request()->user())->active()->orderBy('name')->get();
 
-        return view('bills.form', compact('bill', 'categories', 'providers', 'incomes'));
+        return view('bills.form', compact('bill', 'categories', 'providers', 'accounts'));
     }
 
     public function update(Request $request, Bill $bill)
@@ -252,7 +251,7 @@ class BillController extends Controller
             'description'        => ['nullable', 'string'],
             'category_id'        => ['required', 'exists:categories,id'],
             'provider_id' => ['nullable', 'exists:providers,id'],
-            'default_income_id' => ['nullable', 'exists:incomes,id'],
+            'default_account_id' => ['nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'cost_varies' => ['nullable', 'boolean'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
@@ -308,18 +307,28 @@ class BillController extends Controller
         return redirect()->route('bills.index')->with('success', 'Bill deleted.');
     }
 
-    public function markPaid(Request $request, Bill $bill)
+    public function markPaid(Request $request, Bill $bill, Ledger $ledger)
     {
         $this->authorizeView($bill);
 
         $paidByUserId = $request->input('paid_by_user_id', $request->user()->id);
-        $incomeId = $request->input('income_id') ?: null;
+
+        // The money has to come out of somewhere. Once the user keeps accounts,
+        // picking one is required — otherwise balances quietly stop matching
+        // reality. Users with no accounts yet can still record payments.
+        $hasAccounts = Account::forUser($request->user())->active()->exists();
+        $request->validate([
+            'account_id' => [$hasAccounts ? 'required' : 'nullable', 'exists:accounts,id'],
+        ]);
+        $account = $request->filled('account_id')
+            ? Account::forUser($request->user())->find($request->input('account_id'))
+            : null;
         $paymentMode = $request->input('payment_mode', 'full'); // 'partial' or 'full'
         $isPartial = $paymentMode === 'partial';
 
         // Payments are often recorded days after the fact. The date defaults to
         // today but can be backdated, which matters because `paid_at` decides
-        // which income period the payment is charged to. Future dates are
+        // when the account balance actually moved. Future dates are
         // rejected — a bill isn't paid before it's paid.
         $request->validate([
             'paid_at' => ['nullable', 'date', 'before_or_equal:today'],
@@ -360,17 +369,28 @@ class BillController extends Controller
             $newRemaining = null;
         }
 
-        DB::transaction(function () use ($bill, $request, $paidByUserId, $incomeId, $payAmount, $isPartial, $newRemaining, $paidAt) {
-            Payment::create([
+        DB::transaction(function () use ($bill, $request, $paidByUserId, $account, $payAmount, $isPartial, $newRemaining, $paidAt, $ledger) {
+            $payment = Payment::create([
                 'bill_id'       => $bill->id,
                 'paid_by' => $paidByUserId,
-                'income_id' => $incomeId,
+                'account_id' => $account?->id,
                 'amount' => $payAmount,
                 'is_partial' => $isPartial,
                 'currency_code' => $bill->currency_code,
                 'paid_at'       => $paidAt,
                 'notes' => $request->input('notes'),
             ]);
+
+            if ($account) {
+                $ledger->withdraw(
+                    $account,
+                    $payAmount,
+                    $paidAt,
+                    $paidByUserId,
+                    $bill->name,
+                    $payment,
+                );
+            }
 
             if ($isPartial) {
                 // Partial: update remaining balance, do NOT advance the due date

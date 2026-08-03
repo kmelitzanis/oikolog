@@ -152,16 +152,16 @@
                     </template>
                 </div>
 
-                @isset($incomes)
-                    @if($incomes->count() > 0)
-                        <x-field :label="__('messages.default_income')" name="default_income_id" optional
-                                 :hint="__('messages.default_income_hint')">
-                            <x-input as="select" name="default_income_id" id="default_income_id">
-                                <option value="">{{ __('messages.no_default_income') }}</option>
-                                @foreach($incomes as $income)
-                                    <option value="{{ $income->id }}"
-                                        {{ (string) old('default_income_id', $bill->default_income_id ?? '') === (string) $income->id ? 'selected' : '' }}>
-                                        {{ $income->name }} ({{ $income->currency_code }} {{ number_format($income->amount, 2) }})
+                @isset($accounts)
+                    @if($accounts->count() > 0)
+                        <x-field :label="__('messages.default_account')" name="default_account_id" optional
+                                 :hint="__('messages.default_account_hint')">
+                            <x-input as="select" name="default_account_id" id="default_account_id">
+                                <option value="">{{ __('messages.no_default_account') }}</option>
+                                @foreach($accounts as $acc)
+                                    <option value="{{ $acc->id }}"
+                                        {{ (string) old('default_account_id', $bill->default_account_id ?? '') === (string) $acc->id ? 'selected' : '' }}>
+                                        {{ $acc->name }}
                                     </option>
                                 @endforeach
                             </x-input>
