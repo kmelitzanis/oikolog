@@ -52,7 +52,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-[18px] items-start">
 
         {{-- ── Balance, then the accounts holding it ──────────────────── --}}
-        <div class="space-y-[18px]">
+        <div class="space-y-7">
             @include('accounts._total', ['stats' => $accountStats])
             @include('accounts._list',  ['rows'  => $accountRows])
         </div>

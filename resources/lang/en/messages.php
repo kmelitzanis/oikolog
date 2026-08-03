@@ -408,6 +408,7 @@ return [
     'step_placeholder' => 'Describe the step…',
     'image_too_large' => 'That image’s dimensions are too large.',
     'income_sources' => 'Income sources',
+    'no_movements_this_month' => 'No movement this month',
     // ── Accounts, ledger and transfers ───────────────────────────────────
     'accounts' => 'Accounts',
     'account' => 'Account',
