@@ -62,7 +62,12 @@ Route::middleware('auth')->group(function () {
             Route::put('/{bill}', 'update')->name('update');
             Route::delete('/{bill}', 'destroy')->name('destroy');
             Route::post('/{bill}/pay', 'markPaid')->name('pay');
+            // `unpay` reverses the latest payment only — it is the row-level
+            // "undo what I just did". Removing an arbitrary historical payment
+            // is a deliberate act and lives on its own route, reachable from the
+            // bill's payment history.
             Route::delete('/{bill}/unpay', 'undoLastPayment')->name('unpay');
+            Route::delete('/{bill}/payments/{payment}', 'destroyPayment')->name('payments.destroy');
         });
 
     // Income
@@ -128,6 +133,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 
     // Recipes
+        ->name('recipes.import');
+        ->name('recipes.image.upload');
     Route::post('/recipes/{recipe}/favorite', [App\Http\Controllers\Web\RecipeController::class, 'toggleFavorite'])->name('recipes.favorite');
     Route::post('/recipes/{recipe}/to-shopping-list', [App\Http\Controllers\Web\RecipeController::class, 'toShoppingList'])->name('recipes.to-shopping-list');
     Route::resource('recipes', App\Http\Controllers\Web\RecipeController::class);

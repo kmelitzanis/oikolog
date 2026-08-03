@@ -276,6 +276,65 @@ class Bill extends Model
         return $this->remaining_balance !== null;
     }
 
+    /**
+     * The bill's single status vocabulary — the one place that decides whether a
+     * bill reads as paid, partial, overdue, soon, upcoming or inactive.
+     *
+     * This used to be recomputed inline in bills/index, bills/show and the
+     * calendar `events()` endpoint, and the copies had drifted: the list tinted
+     * a row green off `last_paid_date` (true forever once any payment existed)
+     * while the Pay button keyed off the *current cycle*, so a recurring bill
+     * could render green and still offer "Mark as paid". Callers must use this.
+     *
+     * Returns one of: paid · partial · overdue · soon · upcoming · inactive.
+     */
+    public function status(): string
+    {
+        if (! $this->is_active) {
+            return 'inactive';
+        }
+
+        // A partial balance outranks the date entirely: money is still owed on
+        // this cycle, and that is the more useful thing to say about the bill.
+        if ($this->hasPartialPayment()) {
+            return 'partial';
+        }
+
+        if ($this->isCurrentCyclePaid()) {
+            return 'paid';
+        }
+
+        $days = $this->daysUntilDue();
+
+        return match (true) {
+            $days === null => 'upcoming',
+            $days < 0      => 'overdue',
+            $days <= 7     => 'soon',
+            default        => 'upcoming',
+        };
+    }
+
+    /**
+     * Whether the *current* billing cycle is settled.
+     *
+     * For one-off bills any payment settles them for good. For recurring bills a
+     * payment advances `next_due_date`, so the cycle counts as paid only while
+     * that date is still ahead of us — once it comes due again the bill is owed
+     * anew, however recently it was last paid.
+     */
+    public function isCurrentCyclePaid(): bool
+    {
+        if (! $this->last_paid_date || $this->hasPartialPayment()) {
+            return false;
+        }
+
+        if ($this->frequency === 'once') {
+            return true;
+        }
+
+        return $this->next_due_date && Carbon::parse($this->next_due_date)->gt(Carbon::today());
+    }
+
     /** Returns the amount still owed for the current billing cycle. */
     public function getEffectiveRemainingBalance(): float
     {

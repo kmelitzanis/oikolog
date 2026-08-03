@@ -13,7 +13,7 @@
                     :class="calOpen ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-600' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700'"
                     class="inline-flex items-center gap-2 border rounded-xl px-4 py-2.5 text-sm font-medium transition">
                 <span class="material-icons-round text-base">calendar_month</span>
-                <span x-text="calOpen ? 'Hide Calendar' : 'Show Calendar'"></span>
+                <span x-text="calOpen ? '{{ __('messages.hide_calendar') }}' : '{{ __('messages.show_calendar') }}'"></span>
             </button>
             <a href="{{ route('bills.create') }}"
                class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-4 py-2.5 transition">
@@ -50,21 +50,21 @@
                         <div
                             class="hidden lg:flex items-center gap-3 flex-wrap text-xs font-medium text-gray-400 dark:text-slate-500">
                             <div class="flex items-center gap-1.5">
-                                <span class="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0"></span> Overdue
+                                <span class="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0"></span> {{ __('messages.overdue') }}
                             </div>
                             <div class="flex items-center gap-1.5">
-                                <span class="inline-block w-2 h-2 rounded-full bg-orange-500 shrink-0"></span> Soon
+                                <span class="inline-block w-2 h-2 rounded-full bg-orange-500 shrink-0"></span> {{ __('messages.due_soon') }}
                             </div>
                             <div class="flex items-center gap-1.5">
-                                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span> Paid
+                                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span> {{ __('messages.paid') }}
                             </div>
                             <div class="flex items-center gap-1.5">
-                                <span class="inline-block w-2 h-2 rounded-full bg-amber-500 shrink-0"></span> Upcoming
+                                <span class="inline-block w-2 h-2 rounded-full bg-amber-500 shrink-0"></span> {{ __('messages.upcoming') }}
                             </div>
                         </div>
                         <button @click="goToday()"
                                 class="px-3 py-1.5 rounded-2xl bg-gray-100 dark:bg-slate-700 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition">
-                            Today
+                            {{ __('messages.today') }}
                         </button>
                     </div>
                 </div>
@@ -208,51 +208,54 @@
          markup collapses to the stacked row the phone mockup uses, with the
          column values folded into a meta line under the name. --}}
     @php
-        $billGrid = 'lg:grid lg:grid-cols-[minmax(0,2.2fr)_1fr_1fr_1fr_0.9fr_150px] lg:gap-4 lg:items-center';
+        $billGrid = 'lg:grid lg:grid-cols-[minmax(0,2fr)_1.15fr_1fr_1.15fr_0.9fr_150px] lg:gap-4 lg:items-center';
     @endphp
     <x-card flush class="overflow-hidden">
         <div class="{{ $billGrid }} hidden px-5 py-3 bg-gray-50 dark:bg-slate-900/50 text-[0.64rem] font-bold uppercase tracking-[0.07em] text-gray-400 dark:text-slate-500">
             <div>{{ __('messages.bill_name') }}</div>
-            <div>{{ __('messages.category') }}</div>
-            <div>{{ __('messages.frequency') }}</div>
-            <div>{{ __('messages.next_date') }}</div>
+            <div>{{ __('messages.status') }}</div>
+            <div>{{ __('messages.next_due') }}</div>
+            <div>{{ __('messages.last_paid') }}</div>
             <div class="text-right">{{ __('messages.amount') }}</div>
             <div></div>
         </div>
         @forelse($bills as $bill)
             @php
-                $isOverdue    = $bill->next_due_date && $bill->next_due_date->isPast() && $bill->is_active;
-                $daysUntil    = $bill->next_due_date ? (int) now()->diffInDays($bill->next_due_date, false) : null;
-                $isSoon       = !$isOverdue && $daysUntil !== null && $daysUntil <= 7 && $bill->is_active;
-                $isUpcoming   = !$isOverdue && !$isSoon && $daysUntil !== null && $daysUntil > 7 && $daysUntil <= 60 && $bill->is_active;
-                $lastPayment  = $bill->payments->first();
-                $isPaid       = (bool)$bill->last_paid_date;
-                // "Current cycle paid": for recurring bills the tick returns once
-                // the next occurrence is due again (next_due in the past/today).
-                $isRecurring       = $bill->frequency !== 'once';
-                $currentCyclePaid  = (bool)$bill->last_paid_date
-                    && (!$isRecurring || ($bill->next_due_date && $bill->next_due_date->isFuture()));
-                $color        = $bill->category?->color_hex ?? '#f59e0b';
-                $rowClass     = $isOverdue ? 'bg-red-50 dark:bg-red-900/10' : ($isSoon ? 'bg-orange-50 dark:bg-orange-900/10' : ($isUpcoming ? 'bg-blue-50/40 dark:bg-blue-900/5' : ($isPaid ? 'bg-green-50 dark:bg-green-900/10' : 'bg-white dark:bg-slate-800')));
-                $amountClass  = $isOverdue ? 'text-red-600 font-bold' : ($isSoon ? 'text-orange-600 font-bold' : ($isUpcoming ? 'text-blue-600 dark:text-blue-400 font-bold' : ($isPaid ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-gray-900 dark:text-white font-bold')));
+                // One source of truth — see Bill::status(). The row no longer
+                // recomputes "is it paid?" on its own, which is what let the
+                // green tint and the Pay button contradict each other.
+                $status      = $bill->status();
+                $daysUntil   = $bill->daysUntilDue();
+                $lastPayment = $bill->payments->first();
+                $cyclePaid   = $bill->isCurrentCyclePaid();
+                $color       = $bill->category?->color_hex ?? '#f59e0b';
+
+                // The status colour rides a 3px left rail instead of tinting the
+                // whole row: the badge already names the state, and saying it
+                // twice turned the list into a wall of colour.
+                $railClass = match ($status) {
+                    'overdue' => 'bg-red-500',
+                    'soon'    => 'bg-orange-500',
+                    'partial' => 'bg-amber-500',
+                    'paid'    => 'bg-emerald-500',
+                    'upcoming'=> 'bg-blue-400',
+                    default   => 'bg-transparent',
+                };
+                $dueClass = match ($status) {
+                    'overdue' => 'text-red-600 dark:text-red-400',
+                    'soon'    => 'text-orange-600 dark:text-orange-400',
+                    default   => 'text-gray-700 dark:text-slate-300',
+                };
             @endphp
-            <div x-data="{ paid: {{ $currentCyclePaid ? 'true' : 'false' }}, hasPayments: {{ $lastPayment ? 'true' : 'false' }} }"
-                 class="flex items-center gap-3 sm:gap-4 {{ $billGrid }} px-4 lg:px-5 py-4 lg:py-3 border-t border-gray-50 dark:border-slate-700 {{ $rowClass }} hover:brightness-95 transition cursor-pointer"
+            <div x-data="{ paid: {{ $cyclePaid ? 'true' : 'false' }} }"
+                 class="relative flex items-center gap-3 sm:gap-4 {{ $billGrid }} pl-5 pr-4 lg:pr-5 py-4 lg:py-3 border-t border-gray-50 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition cursor-pointer"
                  @click.self="window.location='{{ route('bills.show', $bill) }}'">
 
-                @php
-                    $dueClass = $isOverdue ? 'text-red-500'
-                        : ($isSoon ? 'text-orange-500'
-                        : ($isUpcoming ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'));
-                    $dueRelative = $isOverdue
-                        ? __('messages.overdue_by', ['days' => abs($daysUntil)])
-                        : ($daysUntil === 0
-                            ? __('messages.due_today')
-                            : ($daysUntil !== null ? __('messages.in_days', ['days' => $daysUntil]) : '—'));
-                @endphp
+                {{-- Status rail --}}
+                <span class="absolute left-0 top-0 bottom-0 w-[3px] {{ $railClass }}" aria-hidden="true"></span>
 
-                {{-- 1 · Bill: icon + name (the meta line only exists below lg,
-                     where the columns to its right are hidden) --}}
+                {{-- 1 · Bill: icon + name + the context that used to occupy its
+                     own columns (category · provider · frequency) --}}
                 <div class="flex items-center gap-3 flex-1 min-w-0 lg:flex-none"
                      @click="window.location='{{ route('bills.show', $bill) }}'">
                     <div class="w-10 h-10 lg:w-9 lg:h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -273,50 +276,66 @@
                                       style="font-size:14px;">group</span>
                             @endif
                         </div>
-                        {{-- below lg: the columns folded into one line --}}
-                        <div class="lg:hidden text-xs mt-0.5 {{ $dueClass }}">
+                        <div class="text-[0.7rem] text-gray-400 dark:text-slate-500 mt-0.5 truncate">
                             {{ $bill->category?->name ?? '—' }}
                             @if($bill->provider)
                                 · <span class="font-medium text-gray-500 dark:text-slate-400">{{ $bill->provider->name }}</span>
                             @endif
-                            · {{ $dueRelative }}
+                            · {{ __('messages.' . $bill->frequency) }}
                         </div>
-                        {{-- from lg: the monthly equivalent, as in the mockup --}}
-                        @unless($bill->cost_varies)
-                            <div class="hidden lg:block text-[0.7rem] text-gray-400 dark:text-slate-500 mt-px">
-                                {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
-                            </div>
-                        @endunless
+                        {{-- below lg the three middle columns are hidden, so the
+                             status chip and the last-payment date fold in here --}}
+                        <div class="lg:hidden flex flex-wrap items-center gap-1.5 mt-1.5">
+                            <x-bill-status :bill="$bill" class="text-[0.68rem] px-2 py-0.5" />
+                            <span class="text-[0.68rem] text-gray-400 dark:text-slate-500">
+                                @if($lastPayment)
+                                    {{ __('messages.last_paid') }}: {{ $lastPayment->paid_at->translatedFormat('j M') }}
+                                @else
+                                    {{ __('messages.last_paid') }}: {{ __('messages.never_paid') }}
+                                @endif
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                {{-- 2 · Category --}}
-                <div class="hidden lg:block text-sm font-medium text-gray-600 dark:text-slate-300 truncate">
-                    {{ $bill->category?->name ?? '—' }}
+                {{-- 2 · Status --}}
+                <div class="hidden lg:block">
+                    <x-bill-status :bill="$bill" />
                 </div>
 
-                {{-- 3 · Frequency — plain muted text, as in the mockup's bills
-                     table; the amber pill is the income table's treatment. --}}
-                <div class="hidden lg:block text-sm font-medium text-gray-500 dark:text-slate-400">
-                    {{ __('messages.' . $bill->frequency) }}
-                </div>
-
-                {{-- 4 · Next due --}}
+                {{-- 3 · Next due --}}
                 <div class="hidden lg:block">
                     <div class="text-sm font-semibold {{ $dueClass }}">
                         {{ $bill->next_due_date?->translatedFormat('j M Y') ?? '—' }}
                     </div>
-                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 mt-px">{{ $dueRelative }}</div>
+                </div>
+
+                {{-- 4 · Last paid — the answer to "when did I pay this?" without
+                     opening the bill. Data was already eager-loaded; it simply
+                     was never rendered. --}}
+                <div class="hidden lg:block min-w-0">
+                    @if($lastPayment)
+                        <div class="text-sm font-medium text-gray-700 dark:text-slate-300">
+                            {{ $lastPayment->paid_at->translatedFormat('j M Y') }}
+                        </div>
+                        <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 truncate mt-px">
+                            {{ $bill->currency_code }} {{ number_format($lastPayment->amount, 2) }}
+                            @if($lastPayment->income)
+                                · {{ __('messages.paid_from', ['source' => $lastPayment->income->name]) }}
+                            @endif
+                        </div>
+                    @else
+                        <div class="text-sm text-gray-300 dark:text-slate-600">{{ __('messages.never_paid') }}</div>
+                    @endif
                 </div>
 
                 {{-- 5 · Amount --}}
                 <div class="text-right shrink-0" @click="window.location='{{ route('bills.show', $bill) }}'">
                     @if($bill->cost_varies)
-                        <div class="text-sm text-gray-400 dark:text-slate-500 font-medium italic">varies</div>
+                        <div class="text-sm text-gray-400 dark:text-slate-500 font-medium italic">{{ __('messages.varies') }}</div>
                     @else
-                        <div class="text-sm {{ $amountClass }}">{{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}</div>
-                        {{-- the /mo line moved into the name cell from lg up --}}
-                        <div class="lg:hidden text-xs text-gray-400 dark:text-slate-500">
+                        <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}</div>
+                        <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
                             {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
                         </div>
                     @endif
@@ -329,27 +348,33 @@
                     <button type="button" x-show="!paid" x-cloak
                             title="{{ __('messages.mark_paid') }}"
                             @click="$dispatch('open-pay-modal', {
-                                billName:       '{{ addslashes($bill->name) }}',
+                                billName:       {{ Illuminate\Support\Js::from($bill->name) }},
                                 amount:         '{{ number_format($bill->amount, 2) }}',
                                 currency:       '{{ $bill->currency_code }}',
                                 payRoute:       '{{ route('bills.pay', $bill) }}',
                                 costVaries:     {{ $bill->cost_varies ? 'true' : 'false' }},
                                 defaultIncomeId: '{{ $bill->default_income_id }}',
-                                lastPaidAmount: '{{ $bill->cost_varies && $bill->payments->first() ? number_format((float)$bill->payments->first()->amount, 2, '.', '') : '' }}'
+                                lastPaidAmount: '{{ $bill->cost_varies && $lastPayment ? number_format((float)$lastPayment->amount, 2, '.', '') : '' }}',
+                                remainingBalance: {{ $bill->hasPartialPayment() ? number_format($bill->getEffectiveRemainingBalance(), 2, '.', '') : 'null' }}
                             })"
                             class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition">
                         <span class="material-icons-round text-base">check_circle</span>
                     </button>
 
-                    {{-- Unpay (reverses the most recent payment) --}}
-                    <form method="POST" action="{{ route('bills.unpay', $bill) }}" x-show="hasPayments" x-cloak>
-                        @csrf @method('DELETE')
-                        <button type="submit" title="{{ __('messages.undo_payment') }}"
-                                @click="if(!confirm('{{ __('messages.undo_payment') }}?')) $event.preventDefault()"
-                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-500 dark:text-orange-400 hover:bg-orange-100 transition">
-                            <span class="material-icons-round text-base">undo</span>
-                        </button>
-                    </form>
+                    {{-- Undo — strictly "take back the payment that settled this
+                         cycle". It used to show whenever the bill had *any*
+                         payment, i.e. forever, which read as "delete history".
+                         Removing an older payment lives in the bill's history. --}}
+                    @if($cyclePaid)
+                        <form method="POST" action="{{ route('bills.unpay', $bill) }}">
+                            @csrf @method('DELETE')
+                            <button type="submit" title="{{ __('messages.undo_payment') }}"
+                                    @click="if(!confirm({{ Illuminate\Support\Js::from(__('messages.undo_payment') . '?') }})) $event.preventDefault()"
+                                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-500 dark:text-orange-400 hover:bg-orange-100 transition">
+                                <span class="material-icons-round text-base">undo</span>
+                            </button>
+                        </form>
+                    @endif
 
                     <a href="{{ route('bills.edit', $bill) }}" title="{{ __('messages.edit') }}"
                        class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-600 transition">
@@ -359,7 +384,7 @@
                     <form method="POST" action="{{ route('bills.destroy', $bill) }}">
                         @csrf @method('DELETE')
                         <button type="submit" title="{{ __('messages.delete') }}"
-                                @click="if(!confirm('{{ addslashes(__('messages.confirm_delete')) }}')) $event.preventDefault()"
+                                @click="if(!confirm({{ Illuminate\Support\Js::from(__('messages.confirm_delete')) }})) $event.preventDefault()"
                                 class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-slate-700 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition">
                             <span class="material-icons-round text-base">delete</span>
                         </button>
@@ -367,18 +392,16 @@
                 </div>
             </div>
         @empty
-            <div class="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-slate-500">
-                <span class="material-icons-round text-6xl mb-3">receipt_long</span>
-                <div class="text-base font-semibold">{{ __('messages.no_bills') }}</div>
-                <div class="text-sm mt-1">
-                    @if(request()->hasAny(['search','frequency','status']))
-                        Try adjusting your filters
-                    @else
-                        <a href="{{ route('bills.create') }}"
-                           class="text-amber-700 dark:text-amber-400 hover:underline">{{ __('messages.add_bill') }}</a>
-                    @endif
-                </div>
-            </div>
+            @if(request()->hasAny(['search','category_id','frequency','status']))
+                <x-empty-state quiet icon="filter_alt_off" :title="__('messages.no_bills')"
+                               :text="__('messages.try_adjusting_filters')">
+                    <x-btn variant="ghost" :href="route('bills.index')" icon="close">{{ __('messages.clear_filters') }}</x-btn>
+                </x-empty-state>
+            @else
+                <x-empty-state icon="receipt_long" :title="__('messages.no_bills')">
+                    <x-btn :href="route('bills.create')" icon="add">{{ __('messages.add_bill') }}</x-btn>
+                </x-empty-state>
+            @endif
         @endforelse
     </x-card>
 

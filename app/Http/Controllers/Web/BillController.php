@@ -407,40 +407,7 @@ class BillController extends Controller
             return back()->with('error', 'No payment found to undo.');
         }
 
-        DB::transaction(function () use ($bill, $lastPayment) {
-            $paidAt = $lastPayment->paid_at;
-            $wasPartial = $lastPayment->is_partial;
-            $undoneAmount = (float)$lastPayment->amount;
-            $lastPayment->delete();
-
-            // Previous payment becomes last_paid_date
-            $prevPayment = $bill->payments()->latest('paid_at')->first();
-
-            if ($wasPartial) {
-                // Restore remaining balance by adding back the undone amount
-                $currentRemaining = $bill->remaining_balance !== null
-                    ? (float)$bill->remaining_balance
-                    : 0;
-                $restoredRemaining = round($currentRemaining + $undoneAmount, 2);
-
-                // If remaining equals the full bill amount, clear it (no partial state)
-                if ($restoredRemaining >= (float)$bill->amount) {
-                    $restoredRemaining = null;
-                }
-
-                $bill->update([
-                    'remaining_balance' => $restoredRemaining,
-                    'last_paid_date' => $prevPayment?->paid_at?->toDateString(),
-                ]);
-            } else {
-                // Undoing a full payment: restore previous due date and clear remaining balance
-                $bill->update([
-                    'remaining_balance' => null,
-                    'last_paid_date' => $prevPayment?->paid_at?->toDateString(),
-                    'next_due_date' => $paidAt?->toDateString(),
-                ]);
-            }
-        });
+        $this->removePayment($bill, $lastPayment);
 
         $bill->refresh();
 
@@ -450,11 +417,88 @@ class BillController extends Controller
                 'remaining_balance' => $bill->remaining_balance,
                 'last_paid_date' => $bill->last_paid_date?->toDateString(),
                 'next_due_date' => $bill->next_due_date?->toDateString(),
-                'message' => 'Payment undone successfully.',
+                'message' => __('messages.payment_undone'),
             ]);
         }
 
-        return back()->with('success', 'Payment undone successfully.');
+        return back()->with('success', __('messages.payment_undone'));
+    }
+
+    /**
+     * Delete one specific payment from a bill's history.
+     *
+     * The row-level Undo deliberately only reaches the latest payment. Correcting
+     * an older entry is a separate, explicit act, so it gets its own entry point
+     * from the payment history on the bill page.
+     */
+    public function destroyPayment(Bill $bill, Payment $payment)
+    {
+        $this->authorizeView($bill);
+
+        // Route-model binding resolves {payment} globally, so confirm it really
+        // belongs to this bill before deleting anything.
+        abort_unless($payment->bill_id === $bill->id, 404);
+
+        $this->removePayment($bill, $payment);
+
+        return back()->with('success', __('messages.payment_deleted'));
+    }
+
+    /**
+     * Delete a payment and put the bill's derived state back where it belongs.
+     *
+     * Only the *latest* payment owns the current cycle, so only it may move
+     * `next_due_date` or restore a partial balance. Deleting an older entry is a
+     * history correction: it must not drag the schedule backwards, so it updates
+     * `last_paid_date` and nothing else.
+     */
+    private function removePayment(Bill $bill, Payment $payment): void
+    {
+        DB::transaction(function () use ($bill, $payment) {
+            $latest    = $bill->payments()->latest('paid_at')->first();
+            $wasLatest = $latest && $latest->getKey() === $payment->getKey();
+
+            $paidAt       = $payment->paid_at;
+            $wasPartial   = $payment->is_partial;
+            $undoneAmount = (float) $payment->amount;
+
+            $payment->delete();
+
+            // Whatever remains is the new "last paid" — null when none is left.
+            $prevPayment = $bill->payments()->latest('paid_at')->first();
+
+            if (! $wasLatest) {
+                $bill->update(['last_paid_date' => $prevPayment?->paid_at?->toDateString()]);
+
+                return;
+            }
+
+            if ($wasPartial) {
+                // Give the money back to the outstanding balance. Once it covers
+                // the full amount again there is no partial state left to track.
+                $currentRemaining  = $bill->remaining_balance !== null ? (float) $bill->remaining_balance : 0;
+                $restoredRemaining = round($currentRemaining + $undoneAmount, 2);
+
+                if ($restoredRemaining >= (float) $bill->amount) {
+                    $restoredRemaining = null;
+                }
+
+                $bill->update([
+                    'remaining_balance' => $restoredRemaining,
+                    'last_paid_date'    => $prevPayment?->paid_at?->toDateString(),
+                ]);
+
+                return;
+            }
+
+            // A full payment had advanced the schedule; undoing it rolls the due
+            // date back to the cycle that payment settled.
+            $bill->update([
+                'remaining_balance' => null,
+                'last_paid_date'    => $prevPayment?->paid_at?->toDateString(),
+                'next_due_date'     => $paidAt?->toDateString(),
+            ]);
+        });
     }
 
     private function authorizeView(Bill $bill): void
