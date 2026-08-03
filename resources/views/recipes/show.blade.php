@@ -3,9 +3,16 @@
 
 @php
     $total = $recipe->totalMinutes();
-    $steps = $recipe->steps();
-    $ingredientsPayload = $recipe->ingredients->map(fn($i) => [
-        'name' => $i->name, 'quantity' => (float) $i->quantity, 'unit' => $i->unit,
+    $stepGroups = $recipe->stepsBySection();
+    $ingredientGroups = $recipe->ingredientsBySection();
+
+    // The servings stepper rescales quantities client-side, so the payload
+    // carries the already-translated unit label — Alpine must never see a raw key.
+    $ingredientsPayload = $recipe->ingredients->sortBy('sort_order')->map(fn($i) => [
+        'section'  => $i->section ?? '',
+        'name'     => $i->name,
+        'quantity' => (float) $i->quantity,
+        'unit'     => $i->unitLabel(),
     ])->values();
 @endphp
 
@@ -49,37 +56,64 @@
         </a>
 
         {{-- Hero --}}
-        <div class="relative overflow-hidden rounded-3xl bg-linear-to-br from-amber-500 via-amber-500 to-amber-400 p-6 sm:p-8 mb-6 shadow-lg">
-            <div class="absolute -right-6 -top-8 text-[10rem] opacity-20 select-none leading-none">{{ $recipe->emoji ?: '🍽️' }}</div>
-            <div class="relative">
+        @php
+            $heroImage = $recipe->imageUrl();
+            // The hero is amber (dark ink) without a photo and a dark scrim over
+            // the photo with one, so the ink has to flip with it.
+            $ink     = $heroImage ? 'text-white' : 'text-slate-900';
+            $inkSoft = $heroImage ? 'text-white/75' : 'text-slate-900/70';
+            $chip    = $heroImage ? 'bg-white/15' : 'bg-slate-900/10';
+            $chipHover = $heroImage ? 'hover:bg-white/25' : 'hover:bg-slate-900/20';
+        @endphp
+        <div class="relative overflow-hidden rounded-3xl p-6 sm:p-8 mb-6 shadow-lg
+                    {{ $heroImage ? 'bg-slate-900' : 'bg-linear-to-br from-amber-500 via-amber-500 to-amber-400' }}">
+            @if($heroImage)
+                {{-- The photo is the hero. Text sits on a scrim rather than on the
+                     raw image, so contrast holds whatever the picture looks like. --}}
+                <img src="{{ $heroImage }}" alt="{{ $recipe->name }}"
+                     class="absolute inset-0 w-full h-full object-cover">
+                <div class="absolute inset-0 bg-linear-to-t from-slate-900/90 via-slate-900/60 to-slate-900/30"></div>
+            @else
+                <div class="absolute -right-6 -top-8 opacity-20 select-none leading-none">
+                    <span class="material-icons-round" style="font-size:10rem;">restaurant_menu</span>
+                </div>
+            @endif
+            <div class="relative {{ $heroImage ? 'pt-16 sm:pt-24' : '' }}">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <div class="flex items-center gap-3 mb-2">
-                            <span class="text-4xl">{{ $recipe->emoji ?: '🍽️' }}</span>
                             @if($recipe->difficulty)
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-900/10 text-slate-900 backdrop-blur-sm">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ $chip }} {{ $ink }} backdrop-blur-sm">
                                     {{ __('messages.' . $recipe->difficulty) }}
                                 </span>
                             @endif
                             @if($recipe->is_favorite)
-                                <span class="material-icons-round text-red-700 text-xl">favorite</span>
+                                <span class="material-icons-round {{ $heroImage ? "text-red-400" : "text-red-700" }} text-xl">favorite</span>
                             @endif
                         </div>
-                        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $recipe->name }}</h1>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold {{ $ink }}">{{ $recipe->name }}</h1>
                         @if($recipe->description)
-                            <p class="text-slate-900/70 text-sm mt-2 max-w-xl">{{ $recipe->description }}</p>
+                            <p class="{{ $inkSoft }} text-sm mt-2 max-w-xl">{{ $recipe->description }}</p>
+                        @endif
+                        @if($recipe->source_url)
+                            {{-- Attribution: an imported recipe is someone else's work. --}}
+                            <a href="{{ $recipe->source_url }}" target="_blank" rel="noopener noreferrer"
+                               class="inline-flex items-center gap-1 {{ $inkSoft }} text-xs mt-2 hover:underline max-w-full">
+                                <span class="material-icons-round shrink-0" style="font-size:14px;">link</span>
+                                <span class="truncate">{{ parse_url($recipe->source_url, PHP_URL_HOST) }}</span>
+                            </a>
                         @endif
                     </div>
                     <div class="flex gap-2 shrink-0">
                         <a href="{{ route('recipes.edit', $recipe) }}"
-                           class="w-10 h-10 rounded-xl bg-slate-900/10 hover:bg-slate-900/20 text-slate-900 flex items-center justify-center backdrop-blur-sm transition" title="{{ __('messages.edit') }}">
+                           class="w-10 h-10 rounded-xl {{ $chip }} {{ $chipHover }} {{ $ink }} flex items-center justify-center backdrop-blur-sm transition" title="{{ __('messages.edit') }}">
                             <span class="material-icons-round text-lg">edit</span>
                         </a>
                         <form method="POST" action="{{ route('recipes.destroy', $recipe) }}"
                               onsubmit="return confirm('{{ __('messages.delete') }}?')">
                             @csrf @method('DELETE')
                             <button type="submit"
-                                    class="w-10 h-10 rounded-xl bg-slate-900/10 hover:bg-red-500/70 text-slate-900 flex items-center justify-center backdrop-blur-sm transition" title="{{ __('messages.delete') }}">
+                                    class="w-10 h-10 rounded-xl {{ $chip }} hover:bg-red-500/70 {{ $ink }} flex items-center justify-center backdrop-blur-sm transition" title="{{ __('messages.delete') }}">
                                 <span class="material-icons-round text-lg">delete</span>
                             </button>
                         </form>
@@ -89,19 +123,19 @@
                 {{-- Stat pills --}}
                 <div class="flex flex-wrap gap-2.5 mt-5">
                     @if($recipe->prep_minutes)
-                        <div class="inline-flex items-center gap-1.5 bg-slate-900/10 backdrop-blur-sm rounded-xl px-3 py-1.5 text-slate-900 text-sm">
+                        <div class="inline-flex items-center gap-1.5 {{ $chip }} backdrop-blur-sm rounded-xl px-3 py-1.5 {{ $ink }} text-sm">
                             <span class="material-icons-round text-base">timer</span>
-                            <span class="font-semibold">{{ $recipe->prep_minutes }}'</span><span class="text-slate-900/70">{{ __('messages.prep_time') }}</span>
+                            <span class="font-semibold">{{ $recipe->prep_minutes }}'</span><span class="{{ $inkSoft }}">{{ __('messages.prep_time') }}</span>
                         </div>
                     @endif
                     @if($recipe->cook_minutes)
-                        <div class="inline-flex items-center gap-1.5 bg-slate-900/10 backdrop-blur-sm rounded-xl px-3 py-1.5 text-slate-900 text-sm">
+                        <div class="inline-flex items-center gap-1.5 {{ $chip }} backdrop-blur-sm rounded-xl px-3 py-1.5 {{ $ink }} text-sm">
                             <span class="material-icons-round text-base">local_fire_department</span>
-                            <span class="font-semibold">{{ $recipe->cook_minutes }}'</span><span class="text-slate-900/70">{{ __('messages.cook_time') }}</span>
+                            <span class="font-semibold">{{ $recipe->cook_minutes }}'</span><span class="{{ $inkSoft }}">{{ __('messages.cook_time') }}</span>
                         </div>
                     @endif
                     @if($total)
-                        <div class="inline-flex items-center gap-1.5 bg-slate-900/10 backdrop-blur-sm rounded-xl px-3 py-1.5 text-slate-900 text-sm">
+                        <div class="inline-flex items-center gap-1.5 {{ $chip }} backdrop-blur-sm rounded-xl px-3 py-1.5 {{ $ink }} text-sm">
                             <span class="material-icons-round text-base">schedule</span>
                             <span class="font-semibold">{{ $total }} {{ __('messages.min_short') }}</span>
                         </div>
@@ -130,19 +164,28 @@
                         </div>
                     </div>
 
-                    <ul class="space-y-1">
-                        <template x-for="(ing, i) in base" :key="i">
-                            <li class="flex items-center justify-between gap-3 py-2 border-b border-gray-50 dark:border-slate-700/60 last:border-0">
-                                <span class="text-sm text-gray-700 dark:text-slate-200" x-text="ing.name"></span>
-                                <span class="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap shrink-0">
-                                    <span x-text="scaled(ing.quantity)"></span> <span class="text-gray-400 dark:text-slate-500 font-normal" x-text="ing.unit"></span>
-                                </span>
-                            </li>
-                        </template>
-                        @if($recipe->ingredients->isEmpty())
-                            <li class="text-sm text-gray-400 py-2">—</li>
+                    {{-- Grouped by section; the heading only appears when the
+                         recipe is actually written in parts. --}}
+                    @forelse($ingredientGroups as $section => $items)
+                        @if(filled($section))
+                            <div class="text-[0.68rem] font-bold uppercase tracking-[0.07em] text-amber-600 dark:text-amber-400 mt-4 first:mt-0 mb-1">
+                                {{ $section }}
+                            </div>
                         @endif
-                    </ul>
+                        <ul class="space-y-1">
+                            @foreach($items as $ing)
+                                <li class="flex items-center justify-between gap-3 py-2 border-b border-gray-50 dark:border-slate-700/60 last:border-0">
+                                    <span class="text-sm text-gray-700 dark:text-slate-200">{{ $ing->name }}</span>
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap shrink-0">
+                                        <span x-text="scaled({{ (float) $ing->quantity }})"></span>
+                                        <span class="text-gray-400 dark:text-slate-500 font-normal">{{ $ing->unitLabel() }}</span>
+                                    </span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @empty
+                        <p class="text-sm text-gray-400 py-2">—</p>
+                    @endforelse
 
                     <button @click="listModal = true" type="button"
                             class="w-full mt-4 inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-xl py-2.5 text-sm transition shadow-sm">
@@ -157,22 +200,25 @@
                     <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-5">
                         <span class="material-icons-round text-amber-500">menu_book</span>{{ __('messages.instructions') }}
                     </h3>
-                    @if(count($steps))
-                        <ol class="space-y-4">
-                            @foreach($steps as $i => $step)
+                    @forelse($stepGroups as $section => $groupSteps)
+                        @if(filled($section))
+                            <h4 class="text-sm font-bold text-amber-600 dark:text-amber-400 mt-6 first:mt-0 mb-3">{{ $section }}</h4>
+                        @endif
+                        <ol class="space-y-4 mb-2">
+                            @foreach($groupSteps as $i => $step)
                                 <li class="flex gap-4">
                                     <span class="w-8 h-8 shrink-0 rounded-full bg-linear-to-br from-amber-500 to-amber-400 text-slate-900 text-sm font-bold flex items-center justify-center shadow-sm">{{ $i + 1 }}</span>
-                                    <p class="text-sm text-gray-700 dark:text-slate-200 leading-relaxed pt-1">{{ preg_replace('/^\s*\d+[\.\)]\s*/', '', $step) }}</p>
+                                    <p class="text-sm text-gray-700 dark:text-slate-200 leading-relaxed pt-1">{{ $step->text }}</p>
                                 </li>
                             @endforeach
                         </ol>
-                    @else
+                    @empty
                         <div class="text-center py-10">
                             <span class="material-icons-round text-4xl text-gray-300 dark:text-slate-600">description</span>
                             <p class="text-sm text-gray-400 dark:text-slate-500 mt-2">{{ __('messages.no_instructions') }}</p>
                             <a href="{{ route('recipes.edit', $recipe) }}" class="text-amber-700 dark:text-amber-400 text-sm font-semibold mt-2 inline-block">{{ __('messages.edit_recipe') }}</a>
                         </div>
-                    @endif
+                    @endforelse
                 </x-card>
             </div>
         </div>

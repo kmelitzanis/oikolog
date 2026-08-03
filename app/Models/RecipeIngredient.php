@@ -10,7 +10,18 @@ class RecipeIngredient extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['recipe_id', 'product_id', 'name', 'quantity', 'unit'];
+    protected $fillable = ['recipe_id', 'section', 'sort_order', 'product_id', 'name', 'quantity', 'unit'];
+
+    protected function casts(): array
+    {
+        return ['sort_order' => 'integer'];
+    }
+
+    /** The unit rendered in the viewer's language — never show the raw key. */
+    public function unitLabel(): string
+    {
+        return \App\Support\Units::label($this->unit);
+    }
 
     public function recipe(): BelongsTo
     {

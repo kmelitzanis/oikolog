@@ -133,8 +133,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 
     // Recipes
+    // Import must be declared before the resource routes so `/recipes/import`
+    // isn't swallowed by the `/recipes/{recipe}` show route.
+    Route::post('/recipes/import', [App\Http\Controllers\Web\RecipeController::class, 'import'])
+        ->middleware('throttle:10,1')
         ->name('recipes.import');
+    // Photos are stored the moment they're chosen so the form can preview them
+    // and so uploads and imports both hand the form the same `image_path`.
+    Route::post('/recipes/image', [App\Http\Controllers\Web\RecipeController::class, 'uploadImage'])
+        ->middleware('throttle:20,1')
         ->name('recipes.image.upload');
+    Route::delete('/recipes/{recipe}/image', [App\Http\Controllers\Web\RecipeController::class, 'destroyImage'])->name('recipes.image.destroy');
     Route::post('/recipes/{recipe}/favorite', [App\Http\Controllers\Web\RecipeController::class, 'toggleFavorite'])->name('recipes.favorite');
     Route::post('/recipes/{recipe}/to-shopping-list', [App\Http\Controllers\Web\RecipeController::class, 'toShoppingList'])->name('recipes.to-shopping-list');
     Route::resource('recipes', App\Http\Controllers\Web\RecipeController::class);

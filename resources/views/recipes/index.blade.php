@@ -52,9 +52,16 @@
                         {{-- Cover band --}}
                         <a href="{{ route('recipes.show', $r) }}" class="block">
                             <div class="h-[110px] bg-linear-to-br from-amber-500 via-amber-500 to-amber-400 flex items-end p-3 relative">
-                                <span class="absolute inset-0 flex items-center justify-center text-5xl drop-shadow-sm pointer-events-none">
-                                    {{ $r->emoji ?: '🍽️' }}
-                                </span>
+                                @if($r->imageUrl())
+                                    <img src="{{ $r->imageUrl() }}" alt="{{ $r->name }}" loading="lazy"
+                                         class="absolute inset-0 w-full h-full object-cover">
+                                    {{-- Scrim so the difficulty chip stays legible over any photo. --}}
+                                    <span class="absolute inset-0 bg-linear-to-t from-black/45 to-transparent pointer-events-none"></span>
+                                @else
+                                    <span class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <span class="material-icons-round text-slate-900/25" style="font-size:52px;">restaurant_menu</span>
+                                    </span>
+                                @endif
                                 @if($r->difficulty)
                                     <span class="relative px-2.5 py-1 rounded-full text-[0.64rem] font-semibold bg-slate-900/[0.55] text-white backdrop-blur-sm">
                                         {{ __('messages.' . $r->difficulty) }}
