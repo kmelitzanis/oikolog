@@ -9,6 +9,18 @@ window.shoppingListApp = function () {
         addItemModalOpen: false,
         editingItem: null,
         itemForm: { name: '', quantity: 1, unit: 'piece' },
+
+        /**
+         * Localised label for a canonical unit key.
+         *
+         * Labels come from the server (window.__unitLabels) so this file holds no
+         * user-facing text; an unknown key is shown as-is rather than swallowed,
+         * which surfaces anything that escaped canonicalisation.
+         */
+        unitLabel(unit) {
+            if (!unit) return '';
+            return (window.__unitLabels || {})[unit] || unit;
+        },
         products: [],
         selectedProductId: null,
         barcodeInput: '',

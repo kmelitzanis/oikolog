@@ -14,6 +14,10 @@
 --}}
 
 @section('content')
+    {{-- Unit labels for the Alpine component: it must render translated
+         text without hardcoding any. --}}
+    <script>window.__unitLabels = @json(\App\Support\Units::options());</script>
+
 <div x-data="shoppingListApp()" x-init="init({{ Illuminate\Support\Js::from($list) }})"
      class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-[18px] items-start">
 
@@ -144,7 +148,7 @@
                     <button @click="bumpQuantity(item, -1)"
                             class="w-6 h-6 rounded-lg bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:text-amber-600 flex items-center justify-center font-bold text-sm transition">−</button>
                     <span class="min-w-[74px] text-center text-[0.76rem] font-semibold text-gray-600 dark:text-slate-300"
-                          x-text="(+item.quantity) + ' ' + item.unit"></span>
+                          x-text="(+item.quantity) + ' ' + unitLabel(item.unit)"></span>
                     <button @click="bumpQuantity(item, 1)"
                             class="w-6 h-6 rounded-lg bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:text-amber-600 flex items-center justify-center font-bold text-sm transition">+</button>
                 </div>
@@ -205,8 +209,13 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">{{ __('messages.unit') }}</label>
-                        <input type="text" x-model="itemForm.unit" placeholder="kg, piece…"
-                               class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500">
+                        {{-- Canonical keys as values, translated labels as text. --}}
+                        <select x-model="itemForm.unit"
+                                class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500">
+                            @foreach(\App\Support\Units::options() as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
                 <div class="flex gap-3 pt-2">
