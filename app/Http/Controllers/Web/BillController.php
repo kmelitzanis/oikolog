@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Income;
 use App\Models\Payment;
 use App\Models\Provider;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -316,6 +317,17 @@ class BillController extends Controller
         $paymentMode = $request->input('payment_mode', 'full'); // 'partial' or 'full'
         $isPartial = $paymentMode === 'partial';
 
+        // Payments are often recorded days after the fact. The date defaults to
+        // today but can be backdated, which matters because `paid_at` decides
+        // which income period the payment is charged to. Future dates are
+        // rejected — a bill isn't paid before it's paid.
+        $request->validate([
+            'paid_at' => ['nullable', 'date', 'before_or_equal:today'],
+        ]);
+        $paidAt = $request->filled('paid_at')
+            ? Carbon::parse($request->input('paid_at'))->setTimeFrom(now())
+            : now();
+
         // Determine the total amount for this billing cycle
         if ($bill->cost_varies && $request->filled('custom_amount')) {
             $periodAmount = (float)$request->input('custom_amount');
@@ -348,7 +360,7 @@ class BillController extends Controller
             $newRemaining = null;
         }
 
-        DB::transaction(function () use ($bill, $request, $paidByUserId, $incomeId, $payAmount, $isPartial, $newRemaining) {
+        DB::transaction(function () use ($bill, $request, $paidByUserId, $incomeId, $payAmount, $isPartial, $newRemaining, $paidAt) {
             Payment::create([
                 'bill_id'       => $bill->id,
                 'paid_by' => $paidByUserId,
@@ -356,7 +368,7 @@ class BillController extends Controller
                 'amount' => $payAmount,
                 'is_partial' => $isPartial,
                 'currency_code' => $bill->currency_code,
-                'paid_at'       => now(),
+                'paid_at'       => $paidAt,
                 'notes' => $request->input('notes'),
             ]);
 
@@ -364,14 +376,14 @@ class BillController extends Controller
                 // Partial: update remaining balance, do NOT advance the due date
                 $bill->update([
                     'remaining_balance' => $newRemaining,
-                    'last_paid_date' => now()->toDateString(),
+                    'last_paid_date' => $paidAt->toDateString(),
                 ]);
             } else {
                 // Full: clear remaining balance and advance to next period
                 $nextDue = $bill->calculateNextDueDate();
                 $bill->update([
                     'remaining_balance' => null,
-                    'last_paid_date' => now()->toDateString(),
+                    'last_paid_date' => $paidAt->toDateString(),
                     'next_due_date' => $nextDue?->toDateString() ?? $bill->next_due_date,
                 ]);
             }

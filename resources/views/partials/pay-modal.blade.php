@@ -45,6 +45,7 @@
         partialAmount: '',
         paidByUserId: '{{ auth()->id() }}',
         incomeId: '',
+        paidAt: '{{ now()->toDateString() }}',
         paymentMode: 'full',
         remainingBalance: null,
 
@@ -68,6 +69,7 @@
             this.partialAmount   = '';
             this.paidByUserId    = '{{ auth()->id() }}';
             this.incomeId        = data.defaultIncomeId ?? '';
+            this.paidAt          = '{{ now()->toDateString() }}';
             this.paymentMode     = 'full';
             this.open            = true;
         },
@@ -175,9 +177,11 @@
             <div class="grid grid-cols-2 gap-2.5 mb-3.5">
                 <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-3.5 py-[11px]">
                     <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">{{ __('messages.date') }}</div>
-                    <div class="text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200 mt-0.5">
-                        {{ now()->translatedFormat('j M Y') }}
-                    </div>
+                    {{-- Defaults to today, but a payment remembered late has to
+                         be datable to when it actually happened — that date is
+                         what charges it to the right income period. --}}
+                    <input type="date" x-model="paidAt" max="{{ now()->toDateString() }}"
+                           class="w-full bg-transparent border-0 outline-none p-0 mt-0.5 text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]">
                 </div>
                 <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-3.5 py-[11px] min-w-0">
                     <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">{{ __('messages.from_income') }}</div>
@@ -260,6 +264,7 @@
         <input type="hidden" name="payment_mode" :value="paymentMode">
         <input type="hidden" name="paid_by_user_id" :value="paidByUserId">
         <input type="hidden" name="income_id" :value="incomeId">
+        <input type="hidden" name="paid_at" :value="paidAt">
         <input type="hidden" name="custom_amount" :value="customAmount">
         <input type="hidden" name="partial_amount" :value="partialAmount">
     </form>

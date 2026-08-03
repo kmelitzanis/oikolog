@@ -89,6 +89,45 @@ class BillStatusAndPaymentsTest extends TestCase
 
     // ── Removing payments ───────────────────────────────────────────────
 
+    // ── backdating a payment ────────────────────────────────────────────
+
+    public function test_a_payment_can_be_backdated(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user);
+        $when = now()->subDays(15)->toDateString();
+
+        $this->actingAs($user)
+            ->post(route('bills.pay', $bill), ['paid_at' => $when])
+            ->assertRedirect();
+
+        $bill->refresh();
+        $this->assertSame($when, $bill->payments()->first()->paid_at->toDateString());
+        $this->assertSame($when, $bill->last_paid_date->toDateString());
+    }
+
+    public function test_a_payment_defaults_to_today(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user);
+
+        $this->actingAs($user)->post(route('bills.pay', $bill))->assertRedirect();
+
+        $this->assertSame(now()->toDateString(), $bill->payments()->first()->paid_at->toDateString());
+    }
+
+    public function test_a_payment_cannot_be_dated_in_the_future(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user);
+
+        $this->actingAs($user)
+            ->post(route('bills.pay', $bill), ['paid_at' => now()->addDay()->toDateString()])
+            ->assertSessionHasErrors('paid_at');
+
+        $this->assertSame(0, $bill->payments()->count());
+    }
+
     public function test_undo_rolls_the_due_date_back_to_the_settled_cycle(): void
     {
         $user = User::factory()->create();
