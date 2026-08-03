@@ -26,8 +26,7 @@
         @foreach($lists as $l)
             @php
                 $isActive = $l->id === $list->id;
-                $done = $l->checked_items_count;
-                $all  = $l->items_count;
+                $pending = $l->pending_items_count;
             @endphp
             <a href="{{ route('shopping-list.show', $l) }}"
                class="flex items-center gap-3 p-3 rounded-2xl transition
@@ -41,7 +40,9 @@
                 <span class="flex-1 min-w-0">
                     <span class="block text-[0.84rem] font-semibold text-gray-900 dark:text-white truncate">{{ $l->name }}</span>
                     <span class="block text-[0.68rem] mt-px {{ $isActive ? 'text-amber-600 dark:text-amber-300' : 'text-gray-400 dark:text-slate-500' }}">
-                        {{ __('messages.items_of', ['done' => $done, 'total' => $all]) }}
+                        {{ $pending > 0
+                            ? __('messages.pending_items', ['count' => $pending])
+                            : __('messages.nothing_to_buy') }}
                     </span>
                 </span>
             </a>
@@ -51,19 +52,6 @@
             + {{ __('messages.new_list') }}
         </a>
 
-        {{-- The catalogue is not a place of its own: it is the history behind
-             these lists, so it is reached from here. --}}
-        <a href="{{ route('products.index') }}"
-           class="flex items-center gap-3 p-3 mt-1.5 rounded-2xl border-t border-gray-100 dark:border-slate-700/60 transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
-            <span class="w-[34px] h-[34px] rounded-xl shrink-0 flex items-center justify-center bg-emerald-500/[0.14] text-emerald-600 dark:text-emerald-400">
-                <span class="material-icons-round text-lg">inventory_2</span>
-            </span>
-            <span class="flex-1 min-w-0">
-                <span class="block text-[0.84rem] font-semibold text-gray-900 dark:text-white truncate">{{ __('messages.bought_products') }}</span>
-                <span class="block text-[0.68rem] text-gray-400 dark:text-slate-500 mt-px">{{ __('messages.bought_products_hint') }}</span>
-            </span>
-            <span class="material-icons-round text-gray-300 dark:text-slate-600" style="font-size:18px;">chevron_right</span>
-        </a>
     </div>
 
     {{-- ── Open list ──────────────────────────────────────────────────── --}}
@@ -74,20 +62,23 @@
             <div class="flex items-center justify-between gap-4">
                 <div class="min-w-0">
                     <div class="text-[1.05rem] font-bold text-gray-900 dark:text-white truncate" x-text="list.name"></div>
+                    {{-- What is left to buy says more than when the list was
+                         last touched, on a list that is never really "done". --}}
                     <div class="text-[0.74rem] text-gray-400 dark:text-slate-500 mt-0.5">
-                        {{ __('messages.updated_ago', ['ago' => $list->updated_at?->diffForHumans() ?? '—']) }}
+                        <span x-show="roundPending > 0"
+                              x-text="roundPending + ' {{ __('messages.left_to_buy') }}'"></span>
+                        <span x-show="roundPending === 0" x-cloak>{{ __('messages.nothing_to_buy') }}</span>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button x-show="checkedCount > 0" @click="clearChecked()" x-cloak
-                            title="{{ __('messages.clear_checked') }}"
-                            class="w-9 h-9 rounded-xl text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center justify-center transition">
-                        <span class="material-icons-round text-lg">delete_sweep</span>
-                    </button>
-                    <div class="text-[1.3rem] font-extrabold text-amber-500 dark:text-amber-300" x-text="progress + '%'"></div>
+                    {{-- Both the figure and the bar belong to the round in
+                         progress; with nothing pending there is nothing to
+                         report, so they step aside rather than sit at 100%. --}}
+                    <div x-show="hasRound" x-cloak
+                         class="text-[1.3rem] font-extrabold text-amber-500 dark:text-amber-300" x-text="progress + '%'"></div>
                 </div>
             </div>
-            <div class="h-2 rounded-full bg-gray-100 dark:bg-slate-900 mt-3 overflow-hidden">
+            <div x-show="hasRound" x-cloak class="h-2 rounded-full bg-gray-100 dark:bg-slate-900 mt-3 overflow-hidden">
                 <div class="h-full rounded-full transition-[width] duration-[350ms] ease-out"
                      :class="progress === 100 ? 'bg-emerald-500' : 'bg-linear-to-r from-amber-500 to-amber-700'"
                      :style="`width: ${progress}%`"></div>

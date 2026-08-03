@@ -222,7 +222,6 @@ return [
     'list_updated' => 'Shopping list updated.',
     'list_deleted' => 'Shopping list deleted.',
     'search_items' => 'Search items…',
-    'clear_checked' => 'Clear checked',
     'items_done' => ':done of :total done',
     'all_done' => 'All done! 🎉',
     'mark_complete' => 'Mark complete',
@@ -564,4 +563,7 @@ return [
     'sort_by_recent' => 'Recently bought',
     'bought_every' => 'Bought about every :days days',
     'expected_again' => 'Likely needed again :when',
+    'left_to_buy' => 'left to buy',
+    'nothing_to_buy' => 'Nothing to buy',
+    'pending_items' => ':count to buy',
 ];

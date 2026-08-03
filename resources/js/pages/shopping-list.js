@@ -57,8 +57,24 @@ window.shoppingListApp = function () {
         get toBuy() { return this.filtered.filter(i => !i.checked); },
         get inCart() { return this.filtered.filter(i => i.checked); },
         get total() { return this.items.length; },
-        get checkedCount() { return this.items.filter(i => i.checked).length; },
-        get progress() { return this.total ? Math.round(this.checkedCount / this.total * 100) : 0; },
+
+        /**
+         * A list is kept permanently stocked: most lines stay ticked and only
+         * what is needed gets un-ticked. So progress is measured over the
+         * current round — the lines still to buy, plus the ones ticked off in
+         * the last day — and not over every tick ever made. A day after the
+         * shopping is done the bar is empty again, with nothing un-ticked.
+         */
+        checkedRecently(item) {
+            if (!item.checked || !item.checked_at) return false;
+            const hours = (Date.now() - new Date(item.checked_at).getTime()) / 36e5;
+            return hours < 24;
+        },
+        get roundBought() { return this.items.filter(i => this.checkedRecently(i)).length; },
+        get roundPending() { return this.items.filter(i => !i.checked).length; },
+        get roundTotal() { return this.roundBought + this.roundPending; },
+        get hasRound() { return this.roundTotal > 0; },
+        get progress() { return this.roundTotal ? Math.round(this.roundBought / this.roundTotal * 100) : 0; },
         get progressDash() {
             const c = 2 * Math.PI * 26; // r=26
             return `${c * this.progress / 100} ${c}`;
@@ -261,17 +277,6 @@ window.shoppingListApp = function () {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
             });
-        },
-
-        async clearChecked() {
-            const checked = this.items.filter(i => i.checked);
-            this.items = this.items.filter(i => !i.checked);
-            await Promise.all(checked.map(i =>
-                fetch(`/api/shopping-lists/${this.list.id}/items/${i.id}`, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                })
-            ));
         },
 
         // ── Barcode ────────────────────────────────────────────────────────

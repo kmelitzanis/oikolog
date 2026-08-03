@@ -142,6 +142,10 @@ class ShoppingListController extends Controller
             'checked'  => 'sometimes|boolean',
         ]);
 
+        if (array_key_exists('checked', $validated)) {
+            $validated['checked_at'] = $validated['checked'] ? now() : null;
+        }
+
         $item->update($validated);
 
         return response()->json($item);
@@ -174,7 +178,13 @@ class ShoppingListController extends Controller
             return response()->json(['message' => 'Item does not belong to this list'], 422);
         }
 
-        $item->update(['checked' => !$item->checked]);
+        $checked = ! $item->checked;
+        $item->update([
+            'checked' => $checked,
+            // The timestamp is what lets progress describe this trip rather
+            // than every tick ever made on the list.
+            'checked_at' => $checked ? now() : null,
+        ]);
 
         // Ticking an item is the moment it was bought; un-ticking takes it back.
         $item->checked

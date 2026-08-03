@@ -209,6 +209,45 @@ class ProductCatalogTest extends TestCase
         $this->assertSame(1, ProductPurchase::count());
     }
 
+    /**
+     * Lists are kept the way Reminders is: everything stays ticked and only
+     * what is needed gets un-ticked. So a tick has to carry its time, and an
+     * old tick must not count as progress — while staying ticked.
+     */
+    public function test_a_tick_records_when_it_happened(): void
+    {
+        $user = User::factory()->create();
+        $list = $this->makeList($user);
+        $this->actingAs($user)->postJson("/api/shopping-lists/{$list->id}/items", ['name' => 'Bread']);
+        $item = $list->items()->first();
+
+        $this->actingAs($user)->patchJson("/api/shopping-lists/{$list->id}/items/{$item->id}/toggle");
+        $item->refresh();
+        $this->assertTrue($item->checked);
+        $this->assertNotNull($item->checked_at);
+        $this->assertTrue($item->checkedThisRound());
+
+        // Un-ticking clears the stamp, so it cannot linger and count later.
+        $this->actingAs($user)->patchJson("/api/shopping-lists/{$list->id}/items/{$item->id}/toggle");
+        $item->refresh();
+        $this->assertFalse($item->checked);
+        $this->assertNull($item->checked_at);
+    }
+
+    public function test_a_tick_from_yesterday_is_no_longer_this_round(): void
+    {
+        $user = User::factory()->create();
+        $list = $this->makeList($user);
+        $this->actingAs($user)->postJson("/api/shopping-lists/{$list->id}/items", ['name' => 'Bread']);
+        $item = $list->items()->first();
+
+        $item->update(['checked' => true, 'checked_at' => now()->subHours(25)]);
+
+        // Still ticked — only the progress it counted towards has expired.
+        $this->assertTrue($item->fresh()->checked);
+        $this->assertFalse($item->fresh()->checkedThisRound());
+    }
+
     public function test_suggestions_come_from_what_has_been_bought_before(): void
     {
         $user = User::factory()->create();

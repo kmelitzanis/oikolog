@@ -222,7 +222,6 @@ return [
     'list_updated' => 'Η λίστα αγορών ενημερώθηκε.',
     'list_deleted' => 'Η λίστα αγορών διαγράφηκε.',
     'search_items' => 'Αναζήτηση αντικειμένων…',
-    'clear_checked' => 'Καθαρισμός επιλεγμένων',
     'items_done' => ':done από :total ολοκληρώθηκαν',
     'all_done' => 'Όλα έτοιμα! 🎉',
     'mark_complete' => 'Ολοκλήρωση',
@@ -564,4 +563,7 @@ return [
     'sort_by_recent' => 'Πρόσφατα',
     'bought_every' => 'Αγοράζεται περίπου κάθε :days ημέρες',
     'expected_again' => 'Πιθανόν να χρειαστεί ξανά :when',
+    'left_to_buy' => 'για αγορά',
+    'nothing_to_buy' => 'Τίποτα για αγορά',
+    'pending_items' => ':count για αγορά',
 ];

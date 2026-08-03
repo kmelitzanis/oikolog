@@ -43,6 +43,9 @@ class ShoppingListController extends Controller
             ->withCount([
                 'items',
                 'items as checked_items_count' => fn($q) => $q->where('checked', true),
+                // What is still to buy is the number worth showing: these lists
+                // stay permanently stocked and mostly ticked.
+                'items as pending_items_count' => fn($q) => $q->where('checked', false),
             ])
             ->orderByDesc('updated_at')
             ->get();
