@@ -56,12 +56,11 @@ class IncomeController extends Controller
                 : 0,
         ];
 
-        // Accounts share this page: "λογαριασμοί" is the same word as bills in
-        // Greek, and money coming in and where it sits are one subject.
+        // Accounts share this page: money coming in and where it sits are one
+        // subject, and "λογαριασμοί" already means bills in the Greek menu.
         ['rows' => $accountRows, 'stats' => $accountStats] = Account::summaryFor($user);
-        $tab = $request->input('tab') === 'accounts' ? 'accounts' : 'income';
 
-        return view('income.index', compact('incomes', 'stats', 'accountRows', 'accountStats', 'tab'));
+        return view('income.index', compact('incomes', 'stats', 'accountRows', 'accountStats'));
     }
 
     public function create(Request $request)

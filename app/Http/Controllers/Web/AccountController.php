@@ -21,7 +21,7 @@ class AccountController extends Controller
      */
     public function index()
     {
-        return redirect()->route('income.index', ['tab' => 'accounts']);
+        return redirect()->route('income.index');
     }
 
     public function create()
@@ -40,7 +40,7 @@ class AccountController extends Controller
             'family_id' => $data['is_shared'] ? $request->user()->family_id : null,
         ]);
 
-        return redirect()->route('income.index', ['tab' => 'accounts'])->with('success', __('messages.account_created'));
+        return redirect()->route('income.index')->with('success', __('messages.account_created'));
     }
 
     public function show(Request $request, Account $account)
@@ -97,12 +97,12 @@ class AccountController extends Controller
         if ($account->transactions()->exists()) {
             $account->update(['is_active' => false]);
 
-            return redirect()->route('income.index', ['tab' => 'accounts'])->with('success', __('messages.account_archived'));
+            return redirect()->route('income.index')->with('success', __('messages.account_archived'));
         }
 
         $account->delete();
 
-        return redirect()->route('income.index', ['tab' => 'accounts'])->with('success', __('messages.account_deleted'));
+        return redirect()->route('income.index')->with('success', __('messages.account_deleted'));
     }
 
     /** Move money to another account. */

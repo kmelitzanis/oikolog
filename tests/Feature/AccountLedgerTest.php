@@ -237,9 +237,8 @@ class AccountLedgerTest extends TestCase
 
         // Accounts live on the income page now; the old route only redirects.
         $this->actingAs($user)->get(route('accounts.index'))
-            ->assertRedirect(route('income.index', ['tab' => 'accounts']));
-        $this->actingAs($user)->get(route('income.index', ['tab' => 'accounts']))
-            ->assertOk()->assertSee('Savings');
+            ->assertRedirect(route('income.index'));
+        $this->actingAs($user)->get(route('income.index'))->assertOk()->assertSee('Savings');
         $this->actingAs($user)->get(route('accounts.show', $account))->assertOk();
         $this->actingAs($user)->get(route('accounts.create'))->assertOk();
         $this->actingAs($user)->get(route('accounts.edit', $account))->assertOk();
