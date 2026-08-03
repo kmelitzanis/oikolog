@@ -357,4 +357,16 @@ return [
     'estimated_optional' => 'Estimated (optional)',
     'receipts_drop_hint' => 'Drag & drop receipts here or click to select (images or PDFs).',
     'validation_failed' => 'Please check the highlighted fields below.',
+    // ── Meal planner redesign ────────────────────────────────────────────
+    'meal_pick_recipe_or_title' => 'Pick a recipe or type a meal.',
+    'meal_save_failed' => 'Could not save the meal.',
+    'meal_delete_failed' => 'Could not delete the meal.',
+    'meal_move_failed' => 'Could not move the meal.',
+    'week_planned' => 'Planned',
+    'week_empty_slots' => 'Empty',
+    'meal_empty_week' => 'Empty week',
+    'meal_empty_week_hint' => 'Click an empty slot to add a meal. Drag a meal to move it.',
+    'meals' => 'meals',
+    'day' => 'Day',
+    'meal' => 'Meal',
 ];

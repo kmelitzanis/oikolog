@@ -26,19 +26,75 @@ class MealPlanController extends Controller
         $recipes = Recipe::where('user_id', $request->user()->id)
             ->withCount('ingredients')
             ->orderBy('name')
-            ->get(['id', 'name', 'emoji', 'servings', 'prep_minutes', 'cook_minutes']);
+            ->get(['id', 'name', 'image_path', 'servings', 'prep_minutes', 'cook_minutes']);
 
         $shoppingLists = ShoppingList::where('user_id', $request->user()->id)
             ->where('is_completed', false)
             ->orderByDesc('created_at')
             ->get(['id', 'name']);
 
+        $today = Carbon::today();
+        $days  = collect(range(0, 6))->map(function ($i) use ($weekStart, $today) {
+            $d = $weekStart->copy()->addDays($i);
+
+            return [
+                'date'    => $d->toDateString(),
+                'weekday' => $d->isoFormat('ddd'),
+                'day'     => $d->day,
+                'label'   => $d->isoFormat('D MMM'),
+                'isToday' => $d->isSameDay($today),
+                'isPast'  => $d->lt($today),
+            ];
+        })->all();
+
         return view('meal-plans.index', [
-            'weekStart'     => $weekStart,
-            'plans'         => $plans,
-            'recipes'       => $recipes,
-            'shoppingLists' => $shoppingLists,
+            'weekStart' => $weekStart,
+            'weekEnd'   => $weekEnd,
+            'days'      => $days,
+            'mealTypes' => self::mealTypeMeta(),
+            // Everything Alpine needs, assembled here so the view does no
+            // serialization and the grid's plan shape matches what a save returns.
+            'payload'   => [
+                'weekStart' => $weekStart->toDateString(),
+                'days'      => $days,
+                'mealTypes' => collect(self::mealTypeMeta())
+                    ->map(fn ($m, $k) => ['key' => $k, 'label' => $m['label']])->values(),
+                'recipes'   => $recipes->map(fn ($r) => [
+                    'id'       => $r->id,
+                    'name'     => $r->name,
+                    'image'    => $r->imageUrl(),
+                    'servings' => $r->servings,
+                    'minutes'  => ((int) $r->prep_minutes + (int) $r->cook_minutes) ?: null,
+                ])->values(),
+                'lists'     => $shoppingLists->map(fn ($l) => ['id' => $l->id, 'name' => $l->name])->values(),
+                'plans'     => $plans->map(fn ($p) => self::planResource($p))->values(),
+                'routes'    => [
+                    'index'  => route('meal-plans.index'),
+                    'store'  => route('meal-plans.store'),
+                    'base'   => url('meal-planner'),
+                    'toList' => route('meal-plans.to-shopping-list'),
+                ],
+                // The Alpine component renders user-facing text, so it must not
+                // hardcode any — it was shipping English toasts in a bilingual app.
+                'i18n'      => [
+                    'pick_recipe_or_title' => __('messages.meal_pick_recipe_or_title'),
+                    'save_failed'          => __('messages.meal_save_failed'),
+                    'delete_failed'        => __('messages.meal_delete_failed'),
+                    'move_failed'          => __('messages.meal_move_failed'),
+                ],
+            ],
         ]);
+    }
+
+    /** Meal slots in the order they occur in a day, with the grid's colour ramp. */
+    public static function mealTypeMeta(): array
+    {
+        return [
+            'breakfast' => ['label' => __('messages.breakfast'), 'icon' => 'wb_twilight',   'dot' => '#fcd34d'],
+            'lunch'     => ['label' => __('messages.lunch'),     'icon' => 'lunch_dining',  'dot' => '#f59e0b'],
+            'dinner'    => ['label' => __('messages.dinner'),    'icon' => 'dinner_dining', 'dot' => '#fbbf24'],
+            'snack'     => ['label' => __('messages.snack'),     'icon' => 'cookie',        'dot' => '#d97706'],
+        ];
     }
 
     public function store(Request $request)
@@ -175,8 +231,15 @@ class MealPlanController extends Controller
         return $d->startOfWeek(Carbon::MONDAY)->startOfDay();
     }
 
-    private function planResource(MealPlan $plan): array
+    /**
+     * The shape the planner grid renders from. Kept in one place because the
+     * index payload and the create/update JSON responses must agree — the grid
+     * swaps a card for whatever a save returns.
+     */
+    public static function planResource(MealPlan $plan): array
     {
+        $recipe = $plan->recipe;
+
         return [
             'id'        => $plan->id,
             'date'      => $plan->date->toDateString(),
@@ -186,7 +249,10 @@ class MealPlanController extends Controller
             'servings'  => $plan->servings,
             'notes'     => $plan->notes,
             'name'      => $plan->displayName(),
-            'emoji'     => $plan->recipe?->emoji,
+            'image'     => $recipe?->imageUrl(),
+            // Total hands-on + cooking time, so a card can say how long the meal
+            // takes. Both columns were already being loaded and then discarded.
+            'minutes'   => $recipe ? ((int) $recipe->prep_minutes + (int) $recipe->cook_minutes) ?: null : null,
             'recipe_url' => $plan->recipe_id ? route('recipes.show', $plan->recipe_id) : null,
         ];
     }
