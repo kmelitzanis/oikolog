@@ -1,82 +1,102 @@
 @extends('layouts.app')
-@section('title', isset($income) ? 'Edit Income' : 'Add Income')
+@section('title', isset($income) ? __('messages.edit_income') : __('messages.add_income'))
+
+{{--
+    Income create / edit.
+
+    Built like the bill form: three titled sections (x-form-section) made of
+    x-field / x-input, so the two forms in the app that describe recurring money
+    look and behave the same and the control styling lives in one place.
+--}}
 
 @section('content')
-    <div class="max-w-2xl">
+    @php
+        $editing = isset($income);
+        $curCode = $editing ? $income->currency_code : auth()->user()->currency_code;
+        $symbols = ['EUR'=>'€','USD'=>'$','GBP'=>'£','CHF'=>'Fr','CAD'=>'CA$','AUD'=>'A$','JPY'=>'¥'];
+        $symbol  = $symbols[$curCode] ?? $curCode;
+    @endphp
 
-        {{-- Back + title --}}
+    <div class="max-w-3xl">
+
         <div class="flex items-center gap-3 mb-6">
-            <a href="{{ route('income.index') }}" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition shrink-0">
+            <a href="{{ $editing ? route('income.show', $income) : route('income.index') }}"
+               class="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition shrink-0">
                 <span class="material-icons-round">arrow_back</span>
             </a>
-            <h1 class="text-xl font-extrabold text-gray-900 dark:text-white">
-                {{ isset($income) ? 'Edit Income' : 'Add Income Source' }}
-            </h1>
+            <div class="min-w-0">
+                <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white truncate">
+                    {{ $editing ? __('messages.edit_income') : __('messages.add_income') }}
+                </h1>
+                @if($editing)
+                    <p class="text-sm text-gray-400 dark:text-slate-500 mt-0.5 truncate">{{ $income->name }}</p>
+                @endif
+            </div>
         </div>
 
+        @if($errors->any())
+            <div class="mb-4 rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3">
+                <div class="flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-300">
+                    <span class="material-icons-round text-base">error_outline</span>
+                    {{ __('messages.validation_failed') }}
+                </div>
+            </div>
+        @endif
+
         <form method="POST"
-              action="{{ isset($income) ? route('income.update', $income) : route('income.store') }}"
+              action="{{ $editing ? route('income.update', $income) : route('income.store') }}"
+              class="space-y-4"
               x-data="{
-              freq: '{{ old('frequency', isset($income) ? $income->frequency : 'monthly') }}',
-              isRecurring() { return this.freq !== 'once'; }
-          }">
+                  freq: '{{ old('frequency', $editing ? $income->frequency : 'monthly') }}',
+                  get isRecurring() { return this.freq !== 'once'; },
+              }">
             @csrf
-            @if(isset($income))
-                @method('PUT')
-            @endif
+            @if($editing) @method('PUT') @endif
 
-            <x-card flush class="p-6 space-y-6">
+            {{-- ── Basics ───────────────────────────────────────────────── --}}
+            <x-form-section icon="trending_up"
+                            :title="__('messages.section_basics')"
+                            :hint="__('messages.section_income_basics_hint')">
 
-                {{-- Name --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Income Name
-                        *</label>
-                    <input type="text" name="name"
-                           value="{{ old('name', $income->name ?? '') }}"
-                           placeholder="e.g. Monthly Salary, Freelance Project, Rent Income" required
-                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
+                <x-field :label="__('messages.income_name')" name="name" required>
+                    <x-input name="name" id="name" required maxlength="120"
+                             :invalid="$errors->has('name')"
+                             value="{{ old('name', $editing ? $income->name : '') }}"
+                             placeholder="{{ __('messages.income_name_ph') }}" />
+                </x-field>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <x-field :label="__('messages.amount')" name="amount" required>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm pointer-events-none">{{ $symbol }}</span>
+                            <x-input type="number" name="amount" id="amount" step="0.01" min="0.01" required
+                                     :invalid="$errors->has('amount')"
+                                     class="pl-10" placeholder="0.00"
+                                     value="{{ old('amount', $editing ? $income->amount : '') }}" />
+                        </div>
+                    </x-field>
+
+                    <x-field :label="__('messages.source')" name="source" optional
+                             :hint="__('messages.source_hint')">
+                        <x-input name="source" id="source" maxlength="80" list="source-suggestions"
+                                 :invalid="$errors->has('source')"
+                                 value="{{ old('source', $editing ? $income->source : '') }}"
+                                 placeholder="{{ __('messages.source_ph') }}" />
+                        <datalist id="source-suggestions">
+                            @foreach(['salary','freelance','rental','business','dividends','pension','side_income','other'] as $s)
+                                <option value="{{ __('messages.source_' . $s) }}"></option>
+                            @endforeach
+                        </datalist>
+                    </x-field>
                 </div>
 
-                {{-- Source --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Source / Category
-                        <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-                    <input type="text" name="source"
-                           value="{{ old('source', $income->source ?? '') }}"
-                           placeholder="e.g. Employer, Freelance, Rental, Dividends"
-                           list="source-suggestions"
-                           class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
-                    <datalist id="source-suggestions">
-                        @foreach(['Salary','Freelance','Rental','Business','Dividends','Pension','Side income','Other'] as $s)
-                            <option value="{{ $s }}">
-                        @endforeach
-                    </datalist>
-                </div>
-
-                {{-- Amount --}}
-                <div>
-                    @php
-                        $symbols = ['EUR'=>'€','USD'=>'$','GBP'=>'£','CHF'=>'Fr','CAD'=>'CA$','AUD'=>'A$','JPY'=>'¥'];
-                        $symbol  = $symbols[auth()->user()->currency_code] ?? auth()->user()->currency_code;
-                    @endphp
-                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Amount *</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 font-semibold text-sm">{{ $symbol }}</span>
-                        <input type="number" name="amount" step="0.01" min="0.01"
-                               value="{{ old('amount', isset($income) ? $income->amount : '') }}"
-                               placeholder="0.00" required
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
-                    </div>
-                </div>
-
-                {{-- Destination account: where the money lands when received. --}}
-                <div>
-                    <label for="account_id" class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
-                        {{ __('messages.deposit_account') }}
-                    </label>
+                {{-- Where the money lands. Without it, marking the income as
+                     received moves no balance, so say so rather than let it
+                     silently do nothing. --}}
+                <x-field :label="__('messages.deposit_account')" name="account_id"
+                         :hint="isset($accounts) && $accounts->count() > 0 ? __('messages.deposit_account_hint') : null">
                     @if(isset($accounts) && $accounts->count() > 0)
-                        <select name="account_id" id="account_id"
-                                class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
+                        <x-input as="select" name="account_id" id="account_id" :invalid="$errors->has('account_id')">
                             <option value="">{{ __('messages.no_deposit_account') }}</option>
                             @foreach($accounts as $acc)
                                 <option value="{{ $acc->id }}"
@@ -84,119 +104,134 @@
                                     {{ $acc->name }}
                                 </option>
                             @endforeach
-                        </select>
-                        <p class="mt-1.5 text-xs text-gray-400 dark:text-slate-500">{{ __('messages.deposit_account_hint') }}</p>
+                        </x-input>
                     @else
-                        <a href="{{ route('accounts.create') }}"
-                           class="inline-flex items-center gap-2 text-sm font-semibold text-amber-600 dark:text-amber-400">
-                            <span class="material-icons-round text-base">add</span>{{ __('messages.add_account') }}
-                        </a>
-                    @endif
-                </div>
-
-                {{-- Frequency --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">Frequency *</label>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach(['once'=>'One-time','weekly'=>'Weekly','biweekly'=>'Bi-weekly','monthly'=>'Monthly','quarterly'=>'Quarterly','yearly'=>'Yearly'] as $val => $lbl)
-                            <label class="cursor-pointer">
-                                <input type="radio" name="frequency" value="{{ $val }}" x-model="freq" class="sr-only">
-                                <span :class="freq==='{{ $val }}'
-                                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                                       : 'border-gray-200 bg-white dark:bg-slate-700 text-gray-600 dark:text-gray-100 hover:border-gray-300 dark:hover:border-slate-500'"
-                                      class="inline-block px-4 py-2 rounded-xl text-sm font-medium border transition select-none">
-                                {{ $lbl }}
+                        <div class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3">
+                            <span class="text-[0.8rem] text-amber-800 dark:text-amber-300 min-w-0">
+                                {{ __('messages.no_accounts_for_income') }}
                             </span>
+                            <a href="{{ route('accounts.create') }}"
+                               class="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 dark:text-amber-400 hover:underline">
+                                <span class="material-icons-round text-base">add</span>{{ __('messages.add_account') }}
+                            </a>
+                        </div>
+                    @endif
+                </x-field>
+            </x-form-section>
+
+            {{-- ── Schedule ─────────────────────────────────────────────── --}}
+            <x-form-section icon="event_repeat"
+                            :title="__('messages.section_schedule')"
+                            :hint="__('messages.section_income_schedule_hint')">
+
+                <x-field :label="__('messages.frequency')" name="frequency" required>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach(['once','weekly','biweekly','monthly','quarterly','yearly'] as $val)
+                            <label class="cursor-pointer">
+                                <input type="radio" name="frequency" value="{{ $val }}" x-model="freq" class="sr-only peer">
+                                <span :class="freq === '{{ $val }}'
+                                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                                          : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-300'"
+                                      class="inline-block px-4 py-2 rounded-xl text-sm font-medium border transition select-none peer-focus:ring-2 peer-focus:ring-amber-200">
+                                    {{ __('messages.' . $val) }}
+                                </span>
                             </label>
                         @endforeach
                     </div>
-                    <p class="text-xs text-gray-400 dark:text-slate-400 mt-2" x-show="!isRecurring()" x-cloak>
-                        One-time income will be recorded as a single entry on the start date.
+                    <p x-show="!isRecurring" x-cloak
+                       class="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                        <span class="material-icons-round text-sm">info</span>
+                        {{ __('messages.income_once_hint') }}
                     </p>
-                </div>
+                </x-field>
 
-                {{-- Dates --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5"
-                               x-text="isRecurring() ? 'Start / First Date *' : 'Date *'"></label>
-                        <input type="date" name="start_date"
-                               value="{{ old('start_date', isset($income) ? $income->start_date->format('Y-m-d') : now()->format('Y-m-d')) }}"
-                               required
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
-                    </div>
-                    <div x-show="isRecurring()" x-cloak>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">End Date <span
-                                class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-                        <input type="date" name="end_date"
-                               value="{{ old('end_date', (isset($income) && $income->end_date) ? $income->end_date->format('Y-m-d') : '') }}"
-                               class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition">
-                    </div>
-                </div>
-
-                {{-- Notes --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Notes <span
-                            class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-                    <textarea name="notes" rows="3" placeholder="Any additional notes…"
-                              class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:text-white transition resize-none">{{ old('notes', $income->notes ?? '') }}</textarea>
-                </div>
-
-                {{-- Active toggle (edit only) --}}
-                @if(isset($income))
-                    <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700 rounded-xl px-4 py-3">
-                        <div>
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">Active</div>
-                            <div class="text-xs text-gray-400 dark:text-gray-400 mt-0.5">Inactive sources are excluded from totals</div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="hidden" name="is_active" value="0">
-                            <input type="checkbox" name="is_active" value="1" class="sr-only peer"
-                                {{ old('is_active', $income->is_active) ? 'checked' : '' }}>
-                            <div class="w-11 h-6 bg-gray-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer
-                                peer-checked:after:translate-x-full peer-checked:after:border-white
-                                after:content-[''] after:absolute after:top-[2px] after:left-[2px]
-                                after:bg-white dark:after:bg-slate-400 after:border-gray-300 dark:after:border-slate-500 after:border after:rounded-full
-                                after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 dark:peer-checked:bg-emerald-700"></div>
+                    {{-- The label depends on the frequency, so it is written
+                         out rather than passed to x-field as a static string. --}}
+                    <div class="min-w-0">
+                        <label for="start_date" class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
+                            <span x-text="isRecurring ? '{{ __('messages.first_payment_date') }}' : '{{ __('messages.date') }}'"></span>
+                            <span class="text-amber-500">*</span>
                         </label>
+                        <x-input type="date" name="start_date" id="start_date" required
+                                 :invalid="$errors->has('start_date')"
+                                 value="{{ old('start_date', $editing ? $income->start_date->format('Y-m-d') : now()->format('Y-m-d')) }}" />
+                        @error('start_date')
+                            <p class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                                <span class="material-icons-round text-sm">error_outline</span>{{ $message }}
+                            </p>
+                        @enderror
                     </div>
-                @endif
 
-                {{-- Share with family --}}
+                    <div x-show="isRecurring" x-cloak>
+                        <x-field :label="__('messages.end_date')" name="end_date" optional
+                                 :hint="__('messages.income_end_date_hint')">
+                            <x-input type="date" name="end_date" id="end_date"
+                                     :invalid="$errors->has('end_date')"
+                                     value="{{ old('end_date', ($editing && $income->end_date) ? $income->end_date->format('Y-m-d') : '') }}" />
+                        </x-field>
+                    </div>
+                </div>
+            </x-form-section>
+
+            {{-- ── Settings ─────────────────────────────────────────────── --}}
+            <x-form-section icon="tune"
+                            :title="__('messages.section_settings')"
+                            :hint="__('messages.section_income_settings_hint')">
+
                 @if(auth()->user()->family_id)
-                    <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700 rounded-xl px-4 py-3">
-                        <div>
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">Share with Family</div>
-                            <div class="text-xs text-gray-400 dark:text-gray-400 mt-0.5">Visible to all family members</div>
+                    <div class="flex items-center justify-between gap-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl px-4 py-3">
+                        <div class="min-w-0">
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ __('messages.share_family') }}</div>
+                            <div class="text-xs text-gray-400 dark:text-slate-400 mt-0.5">{{ __('messages.share_family_hint') }}</div>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="hidden" name="is_shared" value="0">
+                        <input type="hidden" name="is_shared" value="0">
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" name="is_shared" value="1" class="sr-only peer"
-                                {{ old('is_shared', isset($income) && $income->is_shared) ? 'checked' : '' }}>
-                            <div class="w-11 h-6 bg-gray-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer
-                                peer-checked:after:translate-x-full peer-checked:after:border-white
-                                after:content-[''] after:absolute after:top-[2px] after:left-[2px]
-                                after:bg-white dark:after:bg-slate-400 after:border-gray-300 dark:after:border-slate-500 after:border after:rounded-full
-                                after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 dark:peer-checked:bg-emerald-700"></div>
+                                   {{ old('is_shared', $editing ? $income->is_shared : false) ? 'checked' : '' }}>
+                            <div class="w-11 h-6 bg-gray-200 dark:bg-slate-600 rounded-full peer transition
+                                        peer-focus:ring-2 peer-focus:ring-emerald-200 peer-checked:bg-emerald-500
+                                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                                        peer-checked:after:translate-x-full"></div>
                         </label>
                     </div>
                 @endif
 
-            </x-card>
+                @if($editing)
+                    <div class="flex items-center justify-between gap-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl px-4 py-3">
+                        <div class="min-w-0">
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ __('messages.active') }}</div>
+                            <div class="text-xs text-gray-400 dark:text-slate-400 mt-0.5">{{ __('messages.active_income_hint') }}</div>
+                        </div>
+                        <input type="hidden" name="is_active" value="0">
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" name="is_active" value="1" class="sr-only peer"
+                                   {{ old('is_active', $income->is_active) ? 'checked' : '' }}>
+                            <div class="w-11 h-6 bg-gray-200 dark:bg-slate-600 rounded-full peer transition
+                                        peer-focus:ring-2 peer-focus:ring-emerald-200 peer-checked:bg-emerald-500
+                                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                                        peer-checked:after:translate-x-full"></div>
+                        </label>
+                    </div>
+                @endif
 
-            {{-- Submit --}}
-            <div class="flex gap-3 mt-6">
-                <button type="submit"
-                        class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white text-sm font-semibold rounded-xl px-6 py-3 transition">
-                    {{ isset($income) ? 'Save Changes' : 'Add Income' }}
-                </button>
-                <a href="{{ route('income.index') }}"
-                   class="flex-1 sm:flex-none text-center bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-100 text-sm font-semibold rounded-xl px-6 py-3 transition">
-                    Cancel
-                </a>
+                <x-field :label="__('messages.notes')" name="notes" optional>
+                    <x-input as="textarea" name="notes" id="notes" rows="3"
+                             placeholder="{{ __('messages.notes') }}…">{{ old('notes', $editing ? $income->notes : '') }}</x-input>
+                </x-field>
+            </x-form-section>
+
+            {{-- ── Submit ───────────────────────────────────────────────── --}}
+            <div class="flex gap-3 pt-1">
+                <x-btn type="submit" size="lg" class="flex-1" :icon="$editing ? 'save' : 'add'">
+                    {{ $editing ? __('messages.save_changes') : __('messages.add_income') }}
+                </x-btn>
+                <x-btn variant="ghost" size="lg" :href="$editing ? route('income.show', $income) : route('income.index')">
+                    {{ __('messages.cancel') }}
+                </x-btn>
             </div>
         </form>
-
     </div>
 @endsection
-

@@ -10,8 +10,7 @@
     $net     = round($stats['in'] - $stats['out'], 2);
 @endphp
 
-<div class="relative overflow-hidden rounded-[24px] p-[22px] border border-emerald-500/[0.26]
-            bg-linear-to-br from-emerald-500/[0.18] to-amber-500/[0.12]">
+<div class="relative overflow-hidden rounded-[24px] p-[22px] mb-4 border border-emerald-500/[0.26] bg-linear-to-br from-emerald-500/[0.18] to-amber-500/[0.12]">
 
     {{-- A soft glow behind the figure, so the card reads as the page's anchor
          without needing a heavier border. --}}

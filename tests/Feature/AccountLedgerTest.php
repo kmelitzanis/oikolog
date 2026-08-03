@@ -202,6 +202,41 @@ class AccountLedgerTest extends TestCase
         $this->assertFalse($account->fresh()->is_active);
     }
 
+    public function test_the_income_form_creates_and_edits_a_source(): void
+    {
+        $user = User::factory()->create(['currency_code' => 'EUR']);
+        $account = $this->makeAccount($user);
+
+        $this->actingAs($user)->post(route('income.store'), [
+            'name' => 'Salary',
+            'amount' => '1200.00',
+            'source' => 'Employer',
+            'account_id' => $account->id,
+            'frequency' => 'monthly',
+            'start_date' => now()->toDateString(),
+            'notes' => 'Paid on the 25th',
+        ])->assertRedirect(route('income.index'));
+
+        $income = Income::firstWhere('name', 'Salary');
+        $this->assertSame($account->id, $income->account_id);
+        $this->assertTrue($income->is_active);
+
+        // The active toggle posts "0" alongside an unchecked box.
+        $this->actingAs($user)->put(route('income.update', $income), [
+            'name' => 'Salary',
+            'amount' => '1300.00',
+            'account_id' => '',
+            'frequency' => 'monthly',
+            'start_date' => $income->start_date->toDateString(),
+            'is_active' => '0',
+        ])->assertRedirect(route('income.show', $income));
+
+        $income->refresh();
+        $this->assertSame('1300.00', $income->amount);
+        $this->assertNull($income->account_id);
+        $this->assertFalse($income->is_active);
+    }
+
     /** The pay modal, the bill form and the income form all changed shape. */
     public function test_pages_that_pick_an_account_render(): void
     {
