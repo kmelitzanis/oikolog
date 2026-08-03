@@ -64,6 +64,29 @@
                 ]) }}
                 · {{ $currency }} {{ number_format($stats['monthly_income'], 2) }}/mo
             </div>
+
+            {{-- Available balance: gross sources minus everything already paid
+                 from them in the current period. --}}
+            <div class="mt-4 pt-3.5 border-t border-emerald-500/20 flex items-end justify-between gap-3">
+                <div>
+                    <div class="text-[0.66rem] font-semibold uppercase tracking-[0.09em] text-emerald-600 dark:text-emerald-400">
+                        {{ __('messages.income_remaining') }}
+                    </div>
+                    <div class="text-[1.35rem] font-extrabold tracking-[-0.02em] mt-0.5 {{ $stats['total_remaining'] < 0 ? 'text-red-500' : 'text-gray-900 dark:text-white' }}">
+                        {{ $currency }} {{ number_format($stats['total_remaining'], 2) }}
+                    </div>
+                </div>
+                <div class="text-right text-[0.72rem] leading-tight">
+                    <div class="text-gray-500 dark:text-slate-400">
+                        {{ __('messages.income_of') }} {{ $currency }} {{ number_format($stats['total_gross'], 2) }}
+                    </div>
+                    @if($stats['total_spent'] > 0)
+                        <div class="font-semibold text-amber-600 dark:text-amber-400 mt-px">
+                            −{{ $currency }} {{ number_format($stats['total_spent'], 2) }} {{ __('messages.income_spent') }}
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
 
         {{-- ── Sources ────────────────────────────────────────────────── --}}
@@ -130,7 +153,8 @@
                     // Bills paid "from" this income reduce it — but only the
                     // detail page showed that, so paying against an income
                     // looked like it did nothing. Surface it here too.
-                    $spentThisPeriod = $income->spentThisPeriod();
+                    $spentThisPeriod     = $income->spentThisPeriod();
+                    $remainingThisPeriod = $income->remainingThisPeriod();
                 @endphp
                 <div class="flex items-center gap-3 sm:gap-4 {{ $incomeGrid }} px-4 lg:px-5 py-3.5 border-t border-gray-100 dark:border-slate-700/60 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition"
                      x-data>
@@ -170,15 +194,19 @@
                     {{-- 4 · Amount --}}
                     <div class="text-right shrink-0 cursor-pointer"
                          @click="window.location='{{ route('income.show', $income) }}'">
-                        <div class="text-[0.92rem] font-extrabold text-emerald-600 dark:text-emerald-400">
-                            {{ $currency }} {{ number_format($income->amount, 2) }}
-                        </div>
-                        <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
-                            {{ number_format($income->monthlyEquivalent(), 2) }}/mo
+                        <div class="text-[0.92rem] font-extrabold {{ $remainingThisPeriod < 0 ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400' }}">
+                            {{ $currency }} {{ number_format($remainingThisPeriod, 2) }}
                         </div>
                         @if($spentThisPeriod > 0)
+                            <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
+                                {{ __('messages.income_of') }} {{ $currency }} {{ number_format($income->amount, 2) }}
+                            </div>
                             <div class="text-[0.68rem] font-semibold text-amber-600 dark:text-amber-400 mt-0.5">
                                 −{{ $currency }} {{ number_format($spentThisPeriod, 2) }} {{ __('messages.income_spent') }}
+                            </div>
+                        @else
+                            <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
+                                {{ number_format($income->monthlyEquivalent(), 2) }}/mo
                             </div>
                         @endif
                     </div>

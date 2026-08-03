@@ -24,10 +24,12 @@
                 ->get(['id', 'name']);
         }
 
+        // Full models: the picker labels each source with what is still left
+        // of it, which needs the frequency/date fields to compute the period.
         $userIncomes = \App\Models\Income::forUser($authUser)
             ->active()
             ->orderBy('name')
-            ->get(['id', 'name', 'amount', 'currency_code']);
+            ->get();
     }
 @endphp
 
@@ -184,7 +186,13 @@
                                 class="w-full bg-transparent border-0 outline-none p-0 mt-0.5 text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200">
                             <option value="">—</option>
                             @foreach($userIncomes as $income)
-                                <option value="{{ $income->id }}">{{ $income->name }}</option>
+                                @php
+                                    $incRemaining = $income->remainingThisPeriod();
+                                    $incSymbol = ['EUR'=>'€','USD'=>'$','GBP'=>'£'][$income->currency_code] ?? $income->currency_code;
+                                @endphp
+                                <option value="{{ $income->id }}">
+                                    {{ $income->name }} · {{ $incSymbol }}{{ number_format($incRemaining, 2) }}
+                                </option>
                             @endforeach
                         </select>
                     @else

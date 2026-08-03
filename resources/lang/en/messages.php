@@ -309,6 +309,7 @@ return [
     'income_received' => 'Received',
     'income_spent' => 'spent',
     'income_remaining' => 'Remaining',
+    'income_of' => 'of',
     'spending_timeline' => 'Spent on',
     'no_spending_yet' => 'No bills paid from this income yet.',
     'partial' => 'partial',

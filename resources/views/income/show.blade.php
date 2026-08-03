@@ -29,8 +29,16 @@
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <div class="text-sm text-emerald-200 mb-1">{{ $income->source ?? 'Income' }}</div>
+                    {{-- The headline is what's still available, not the gross
+                         amount — bill payments funded from here reduce it. --}}
                     <div
-                        class="text-4xl font-extrabold tracking-tight">{{ $symbol }}{{ number_format($income->amount, 2) }}</div>
+                        class="text-4xl font-extrabold tracking-tight">{{ $symbol }}{{ number_format($remaining, 2) }}</div>
+                    @if($spent > 0)
+                        <div class="text-sm text-emerald-200 mt-1">
+                            {{ __('messages.income_of') }} {{ $symbol }}{{ number_format($income->amount, 2) }}
+                            · −{{ $symbol }}{{ number_format($spent, 2) }} {{ __('messages.income_spent') }}
+                        </div>
+                    @endif
                     <div class="text-sm text-emerald-300 mt-1">{{ $income->frequencyLabel() }}</div>
                     @if($isRecurring)
                         <div class="text-sm text-emerald-200 mt-2">

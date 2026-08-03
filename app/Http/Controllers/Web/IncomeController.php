@@ -42,8 +42,16 @@ class IncomeController extends Controller
         );
         $received = round($receivedSources->sum('amount'), 2);
 
+        // Bill payments funded from these sources reduce what is still
+        // available — the totals must reflect that, not just the gross amounts.
+        $totalSpent = round($allActive->sum(fn($i) => $i->spentThisPeriod()), 2);
+        $totalGross = round((float) $allActive->sum('amount'), 2);
+
         $stats = [
             'monthly_income' => $monthlyIncome,
+            'total_gross' => $totalGross,
+            'total_spent' => $totalSpent,
+            'total_remaining' => round($totalGross - $totalSpent, 2),
             'yearly_income' => round($monthlyIncome * 12, 2),
             'total_sources' => $allActive->count(),
             'recurring' => $allActive->filter(fn($i) => $i->frequency !== 'once')->count(),

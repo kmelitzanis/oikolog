@@ -309,6 +309,7 @@ return [
     'income_received' => 'Εισπράχθηκαν',
     'income_spent' => 'ξοδεύτηκαν',
     'income_remaining' => 'Υπόλοιπο',
+    'income_of' => 'από',
     'spending_timeline' => 'Ξοδεύτηκαν σε',
     'no_spending_yet' => 'Δεν έχει πληρωθεί κανένας λογαριασμός από αυτό το έσοδο ακόμα.',
     'partial' => 'μερική',
