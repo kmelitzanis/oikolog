@@ -117,8 +117,7 @@
                 ['label'=>'Start Date',    'value'=> $income->start_date->format('d M Y')],
                 ['label'=>'End Date',      'value'=> $income->end_date ? $income->end_date->format('d M Y') : '—'],
                 ['label'=>'Last Received', 'value'=> $income->last_received_date ? $income->last_received_date->format('d M Y') : 'Never'],
-                ['label'=>'Status',        'value'=> $income->is_active ? 'Active' : 'Inactive'],
-                ['label'=>'Shared',        'value'=> $income->is_shared ? 'Yes (Family)' : 'No'],
+                ['label'=>'Status',        'value'=> $income->is_active ? __('messages.active') : __('messages.inactive')],
             ] as $row)
                 <div class="flex items-center px-5 py-3.5 gap-4">
                     <span class="text-sm text-gray-400 dark:text-slate-500 w-32 shrink-0">{{ $row['label'] }}</span>

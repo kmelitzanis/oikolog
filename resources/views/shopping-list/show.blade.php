@@ -133,7 +133,7 @@
 
         {{-- Items — one flat sequence, unchecked first, as in the mockup --}}
         <template x-for="item in [...toBuy, ...inCart]" :key="item.id">
-            <div class="flex items-center gap-3.5 px-5 py-[13px] border-t border-gray-100 dark:border-slate-700/60 group hover:bg-gray-50/60 dark:hover:bg-slate-700/30 transition">
+            <div class="flex flex-wrap sm:flex-nowrap items-center gap-x-3.5 gap-y-2 px-5 py-[13px] border-t border-gray-100 dark:border-slate-700/60 group hover:bg-gray-50/60 dark:hover:bg-slate-700/30 transition">
                 <button @click="toggleItem(item)"
                         class="shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition"
                         :class="item.checked
@@ -160,22 +160,26 @@
                          x-show="item.product && item.product.brand" x-cloak
                          x-text="item.product && item.product.brand"></div>
                 </div>
+                {{-- Stepper and actions share a second line on phones. --}}
+                <div class="w-full flex items-center justify-between gap-2 pl-[3.25rem] sm:pl-0 sm:w-auto sm:contents">
+
                 {{-- Quantity stepper --}}
                 <div class="flex items-center gap-2 shrink-0">
                     <button @click="bumpQuantity(item, -1)"
                             class="w-6 h-6 rounded-lg bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:text-amber-600 flex items-center justify-center font-bold text-sm transition">−</button>
-                    <span class="min-w-[74px] text-center text-[0.76rem] font-semibold text-gray-600 dark:text-slate-300"
+                    <span class="min-w-[56px] sm:min-w-[74px] text-center text-[0.76rem] font-semibold text-gray-600 dark:text-slate-300"
                           x-text="(+item.quantity) + ' ' + unitLabel(item.unit)"></span>
                     <button @click="bumpQuantity(item, 1)"
                             class="w-6 h-6 rounded-lg bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:text-amber-600 flex items-center justify-center font-bold text-sm transition">+</button>
                 </div>
-                <div class="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition">
+                <div class="flex items-center shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition">
                     <button @click="editItem(item)" class="w-8 h-8 rounded-lg text-gray-400 hover:text-amber-600 flex items-center justify-center transition">
                         <span class="material-icons-round text-base">edit</span>
                     </button>
                     <button @click="deleteItem(item.id)" class="w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 flex items-center justify-center transition">
                         <span class="material-icons-round text-base">delete</span>
                     </button>
+                </div>
                 </div>
             </div>
         </template>

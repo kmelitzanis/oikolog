@@ -12,7 +12,7 @@
         </div>
 
         <x-card flush class="overflow-hidden">
-            <table class="w-full text-sm">
+            <div class="overflow-x-auto -mx-px"><table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700">
                 <tr>
                     <th class="px-4 py-3 text-left">Product</th>
@@ -97,7 +97,7 @@
                     </tr>
                 @endforelse
                 </tbody>
-            </table>
+            </table></div>
         </x-card>
 
         <div class="mt-6">{{ $products->links() }}</div>

@@ -132,7 +132,7 @@
                     };
 
                 @endphp
-                <div class="flex items-center gap-3 sm:gap-4 {{ $incomeGrid }} px-4 lg:px-5 py-3.5 border-t border-gray-100 dark:border-slate-700/60 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition"
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4 {{ $incomeGrid }} px-4 lg:px-5 py-3.5 border-t border-gray-100 dark:border-slate-700/60 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition"
                      x-data>
 
                     {{-- 1 · Source --}}
@@ -144,9 +144,6 @@
                         <div class="min-w-0">
                             <div class="text-[0.88rem] font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
                                 {{ $income->name }}
-                                @if($income->is_shared)
-                                    <span class="material-icons-round text-gray-300 dark:text-slate-500" style="font-size:14px;">group</span>
-                                @endif
                             </div>
                             <div class="text-[0.68rem] font-semibold {{ $stateClass }} mt-px truncate">
                                 {{ $stateLabel }}
@@ -166,6 +163,10 @@
                             {{ __('messages.' . $income->frequency) }}
                         </span>
                     </div>
+
+                    {{-- Amount and actions sit together on their own line
+                         below lg; `lg:contents` returns them to the grid. --}}
+                    <div class="w-full flex items-center justify-between gap-3 lg:w-auto lg:contents">
 
                     {{-- 4 · Amount --}}
                     <div class="text-right shrink-0 cursor-pointer"
@@ -198,6 +199,7 @@
                                         title="{{ __('messages.delete') }}"
                                         @click="if(!confirm('{{ addslashes(__('messages.confirm_delete')) }}')) $event.preventDefault()" />
                         </form>
+                    </div>
                     </div>
                 </div>
             @empty

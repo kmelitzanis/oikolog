@@ -179,25 +179,6 @@
                             :title="__('messages.section_settings')"
                             :hint="__('messages.section_income_settings_hint')">
 
-                @if(auth()->user()->family_id)
-                    <div class="flex items-center justify-between gap-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl px-4 py-3">
-                        <div class="min-w-0">
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ __('messages.share_family') }}</div>
-                            <div class="text-xs text-gray-400 dark:text-slate-400 mt-0.5">{{ __('messages.share_family_hint') }}</div>
-                        </div>
-                        <input type="hidden" name="is_shared" value="0">
-                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                            <input type="checkbox" name="is_shared" value="1" class="sr-only peer"
-                                   {{ old('is_shared', $editing ? $income->is_shared : false) ? 'checked' : '' }}>
-                            <div class="w-11 h-6 bg-gray-200 dark:bg-slate-600 rounded-full peer transition
-                                        peer-focus:ring-2 peer-focus:ring-emerald-200 peer-checked:bg-emerald-500
-                                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
-                                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
-                                        peer-checked:after:translate-x-full"></div>
-                        </label>
-                    </div>
-                @endif
-
                 @if($editing)
                     <div class="flex items-center justify-between gap-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl px-4 py-3">
                         <div class="min-w-0">

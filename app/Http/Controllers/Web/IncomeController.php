@@ -82,16 +82,18 @@ class IncomeController extends Controller
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after:start_date'],
-            'is_shared' => ['nullable'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        // Income sharing follows the account it is paid into.
+        $shared = $this->accountIsShared($request, $data['account_id'] ?? null);
 
         Income::create([
             ...$data,
             'currency_code' => $request->user()->currency_code,
-            'is_shared' => (bool)($data['is_shared'] ?? false),
+            'is_shared' => $shared,
             'created_by' => $request->user()->id,
-            'family_id' => ($data['is_shared'] ?? false) ? $request->user()->family_id : null,
+            'family_id' => $shared ? $request->user()->family_id : null,
             'next_date' => $data['start_date'],
             'frequency_interval' => $data['frequency_interval'] ?? 1,
         ]);
@@ -135,13 +137,12 @@ class IncomeController extends Controller
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date'],
-            'is_shared' => ['nullable'],
             'is_active' => ['nullable'],
             'notes' => ['nullable', 'string'],
         ]);
 
-        $data['is_shared'] = (bool)($data['is_shared'] ?? false);
         $data['is_active'] = (bool)($data['is_active'] ?? true);
+        $data['is_shared'] = $this->accountIsShared($request, $data['account_id'] ?? null);
         $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
         $data['frequency_interval'] = $data['frequency_interval'] ?? 1;
 
@@ -199,6 +200,16 @@ class IncomeController extends Controller
         return back()->with('success', $account
             ? __('messages.income_deposited', ['account' => $account->name])
             : __('messages.income_received_no_account'));
+    }
+
+    /** Income visibility mirrors the account it is paid into. */
+    private function accountIsShared(Request $request, $accountId): bool
+    {
+        if (! $accountId || ! $request->user()->family_id) {
+            return false;
+        }
+
+        return (bool) Account::forUser($request->user())->whereKey($accountId)->value('is_shared');
     }
 
     private function authorizeAccess(Income $income): void

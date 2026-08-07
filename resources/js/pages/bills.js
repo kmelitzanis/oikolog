@@ -16,6 +16,12 @@ window.billsPageCal = function () {
         get monthName() {
             return this.current.toLocaleString('default', {month: 'long'});
         },
+        /** Mon…Sun in the browser's locale, matching the Monday-first grid. */
+        get weekdayNames() {
+            return Array.from({length: 7}, (_, i) =>
+                // 2024-01-01 was a Monday, so this walks Mon → Sun.
+                new Date(2024, 0, 1 + i).toLocaleString('default', {weekday: 'short'}));
+        },
 
         init() {
             this.current = new Date(this.today.getFullYear(), this.today.getMonth(), 1);
@@ -37,11 +43,13 @@ window.billsPageCal = function () {
 
         async fetchEvents() {
             this.loading = true;
-            const start = new Date(this.year, this.month, 1);
-            const end = new Date(this.year, this.month + 1, 0);
-            const fmt = d => d.toISOString().split('T')[0];
+            // Fetch the whole visible grid, not just the month: macOS-style month
+            // views show events on the leading/trailing days too.
+            const days = this.gridDays();
+            const start = days[0];
+            const end = days[days.length - 1];
             try {
-                const r = await fetch(`/bills/events?start=${fmt(start)}&end=${fmt(end)}`);
+                const r = await fetch(`/bills/events?start=${this.dateStr(start)}&end=${this.dateStr(end)}`);
                 this.events = await r.json();
             } catch (e) {
                 this.events = [];
@@ -49,34 +57,40 @@ window.billsPageCal = function () {
             this.loading = false;
         },
 
-        get calendarCells() {
+        /** The 35 or 42 Date objects the month grid renders, Monday-first. */
+        gridDays() {
             const year = this.year, month = this.month;
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            let startDow = firstDay.getDay();
+            let startDow = new Date(year, month, 1).getDay();
             startDow = startDow === 0 ? 6 : startDow - 1;
-            const cells = [];
-            for (let i = startDow - 1; i >= 0; i--) {
-                const d = new Date(year, month, -i);
-                cells.push({day: d.getDate(), date: this.dateStr(d), currentMonth: false, isToday: false, events: []});
+            const total = new Date(year, month + 1, 0).getDate();
+            const count = Math.ceil((startDow + total) / 7) * 7;
+            const days = [];
+            for (let i = 0; i < count; i++) {
+                days.push(new Date(year, month, 1 - startDow + i));
             }
-            for (let d = 1; d <= lastDay.getDate(); d++) {
-                const date = new Date(year, month, d);
-                const ds = this.dateStr(date);
-                cells.push({
-                    day: d,
+            return days;
+        },
+
+        get calendarCells() {
+            const todayStr = this.dateStr(this.today);
+            return this.gridDays().map(d => {
+                const ds = this.dateStr(d);
+                return {
+                    day: d.getDate(),
                     date: ds,
-                    currentMonth: true,
-                    isToday: ds === this.dateStr(this.today),
-                    events: this.events.filter(e => e.start === ds)
-                });
-            }
-            const rem = 7 - (cells.length % 7);
-            if (rem < 7) for (let i = 1; i <= rem; i++) {
-                const d = new Date(year, month + 1, i);
-                cells.push({day: d.getDate(), date: this.dateStr(d), currentMonth: false, isToday: false, events: []});
-            }
-            return cells;
+                    // First cell of a month gets the month name, like macOS ("Aug 1").
+                    monthLabel: d.getDate() === 1 ? d.toLocaleString('default', {month: 'short'}) : '',
+                    currentMonth: d.getMonth() === this.month,
+                    isWeekend: d.getDay() === 0 || d.getDay() === 6,
+                    isToday: ds === todayStr,
+                    events: this.events.filter(e => e.start === ds),
+                };
+            });
+        },
+
+        /** Titles arrive prefixed with a bullet for the old FullCalendar look. */
+        eventTitle(e) {
+            return (e.title || '').replace(/^[•·]\s*/, '');
         },
 
         dateStr(d) {

@@ -48,7 +48,7 @@
     </div>
 
     {{-- ── Hero + attention queue (1.15fr / 1fr) ──────────────────────── --}}
-    <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-[18px] mb-[18px] items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-[18px] mb-[18px]">
 
         {{-- Hero — tapping it opens the month overview (mockup 2b) --}}
         <a href="{{ route('dashboard.month') }}"
@@ -91,9 +91,13 @@
             </div>
         </a>
 
-        {{-- Needs attention --}}
-        <div class="{{ $panel }} overflow-hidden">
-            <div class="flex items-center justify-between px-5 pt-4 pb-2.5">
+        {{-- Needs attention — on desktop it is pinned to the hero's height and the
+             queue scrolls inside it. The panel is absolutely positioned from lg up
+             so a long queue can't stretch the grid row; below lg it falls back to
+             normal flow and grows naturally in the single-column stack. --}}
+        <div class="relative">
+        <div class="{{ $panel }} overflow-hidden flex flex-col lg:absolute lg:inset-0">
+            <div class="flex items-center justify-between px-5 pt-4 pb-2.5 shrink-0">
                 <div class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.needs_attention') }}</div>
                 @if($stats['overdue_count'] > 0)
                     <span class="text-[0.72rem] font-bold text-red-400">
@@ -102,13 +106,14 @@
                 @endif
             </div>
 
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             @forelse($attention as $bill)
                 @php
                     $isOverdue = $bill->isOverdue();
                     $daysUntil = (int) $bill->daysUntilDue();
                     $accent    = $isOverdue ? '#ef4444' : '#f97316';
                 @endphp
-                <div class="flex items-center gap-[13px] px-5 py-[13px] border-t border-gray-100 dark:border-slate-700/70 border-l-[3px]"
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-x-[13px] gap-y-2 px-5 py-[13px] border-t border-gray-100 dark:border-slate-700/70 border-l-[3px]"
                      style="border-left-color: {{ $accent }}; background: {{ $accent }}0f;">
                     <div class="w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0"
                          style="background: {{ $accent }}22; color: {{ $accent }};">
@@ -126,6 +131,9 @@
                             @endif
                         </div>
                     </div>
+                    {{-- Below sm these two share a second line, so the name
+                         above them keeps its full width. --}}
+                    <div class="w-full flex items-center justify-between gap-3 sm:w-auto sm:contents">
                     <div class="text-base font-extrabold text-gray-900 dark:text-white shrink-0">
                         {{ $currency }} {{ number_format($bill->amount, 2) }}
                     </div>
@@ -142,13 +150,18 @@
                         <span class="material-icons-round text-sm">check</span>
                         {{ __('messages.pay') }}
                     </button>
+                    </div>
                 </div>
             @empty
-                <div class="border-t border-gray-100 dark:border-slate-700/70 px-5 py-[26px] text-center">
+                {{-- Nothing to show: centre the reassurance in the panel's full
+                     height rather than leaving it stranded at the top. --}}
+                <div class="h-full flex flex-col items-center justify-center border-t border-gray-100 dark:border-slate-700/70 px-5 py-[26px] text-center">
                     <div class="text-[0.95rem] font-bold text-gray-900 dark:text-white">{{ __('messages.all_paid') }}</div>
                     <div class="text-[0.78rem] text-gray-400 dark:text-slate-500 mt-[3px]">{{ __('messages.nothing_overdue') }}</div>
                 </div>
             @endforelse
+            </div>
+        </div>
         </div>
     </div>
 

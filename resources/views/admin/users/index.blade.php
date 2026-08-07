@@ -16,7 +16,7 @@
         </div>
     @endif
     <x-card flush class="overflow-hidden">
-        <table class="min-w-full text-sm">
+        <div class="overflow-x-auto -mx-px"><table class="min-w-full text-sm">
             <thead>
             <tr class="border-b border-gray-100 dark:border-slate-700 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                 <th class="px-5 py-3">Name</th>
@@ -75,7 +75,7 @@
                 </tr>
             @endforelse
             </tbody>
-        </table>
+        </table></div>
         @if($users->hasPages())
             <div class="px-5 py-4 border-t border-gray-100 dark:border-slate-700">{{ $users->links() }}</div>
         @endif
