@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendPaymentPushNotification;
 use App\Models\Bill;
 use App\Models\Category;
 use App\Models\Account;
@@ -369,7 +370,7 @@ class BillController extends Controller
             $newRemaining = null;
         }
 
-        DB::transaction(function () use ($bill, $request, $paidByUserId, $account, $payAmount, $isPartial, $newRemaining, $paidAt, $ledger) {
+        $payment = DB::transaction(function () use ($bill, $request, $paidByUserId, $account, $payAmount, $isPartial, $newRemaining, $paidAt, $ledger) {
             $payment = Payment::create([
                 'bill_id'       => $bill->id,
                 'paid_by' => $paidByUserId,
@@ -407,7 +408,13 @@ class BillController extends Controller
                     'next_due_date' => $nextDue?->toDateString() ?? $bill->next_due_date,
                 ]);
             }
+
+            return $payment;
         });
+
+        // Tell the rest of the household. After the response so the person who
+        // just paid isn't kept waiting on the push services.
+        SendPaymentPushNotification::dispatch($payment->id)->afterResponse();
 
         if ($request->wantsJson() || $request->ajax()) {
             $bill->refresh();

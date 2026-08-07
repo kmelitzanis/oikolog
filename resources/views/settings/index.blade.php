@@ -52,6 +52,27 @@
                         <input type="email" name="email" value="{{ old('email', $user->email) }}" required
                                class="{{ $input }}">
                     </div>
+
+                    {{-- Gender — Greek copy inflects the article before a name --}}
+                    <div class="mt-5">
+                        <label class="{{ $label }}">{{ __('messages.gender') }}</label>
+                        <div class="flex gap-2">
+                            @php $currentGender = old('gender', $user->gender); @endphp
+                            @foreach(['male' => ['man', __('messages.gender_male')], 'female' => ['woman', __('messages.gender_female')]] as $g => [$gicon, $glabel])
+                                <label class="flex-1 cursor-pointer">
+                                    <input type="radio" name="gender" value="{{ $g }}" class="peer sr-only"
+                                           {{ $currentGender === $g ? 'checked' : '' }}>
+                                    <span class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border
+                                                 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400
+                                                 peer-checked:border-amber-500 peer-checked:bg-amber-50 dark:peer-checked:bg-amber-500/15
+                                                 peer-checked:text-amber-700 dark:peer-checked:text-amber-300 transition">
+                                        <span class="material-icons-round text-base">{{ $gicon }}</span> {{ $glabel }}
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <div class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">{{ __('messages.gender_hint') }}</div>
+                    </div>
                 </x-card>
 
                 {{-- Password --}}
@@ -115,6 +136,32 @@
                                 </button>
                             @endforeach
                         </div>
+                    </div>
+                </x-card>
+
+                {{-- Push notifications. Permission can only be requested from a
+                     user gesture, so this is a live toggle rather than a field
+                     the Save button submits. --}}
+                <x-card flush class="p-6" x-data="pushToggle()" x-init="init()">
+                    <div class="{{ $cardTitle }}">{{ __('messages.notifications') }}</div>
+
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-gray-800 dark:text-white">{{ __('messages.push_notifications') }}</p>
+                            <p class="text-xs text-gray-400 dark:text-slate-400 mt-0.5">{{ __('messages.push_notifications_hint') }}</p>
+                            <p x-show="blocked" x-cloak class="text-xs text-red-500 mt-1.5">{{ __('messages.push_blocked') }}</p>
+                            <p x-show="state === 'unavailable'" x-cloak class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">
+                                {{ __('messages.push_unavailable') }}
+                            </p>
+                        </div>
+                        <button type="button" @click="toggle()"
+                                :disabled="busy || blocked || state === 'unavailable' || state === 'unknown'"
+                                :aria-pressed="enabled ? 'true' : 'false'"
+                                class="relative shrink-0 w-11 h-6 rounded-full transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                :class="enabled ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-slate-600'">
+                            <span class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full transition-transform"
+                                  :class="enabled ? 'translate-x-5' : ''"></span>
+                        </button>
                     </div>
                 </x-card>
 

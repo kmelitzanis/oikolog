@@ -6,7 +6,7 @@
 //    must never be served stale.
 // Bumped for the beam-stack icon set: /icons/* and /favicon.ico are served
 // cache-first, so installed PWAs would otherwise keep showing the old mark.
-const VERSION = 'oikolog-v2';
+const VERSION = 'oikolog-v3';
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 
@@ -74,4 +74,50 @@ self.addEventListener('fetch', (event) => {
                 )
         );
     }
+});
+
+// ── Web Push ────────────────────────────────────────────────────────────────
+// The server sends {title, body, url, tag}. `url` is where a tap should land.
+
+self.addEventListener('push', (event) => {
+    let data = {};
+    try {
+        data = event.data ? event.data.json() : {};
+    } catch (e) {
+        data = {body: event.data ? event.data.text() : ''};
+    }
+
+    const title = data.title || 'Oikolog';
+
+    event.waitUntil(
+        self.registration.showNotification(title, {
+            body: data.body || '',
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            // Same tag replaces an earlier notification instead of stacking, so
+            // repeated payments on one bill don't bury the notification shade.
+            tag: data.tag || 'oikolog',
+            renotify: true,
+            data: {url: data.url || '/'},
+        })
+    );
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const target = new URL(event.notification.data?.url || '/', self.location.origin).href;
+
+    event.waitUntil(
+        self.clients.matchAll({type: 'window', includeUncontrolled: true}).then((clients) => {
+            // Reuse an open tab when there is one — opening a duplicate window
+            // every time a notification is tapped gets old fast.
+            for (const client of clients) {
+                if ('focus' in client) {
+                    return client.navigate ? client.navigate(target).then((c) => c && c.focus()) : client.focus();
+                }
+            }
+            return self.clients.openWindow(target);
+        })
+    );
 });

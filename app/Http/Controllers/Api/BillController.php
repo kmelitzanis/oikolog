@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendPaymentPushNotification;
 use App\Models\Bill;
 use App\Models\Income;
 use App\Models\Payment;
@@ -144,8 +145,8 @@ class BillController extends Controller
             'notes'         => ['nullable', 'string'],
         ]);
 
-        DB::transaction(function () use ($bill, $request, $data) {
-            Payment::create([
+        $payment = DB::transaction(function () use ($bill, $request, $data) {
+            $payment = Payment::create([
                 'bill_id'       => $bill->id,
                 'paid_by'       => $request->user()->id,
                 'amount'        => $data['amount'] ?? $bill->amount,
@@ -158,7 +159,11 @@ class BillController extends Controller
                 'last_paid_date' => now()->toDateString(),
                 'next_due_date'  => $bill->calculateNextDueDate()->toDateString(),
             ]);
+
+            return $payment;
         });
+
+        SendPaymentPushNotification::dispatch($payment->id)->afterResponse();
 
         return response()->json([
             'data'    => $this->billResource($bill->fresh()->load('category')),

@@ -16,6 +16,12 @@ services:
       - DB_USERNAME=${DB_USERNAME:-oikolog}
       - DB_PASSWORD=${DB_PASSWORD:-secret}
       - FORCE_MIGRATE=${FORCE_MIGRATE:-1}
+      # Web Push. Generate once with `php artisan push:vapid` and put the values
+      # in the .env next to this file. Without them the notification toggle in
+      # settings stays disabled; changing them invalidates every subscription.
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
     depends_on:
       db:
         condition: service_healthy

@@ -213,6 +213,7 @@ class DashboardController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:male,female'],
             'email' => ['required', 'email', 'unique:users,email,' . $user->id],
             'currency_code' => ['nullable', 'string', 'size:3'],
             'password' => ['nullable', 'confirmed', 'min:8'],
@@ -223,6 +224,7 @@ class DashboardController extends Controller
 
         $update = [
             'name' => $data['name'],
+            'gender' => $data['gender'] ?? $user->gender,
             'email' => $data['email'],
             'currency_code' => $data['currency_code'] ?? $user->currency_code,
             'avatar_url' => $data['avatar_url'] ?? $user->avatar_url,

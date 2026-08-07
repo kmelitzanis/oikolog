@@ -184,7 +184,16 @@
             <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">{{ __('messages.payment_history') }}</h2>
 
             @forelse($payments as $payment)
-                <div class="flex items-center gap-3 py-3 {{ !$loop->last ? 'border-b border-gray-50 dark:border-slate-700' : '' }}">
+                {{-- The `payment` query parameter comes from a push notification
+                     deep link: scroll to that row and tint it so the reason for
+                     landing here is obvious. --}}
+                @php $isLinked = request('payment') === $payment->id; @endphp
+                <div id="payment-{{ $payment->id }}"
+                     @class([
+                        'flex items-center gap-3 py-3 scroll-mt-24 transition-colors',
+                        'border-b border-gray-50 dark:border-slate-700' => !$loop->last,
+                        '-mx-3 px-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 ring-1 ring-amber-300 dark:ring-amber-500/40' => $isLinked,
+                     ])>
                     <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0
                                 {{ $payment->is_partial ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30' }}">
                         <span class="material-icons-round text-base {{ $payment->is_partial ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }}">

@@ -15,7 +15,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, HasUlids, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'avatar_url',
+        'name', 'gender', 'email', 'password', 'avatar_url',
         'currency_code', 'timezone', 'notifications_enabled',
         'family_id', 'family_role', 'locale', 'is_admin',
         'two_factor_secret', 'two_factor_enabled',
@@ -51,6 +51,34 @@ class User extends Authenticatable
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'paid_by');
+    }
+
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
+    /**
+     * The name as it should be read in a sentence. Greek puts a definite article
+     * before a personal name and inflects it by gender, so "Κώστας" becomes
+     * "Ο Κώστας" and "Μαρία" becomes "Η Μαρία"; an unset gender falls back to
+     * the neutral "Ο/Η". Other locales just get the bare name.
+     */
+    public function subjectName(?string $locale = null): string
+    {
+        $locale ??= $this->locale ?: app()->getLocale();
+
+        if ($locale !== 'el') {
+            return $this->name;
+        }
+
+        $article = match ($this->gender) {
+            'male'   => 'Ο',
+            'female' => 'Η',
+            default  => 'Ο/Η',
+        };
+
+        return $article . ' ' . $this->name;
     }
 
     public function isAdmin(): bool

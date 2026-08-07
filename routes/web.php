@@ -123,6 +123,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Web\DashboardController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Web\DashboardController::class, 'updateSettings'])->name('settings.update');
 
+    // Web Push subscriptions — one row per browser that granted permission.
+    Route::controller(\App\Http\Controllers\Web\PushSubscriptionController::class)
+        ->prefix('push')
+        ->name('push.')
+        ->group(function () {
+            Route::get('/config', 'config')->name('config');
+            Route::post('/subscribe', 'store')->name('subscribe');
+            Route::delete('/subscribe', 'destroy')->name('unsubscribe');
+        });
+
     // 2FA setup
     Route::get('/two-factor-setup', [TwoFactorController::class, 'setup'])->name('2fa.setup');
     Route::post('/two-factor-enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
