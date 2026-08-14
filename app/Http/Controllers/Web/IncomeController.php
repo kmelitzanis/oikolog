@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Income;
+use App\Models\User;
 use App\Services\Ledger;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -70,7 +72,7 @@ class IncomeController extends Controller
         return view('income.form', compact('accounts'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, Ledger $ledger)
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -88,7 +90,7 @@ class IncomeController extends Controller
         // Income sharing follows the account it is paid into.
         $shared = $this->accountIsShared($request, $data['account_id'] ?? null);
 
-        Income::create([
+        $income = Income::create([
             ...$data,
             'currency_code' => $request->user()->currency_code,
             'is_shared' => $shared,
@@ -98,7 +100,57 @@ class IncomeController extends Controller
             'frequency_interval' => $data['frequency_interval'] ?? 1,
         ]);
 
-        return redirect()->route('income.index')->with('success', 'Income source added.');
+        // A one-off income is a record of money that already arrived, not a
+        // schedule waiting to be confirmed — so it lands in the account right
+        // away. Recurring sources still get confirmed once per period, because
+        // there the entry describes what is *expected*.
+        $account = $income->frequency === 'once'
+            ? $this->receiveOneOff($income, $request->user(), $ledger)
+            : null;
+
+        return redirect()->route('income.index')->with('success', $account
+            ? __('messages.income_deposited', ['account' => $account->name])
+            : __('messages.income_added'));
+    }
+
+    /**
+     * Settle a one-off income immediately: mark it received and, when it has a
+     * destination account, deposit it. Returns the account credited, if any.
+     *
+     * A start date in the future is left alone — that is a windfall someone is
+     * expecting, and crediting it now would make the balance describe money
+     * that has not arrived.
+     */
+    private function receiveOneOff(Income $income, User $user, Ledger $ledger): ?Account
+    {
+        $receivedAt = $income->start_date
+            ? Carbon::parse($income->start_date)->setTimeFrom(now())
+            : now();
+
+        if ($receivedAt->isAfter(now()->endOfDay())) {
+            return null;
+        }
+
+        $income->update(['last_received_date' => $receivedAt->toDateString()]);
+
+        if (! $income->account_id) {
+            return null;
+        }
+
+        $account = Account::forUser($user)->find($income->account_id);
+
+        if ($account) {
+            $ledger->deposit(
+                $account,
+                (float) $income->amount,
+                $receivedAt,
+                $user->id,
+                $income->name,
+                $income,
+            );
+        }
+
+        return $account;
     }
 
     public function show(Income $income)

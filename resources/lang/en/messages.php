@@ -495,6 +495,7 @@ return [
     'received_total' => 'Received in total',
     'no_deposits_yet' => 'Not received yet.',
     'income_without_account' => 'This income has no destination account, so receiving it moves no balance.',
+    'income_added' => 'Income source added.',
     'income_deposited' => 'Received and deposited into :account.',
     'income_received_no_account' => 'Marked as received. Pick an account to have it deposited.',
     // ── Income form ──────────────────────────────────────────────────────
