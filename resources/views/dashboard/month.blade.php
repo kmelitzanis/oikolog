@@ -76,7 +76,7 @@
         {{-- What needs paying --}}
         @forelse($attention as $bill)
             @php
-                $isOverdue = $bill->isOverdue();
+                $isOverdue = $bill->status() === 'overdue';
                 $daysUntil = (int) $bill->daysUntilDue();
                 $accent    = $isOverdue ? '#ef4444' : '#f97316';
             @endphp

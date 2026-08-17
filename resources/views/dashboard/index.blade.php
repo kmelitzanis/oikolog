@@ -109,7 +109,7 @@
             <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             @forelse($attention as $bill)
                 @php
-                    $isOverdue = $bill->isOverdue();
+                    $isOverdue = $bill->status() === 'overdue';
                     $daysUntil = (int) $bill->daysUntilDue();
                     $accent    = $isOverdue ? '#ef4444' : '#f97316';
                 @endphp
@@ -188,7 +188,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="text-[0.84rem] font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</div>
                         <div class="text-[0.7rem] text-gray-400 dark:text-slate-500 mt-px">
-                            @if($bill->isOverdue())
+                            @if($bill->status() === 'overdue')
                                 {{ __('messages.overdue_by', ['days' => abs($daysUntil)]) }}
                             @elseif($daysUntil === 0)
                                 {{ __('messages.due_today') }}

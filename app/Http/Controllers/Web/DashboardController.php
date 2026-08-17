@@ -23,8 +23,11 @@ class DashboardController extends Controller
             'monthly_total' => round($bills->sum(fn($b) => $b->monthlyEquivalent()), 2),
             'yearly_total'  => round($bills->sum(fn($b) => $b->monthlyEquivalent()) * 12, 2),
             'active_count'  => $bills->count(),
-            'overdue_count' => $bills->filter(fn($b) => $b->isOverdue())->count(),
-            'due_this_week' => $bills->filter(fn($b) => $b->daysUntilDue() >= 0 && $b->daysUntilDue() <= 7)->count(),
+            // Both counts go through status() rather than the raw dates: a paid
+            // bill keeps its past due date, so isOverdue() stays true forever
+            // and the badge kept counting bills that were already settled.
+            'overdue_count' => $bills->filter(fn($b) => $b->status() === 'overdue')->count(),
+            'due_this_week' => $bills->filter(fn($b) => $b->status() === 'soon')->count(),
         ];
 
         // Income summary
@@ -48,10 +51,14 @@ class DashboardController extends Controller
         $monthPaid = (float) \App\Models\Payment::whereIn('bill_id', $billIds)
             ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])
             ->sum('amount');
+        // Settled bills are excluded, and what remains is counted at its
+        // *remaining* balance: a part-paid bill already has its paid slice in
+        // $monthPaid, so summing the full amount counted that money twice.
         $monthOutstanding = (float) $bills
-            ->filter(fn($b) => $b->isOverdue()
+            ->reject(fn($b) => $b->isSettled())
+            ->filter(fn($b) => $b->status() === 'overdue'
                 || ($b->next_due_date && $b->next_due_date->isSameMonth(now())))
-            ->sum('amount');
+            ->sum(fn($b) => $b->getEffectiveRemainingBalance());
         $monthLoad = $monthPaid + $monthOutstanding;
 
         $stats['month_paid']        = round($monthPaid, 2);
@@ -63,7 +70,7 @@ class DashboardController extends Controller
         // is `dueWithin(30)`, so a bill overdue by more than a month never
         // appeared in it and the queue claimed "all paid" against a red count.
         $attention = $bills
-            ->filter(fn($b) => $b->isOverdue() || ($b->daysUntilDue() !== null && $b->daysUntilDue() <= 7))
+            ->filter(fn($b) => $b->needsAttention())
             ->sortBy(fn($b) => $b->next_due_date)
             ->take(4)
             ->values();
@@ -78,12 +85,14 @@ class DashboardController extends Controller
 
         // Build spending per month using actual payment records
         $userBillIds = Bill::forUser($user)->pluck('id');
+        // Grouped in PHP rather than SQL: DATE_FORMAT is MySQL-only, so the
+        // previous version made this whole page a 500 on SQLite. A year of one
+        // household's payments is a handful of rows.
         $payments12 = \App\Models\Payment::whereIn('bill_id', $userBillIds)
             ->where('paid_at', '>=', now()->subMonths(11)->startOfMonth())
-            ->selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as ym, SUM(amount) as total")
-            ->groupBy('ym')
-            ->orderBy('ym')
-            ->pluck('total', 'ym');
+            ->get(['paid_at', 'amount'])
+            ->groupBy(fn($p) => $p->paid_at->format('Y-m'))
+            ->map(fn($group) => (float) $group->sum('amount'));
 
         // Build income per month using monthly equivalents (projected flat)
         $allIncomes = Income::forUser($user)->active()->get();
@@ -125,12 +134,14 @@ class DashboardController extends Controller
             ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])
             ->sum('amount');
         $outstanding = (float) $bills
-            ->filter(fn($b) => $b->isOverdue() || ($b->next_due_date && $b->next_due_date->isSameMonth(now())))
-            ->sum('amount');
+            ->reject(fn($b) => $b->isSettled())
+            ->filter(fn($b) => $b->status() === 'overdue'
+                || ($b->next_due_date && $b->next_due_date->isSameMonth(now())))
+            ->sum(fn($b) => $b->getEffectiveRemainingBalance());
         $load = $paid + $outstanding;
 
         $attention = $bills
-            ->filter(fn($b) => $b->isOverdue() || ($b->daysUntilDue() !== null && $b->daysUntilDue() <= 7))
+            ->filter(fn($b) => $b->needsAttention())
             ->sortBy(fn($b) => $b->next_due_date)
             ->values();
 

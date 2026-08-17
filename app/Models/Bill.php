@@ -335,6 +335,23 @@ class Bill extends Model
         return $this->next_due_date && Carbon::parse($this->next_due_date)->gt(Carbon::today());
     }
 
+    /** Whether the current cycle is fully settled. */
+    public function isSettled(): bool
+    {
+        return $this->status() === 'paid';
+    }
+
+    /**
+     * Whether the bill is asking for money right now — overdue, part-paid, or
+     * due within the week. Prefer this over `isOverdue()` for any "needs
+     * action" list: `isOverdue()` only compares dates and reads true for a
+     * bill that has already been paid.
+     */
+    public function needsAttention(): bool
+    {
+        return in_array($this->status(), ['overdue', 'partial', 'soon'], true);
+    }
+
     /** Returns the amount still owed for the current billing cycle. */
     public function getEffectiveRemainingBalance(): float
     {
