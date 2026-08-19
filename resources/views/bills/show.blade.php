@@ -96,14 +96,23 @@
                             {{ __('messages.overdue_by', ['days' => abs($daysUntil ?? 0)]) }}
                         @elseif($daysUntil === 0)
                             {{ __('messages.due_today') }}
-                        @elseif($daysUntil !== null)
+                        @elseif($daysUntil !== null && $daysUntil > 0)
                             {{ __('messages.in_days', ['days' => $daysUntil]) }}
                         @endif
                     </div>
                 </div>
             </div>
 
-            @if($bill->is_active)
+            @if($bill->is_active && $status === 'paid')
+                {{-- Nothing is owed on this cycle. The button states that rather
+                     than offering an action that would record a second payment
+                     against a settled bill. --}}
+                <div class="mt-6">
+                    <x-btn variant="success" block type="button" icon="check_circle" disabled>
+                        {{ __('messages.paid') }}
+                    </x-btn>
+                </div>
+            @elseif($bill->is_active)
                 <div class="mt-6" x-data>
                     <x-btn variant="success" block type="button" icon="check_circle"
                            @click="$dispatch('open-pay-modal', {

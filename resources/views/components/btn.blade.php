@@ -31,7 +31,7 @@
     };
 
     $classes = [
-        'inline-flex items-center justify-center font-semibold transition disabled:opacity-60 cursor-pointer',
+        'inline-flex items-center justify-center font-semibold transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none',
         $variantClass,
         $sizeClass,
         'w-full' => $block,

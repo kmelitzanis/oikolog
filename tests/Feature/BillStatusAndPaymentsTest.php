@@ -60,6 +60,46 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->assertSame('paid', $bill->status());
     }
 
+    public function test_a_settled_bill_does_not_offer_the_pay_action(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user, [
+            'last_paid_date' => now()->toDateString(),
+            'next_due_date'  => now()->addMonth()->toDateString(),
+        ]);
+
+        $this->actingAs($user)->get(route('bills.show', $bill))->assertOk()
+            // The button reads as a fact and cannot be clicked, so a second
+            // payment can't be recorded against a settled cycle.
+            ->assertDontSee("\$dispatch('open-pay-modal'", false)
+            ->assertSee('disabled', false);
+    }
+
+    public function test_an_unpaid_bill_still_offers_the_pay_action(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user);
+
+        $this->actingAs($user)->get(route('bills.show', $bill))->assertOk()
+            ->assertSee("\$dispatch('open-pay-modal'", false);
+    }
+
+    /** A settled one-off keeps a past due date, which read as "in -10 days". */
+    public function test_a_past_due_date_never_renders_as_negative_days(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user, [
+            'frequency'      => 'once',
+            'last_paid_date' => now()->subDays(40)->toDateString(),
+            'next_due_date'  => now()->subDays(10)->toDateString(),
+        ]);
+
+        $this->assertSame('paid', $bill->status());
+
+        $this->actingAs($user)->get(route('bills.show', $bill))->assertOk()
+            ->assertDontSee(__('messages.in_days', ['days' => -10]));
+    }
+
     public function test_partial_balance_outranks_the_due_date(): void
     {
         $bill = $this->makeBill(User::factory()->create(), [
