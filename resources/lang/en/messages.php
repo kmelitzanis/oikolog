@@ -158,6 +158,7 @@ return [
     'set_up' => 'Set up',
     'previous_month' => 'Previous month',
     'next_month' => 'Next month',
+    'overdue_count' => '{1} :count overdue bill|[2,*] :count overdue bills',
     'inactive' => 'Inactive',
     'expected_today' => 'Expected today',
     'expected_ago' => 'Expected :days days ago',

@@ -172,41 +172,34 @@ class DashboardController extends Controller
             'password' => ['required'],
         ]);
 
-        // If the user requested "remember me", extend the session lifetime for
-        // this request so the session cookie will be issued with a longer TTL.
-        if ($request->boolean('remember')) {
-            // Compute desired remember lifetime but cap it using max_lifetime
-            $desired = config('session.remember_lifetime', 60 * 24 * 30);
-            $max = config('session.max_lifetime', 60 * 24 * 30);
-            $use = min($desired, $max);
-            config(['session.lifetime' => $use]);
+        $remember = $request->boolean('remember');
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            return back()->withErrors(['email' => 'Invalid credentials.'])->withInput();
         }
 
-        if (Auth::attempt($credentials, false)) {
-            $user = Auth::user();
+        // Two-factor users are held at the door: the password is checked
+        // directly and nothing is signed in until the code clears.
+        //
+        // This deliberately avoids Auth::attempt() followed by Auth::logout(),
+        // which is how it used to work: logout() cycles the remember token, so
+        // every sign-in here silently invalidated the "remember me" cookie on
+        // the user's *other* devices — the phone got signed out each time the
+        // laptop signed in.
+        if ($user->two_factor_enabled) {
+            $request->session()->put([
+                '2fa_user_id'  => $user->id,
+                '2fa_remember' => $remember,
+            ]);
 
-            if ($user->two_factor_enabled) {
-                Auth::logout();
-                session([
-                    '2fa_user_id' => $user->id,
-                    '2fa_remember' => $request->boolean('remember'),
-                ]);
-                return redirect()->route('2fa.challenge');
-            }
-
-            // Regenerate session after login (uses the lifetime potentially
-            // adjusted above when remember was selected).
-            $request->session()->regenerate();
-
-            if ($request->boolean('remember')) {
-                // Set the persistent remember cookie as well.
-                Auth::login($user, true);
-            }
-
-            return redirect()->intended('/');
+            return redirect()->route('2fa.challenge');
         }
 
-        return back()->withErrors(['email' => 'Invalid credentials.'])->withInput();
+        Auth::login($user, $remember);
+        $request->session()->regenerate();
+
+        return redirect()->intended('/');
     }
 
     // Show settings form

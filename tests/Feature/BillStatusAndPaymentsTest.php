@@ -60,6 +60,28 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->assertSame('paid', $bill->status());
     }
 
+    public function test_the_list_shows_the_remaining_amount_not_the_chip(): void
+    {
+        $user = User::factory()->create(['locale' => 'en']);
+        $bill = $this->makeBill($user, [
+            'amount'            => 92.60,
+            'remaining_balance' => 69.44,
+            'last_paid_date'    => now()->toDateString(),
+        ]);
+
+        $this->assertSame('partial', $bill->status());
+
+        $html = $this->actingAs($user)->get(route('bills.index'))->assertOk()->getContent();
+
+        // The chip is the label alone; the figure lives in the amount column.
+        $this->assertStringContainsString('Partially paid', $html);
+        $this->assertStringNotContainsString('· EUR 69.44', $html);
+        $this->assertStringContainsString('69.44', $html);
+        $this->assertStringContainsString('of 92.60', $html);
+        // …and it is tinted rather than the usual white.
+        $this->assertStringContainsString('text-amber-600 dark:text-amber-400', $html);
+    }
+
     public function test_a_settled_bill_does_not_offer_the_pay_action(): void
     {
         $user = User::factory()->create();

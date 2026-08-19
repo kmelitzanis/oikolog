@@ -51,5 +51,25 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable $e) {
             // Skip if DB isn't ready (e.g. during migrations)
         }
+
+        // "Remember me" duration. Laravel's SessionGuard hard-codes this, so it
+        // is set here to make it configurable per deployment; the guard is
+        // resolved lazily so nothing is booted before it is needed.
+        $this->app->resolving('auth', function ($auth) {
+            $auth->guard('web')->setRememberDuration(
+                (int) config('session.remember_lifetime', 60 * 24 * 400)
+            );
+        });
+
+        // The sidebar badge needs the overdue count on every page, so it is
+        // composed into the layout rather than threaded through every
+        // controller. Guarded: the layout also renders before migrations run.
+        View::composer('layouts.app', function ($view) {
+            try {
+                $view->with('overdueBillCount', \App\Models\Bill::overdueCountFor(\Illuminate\Support\Facades\Auth::user()));
+            } catch (\Throwable $e) {
+                $view->with('overdueBillCount', 0);
+            }
+        });
     }
 }

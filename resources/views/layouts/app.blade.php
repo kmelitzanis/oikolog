@@ -61,7 +61,7 @@
             @php
                 $navLinks = [
                     ['route' => 'dashboard',         'icon' => 'dashboard',    'label' => __('messages.dashboard'),    'match' => 'dashboard'],
-                    ['route' => 'bills.index',       'icon' => 'receipt_long', 'label' => __('messages.bills'),        'match' => 'bills.*'],
+                    ['route' => 'bills.index',       'icon' => 'receipt_long', 'label' => __('messages.bills'),        'match' => 'bills.*', 'count' => $overdueBillCount ?? 0],
                     ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => ['income.*', 'accounts.*']],
                     ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
                     ['route' => 'shopping-list.index', 'icon' => 'shopping_cart', 'label' => __('messages.shopping_lists'), 'match' => ['shopping-list.*', 'products.*']],
@@ -77,6 +77,16 @@
                               : 'text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white' }}">
                     <span class="material-icons-round text-xl">{{ $link['icon'] }}</span>
                     <span>{{ $link['label'] }}</span>
+                    {{-- Overdue counter. `ms-auto` pins it to the trailing edge
+                         so it survives a right-to-left locale. --}}
+                    @if(($link['count'] ?? 0) > 0)
+                        @php $badgeLabel = trans_choice('messages.overdue_count', $link['count'], ['count' => $link['count']]); @endphp
+                        <span class="ms-auto min-w-5 h-5 px-1.5 inline-flex items-center justify-center
+                                     rounded-full bg-red-500 text-white text-[0.66rem] font-bold leading-none"
+                              title="{{ $badgeLabel }}" aria-label="{{ $badgeLabel }}">
+                            {{ $link['count'] > 99 ? '99+' : $link['count'] }}
+                        </span>
+                    @endif
                 </a>
             @endforeach
             @if(auth()->check() && auth()->user()->isAdmin())
@@ -313,7 +323,7 @@
         @php
             $bottomNavLinks = [
                 ['route' => 'dashboard',    'icon' => 'dashboard',    'match' => 'dashboard'],
-                ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*'],
+                ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*', 'count' => $overdueBillCount ?? 0],
                 ['route' => 'recipes.index','icon' => 'restaurant_menu','match' => 'recipes.*'],
                 ['route' => 'income.index', 'icon' => 'trending_up',  'match' => ['income.*', 'accounts.*']],
             ];
@@ -331,9 +341,18 @@
 
                 @foreach(array_slice($bottomNavLinks, 0, 2) as $link)
                     <a href="{{ route($link['route']) }}"
-                       class="flex flex-col items-center justify-center gap-1 w-12
+                       class="relative flex flex-col items-center justify-center gap-1 w-12
                                   {{ request()->routeIs(...(array) $link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
                         <span class="material-icons-round" style="font-size:22px;">{{ $link['icon'] }}</span>
+                        {{-- Same counter, but as a corner dot on the icon: a tab
+                             bar has no room for a trailing pill. --}}
+                        @if(($link['count'] ?? 0) > 0)
+                            <span class="absolute -top-0.5 right-0 min-w-4 h-4 px-1 inline-flex items-center justify-center
+                                         rounded-full bg-red-500 text-white text-[0.6rem] font-bold leading-none"
+                                  aria-label="{{ trans_choice('messages.overdue_count', $link['count'], ['count' => $link['count']]) }}">
+                                {{ $link['count'] > 9 ? '9+' : $link['count'] }}
+                            </span>
+                        @endif
                         <span
                             class="w-1.5 h-1.5 rounded-full {{ request()->routeIs(...(array) $link['match']) ? 'bg-amber-500' : 'bg-transparent' }}"></span>
                     </a>
@@ -344,9 +363,18 @@
 
                 @foreach(array_slice($bottomNavLinks, 2, 2) as $link)
                     <a href="{{ route($link['route']) }}"
-                       class="flex flex-col items-center justify-center gap-1 w-12
+                       class="relative flex flex-col items-center justify-center gap-1 w-12
                                   {{ request()->routeIs(...(array) $link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
                         <span class="material-icons-round" style="font-size:22px;">{{ $link['icon'] }}</span>
+                        {{-- Same counter, but as a corner dot on the icon: a tab
+                             bar has no room for a trailing pill. --}}
+                        @if(($link['count'] ?? 0) > 0)
+                            <span class="absolute -top-0.5 right-0 min-w-4 h-4 px-1 inline-flex items-center justify-center
+                                         rounded-full bg-red-500 text-white text-[0.6rem] font-bold leading-none"
+                                  aria-label="{{ trans_choice('messages.overdue_count', $link['count'], ['count' => $link['count']]) }}">
+                                {{ $link['count'] > 9 ? '9+' : $link['count'] }}
+                            </span>
+                        @endif
                         <span
                             class="w-1.5 h-1.5 rounded-full {{ request()->routeIs(...(array) $link['match']) ? 'bg-amber-500' : 'bg-transparent' }}"></span>
                     </a>

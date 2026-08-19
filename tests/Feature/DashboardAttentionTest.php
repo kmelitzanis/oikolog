@@ -73,6 +73,50 @@ class DashboardAttentionTest extends TestCase
         $response->assertViewHas('stats', fn ($stats) => $stats['overdue_count'] === 1);
     }
 
+    public function test_the_sidebar_badge_counts_only_genuinely_overdue_bills(): void
+    {
+        $user = User::factory()->create(['currency_code' => 'EUR', 'locale' => 'en']);
+        $account = Account::create([
+            'name' => 'Cash', 'opening_balance' => 5000, 'currency_code' => 'EUR', 'created_by' => $user->id,
+        ]);
+
+        $unpaid = $this->bill($user);
+        $paid   = $this->bill($user, ['name' => 'Settled']);
+
+        $this->actingAs($user)->post(route('bills.pay', $paid), [
+            'payment_mode' => 'full',
+            'account_id'   => $account->id,
+        ])->assertRedirect();
+
+        // The paid one keeps a past due date, so a date-only count would say 2.
+        $this->assertSame(1, Bill::overdueCountFor($user->fresh()));
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()
+            ->assertSee('aria-label="1 overdue bill"', false);
+    }
+
+    public function test_the_badge_is_hidden_when_nothing_is_overdue(): void
+    {
+        $user = User::factory()->create(['currency_code' => 'EUR', 'locale' => 'en']);
+        $this->bill($user, ['next_due_date' => now()->addMonth()->toDateString()]);
+
+        $this->assertSame(0, Bill::overdueCountFor($user));
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()
+            // Anchored on the badge's own label: "overdue bill" also appears
+            // in the FAB's "Pick an overdue bill".
+            ->assertDontSee('aria-label="1 overdue bill"', false);
+    }
+
+    public function test_another_users_overdue_bills_are_not_counted(): void
+    {
+        $mine = User::factory()->create(['currency_code' => 'EUR']);
+        $theirs = User::factory()->create(['currency_code' => 'EUR']);
+        $this->bill($theirs);
+
+        $this->assertSame(0, Bill::overdueCountFor($mine));
+    }
+
     public function test_a_part_paid_bill_is_counted_at_its_remaining_balance(): void
     {
         $user = User::factory()->create(['currency_code' => 'EUR']);

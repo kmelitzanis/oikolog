@@ -42,7 +42,7 @@
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white truncate">{{ $bill->name }}</h1>
-                    <x-bill-status :bill="$bill" :show-remaining="false" />
+                    <x-bill-status :bill="$bill" />
                 </div>
                 <p class="text-sm text-gray-400 dark:text-slate-500 mt-0.5">
                     {{ $bill->category?->name ?? '—' }}

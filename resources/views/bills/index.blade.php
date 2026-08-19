@@ -338,9 +338,20 @@
                     @if($bill->cost_varies)
                         <div class="text-sm text-gray-400 dark:text-slate-500 font-medium italic">{{ __('messages.varies') }}</div>
                     @else
-                        <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}</div>
+                        {{-- On a part-paid bill this column shows what is still
+                             owed, tinted amber, with the full amount beneath —
+                             the status chip used to carry the figure instead. --}}
+                        @php $isPartial = $bill->status() === 'partial'; @endphp
+                        <div class="text-sm font-bold {{ $isPartial ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white' }}">
+                            {{ $bill->currency_code }}
+                            {{ number_format($isPartial ? $bill->getEffectiveRemainingBalance() : $bill->amount, 2) }}
+                        </div>
                         <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
-                            {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
+                            @if($isPartial)
+                                {{ __('messages.of_amount', ['amount' => number_format($bill->amount, 2)]) }}
+                            @else
+                                {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
+                            @endif
                         </div>
                     @endif
                 </div>

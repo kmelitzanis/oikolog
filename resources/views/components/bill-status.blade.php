@@ -6,12 +6,8 @@
     ones `x-badge` already defines; do not pass a tone in.
 
     &lt;x-bill-status :bill="$bill" />
-    &lt;x-bill-status :bill="$bill" :show-remaining="false" />
 --}}
-@props([
-    'bill',
-    'showRemaining' => true,
-])
+@props(['bill'])
 @php
     $status = $bill->status();
     $days   = $bill->daysUntilDue();
@@ -29,12 +25,6 @@
             : __('messages.upcoming'),
     };
 
-    // `partial` is the one state whose headline isn't self-explanatory — the
-    // amount still owed is the whole point of the label, so carry it inline.
-    $remaining = $showRemaining && $status === 'partial'
-        ? $bill->currency_code . ' ' . number_format($bill->getEffectiveRemainingBalance(), 2)
-        : null;
-
     $icon = match ($status) {
         'paid'    => 'check_circle',
         'partial' => 'account_balance_wallet',
@@ -48,7 +38,4 @@
         <span class="material-icons-round" style="font-size:13px;">{{ $icon }}</span>
     @endif
     {{ $label }}
-    @if($remaining)
-        <span class="font-bold">· {{ $remaining }}</span>
-    @endif
 </x-badge>

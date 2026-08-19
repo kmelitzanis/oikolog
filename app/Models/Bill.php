@@ -103,9 +103,34 @@ class Bill extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Bills whose due date has passed. Date-only, so it says nothing about
+     * whether the bill was paid — use it to narrow rows, then decide with
+     * status(). See `overdueCountFor()`.
+     */
     public function scopeOverdue($query)
     {
         return $query->whereDate('next_due_date', '<', Carbon::today());
+    }
+
+    /**
+     * How many of the user's bills are genuinely overdue — money owed, past due.
+     *
+     * Sidebar badges and the like need this on every page, so the query narrows
+     * to past-due active bills first (usually a handful) and only then asks
+     * status(), which is the only thing that accounts for payments.
+     */
+    public static function overdueCountFor(?User $user): int
+    {
+        if (! $user) {
+            return 0;
+        }
+
+        return static::forUser($user)->active()->overdue()
+            ->whereNotNull('next_due_date')
+            ->get(['id', 'is_active', 'frequency', 'next_due_date', 'last_paid_date', 'remaining_balance'])
+            ->filter(fn (self $bill) => $bill->status() === 'overdue')
+            ->count();
     }
 
     public function scopeDueWithin($query, int $days)

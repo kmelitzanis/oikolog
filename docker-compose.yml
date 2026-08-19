@@ -29,6 +29,11 @@ services:
       # the exact scheme+host+port the browser uses. A mismatch makes every
       # /api/* call return 401 and the API-backed pages render empty.
       - SESSION_SECURE_COOKIE=${SESSION_SECURE_COOKIE:-}
+      # SESSION_LIFETIME is the idle timeout of one session, in minutes.
+      # SESSION_REMEMBER_LIFETIME is how long "remember me" keeps someone
+      # signed in across that timeout — 400 days by default.
+      - SESSION_LIFETIME=${SESSION_LIFETIME:-10080}
+      - SESSION_REMEMBER_LIFETIME=${SESSION_REMEMBER_LIFETIME:-576000}
     depends_on:
       db:
         condition: service_healthy

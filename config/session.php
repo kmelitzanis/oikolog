@@ -39,25 +39,14 @@ return [
     | Remember-me Session Lifetime
     |--------------------------------------------------------------------------
     |
-    | When a user selects "remember me" during login we optionally extend the
-    | session lifetime for that specific request. This value (in minutes)
-    | defines the extended lifetime to use. Default is 30 days.
+    | How long the "remember me" cookie stays valid, in minutes. This is what
+    | actually keeps someone signed in: `lifetime` above is only the idle
+    | timeout of a single session, and when it lapses this cookie signs the
+    | user straight back in. Defaults to 400 days — the ceiling browsers will
+    | honour for a cookie's max-age.
     |
     */
-    'remember_lifetime' => (int)env('SESSION_REMEMBER_LIFETIME', 60 * 24 * 30),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Maximum Session Lifetime
-    |--------------------------------------------------------------------------
-    |
-    | This value defines an upper bound (in minutes) for any per-request
-    | session lifetime changes (for example when "remember me" is requested).
-    | It allows a sysadmin to cap how long a session may be extended via
-    | environment configuration.
-    |
-    */
-    'max_lifetime' => (int)env('SESSION_MAX_LIFETIME', 60 * 24 * 30),
+    'remember_lifetime' => (int) env('SESSION_REMEMBER_LIFETIME', 60 * 24 * 400),
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 
     /*
