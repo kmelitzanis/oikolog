@@ -78,6 +78,42 @@
                       class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition resize-none">{{ old('notes') }}</textarea>
             @error('notes')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
         </div>
+        {{-- Invoice-mail crawling. Optional per provider: leave blank and the
+             crawler simply skips this one. --}}
+        <div class="pt-2 border-t border-gray-100 dark:border-slate-700">
+            <p class="text-[0.7rem] font-bold uppercase tracking-[0.09em] text-gray-400 dark:text-slate-500 mb-1">
+                {{ __('messages.invoice_mail') }}
+            </p>
+            <p class="text-xs text-gray-400 dark:text-slate-500 mb-3">{{ __('messages.invoice_mail_hint') }}</p>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.sender_pattern') }}</label>
+                    <input type="text" name="email_from_pattern" value="{{ old('email_from_pattern', (object)['email_from_pattern'=>null,'email_subject_pattern'=>null,'email_amount_pattern'=>null]->email_from_pattern) }}"
+                           placeholder="@dei\.gr$"
+                           class="w-full font-mono bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 transition">
+                    @error('email_from_pattern')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
+                        {{ __('messages.subject_pattern') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
+                    </label>
+                    <input type="text" name="email_subject_pattern" value="{{ old('email_subject_pattern', (object)['email_from_pattern'=>null,'email_subject_pattern'=>null,'email_amount_pattern'=>null]->email_subject_pattern) }}"
+                           placeholder="λογαριασμ"
+                           class="w-full font-mono bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 transition">
+                    @error('email_subject_pattern')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.amount_pattern') }}</label>
+                    <input type="text" name="email_amount_pattern" value="{{ old('email_amount_pattern', (object)['email_from_pattern'=>null,'email_subject_pattern'=>null,'email_amount_pattern'=>null]->email_amount_pattern) }}"
+                           placeholder="πληρωμ\S*\s*:?\s*([\d.,]+)\s*€"
+                           class="w-full font-mono bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 transition">
+                    <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">{{ __('messages.amount_pattern_hint') }}</p>
+                    @error('email_amount_pattern')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                </div>
+            </div>
+        </div>
+
         <div class="flex items-center gap-3 pt-2">
             <button type="submit"
                     class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm font-semibold rounded-xl px-5 py-2.5 transition">

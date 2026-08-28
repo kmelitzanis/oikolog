@@ -73,6 +73,16 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{bill}/payments/{payment}', 'destroyPayment')->name('payments.destroy');
         });
 
+    // Amounts parsed out of provider invoice mail, pending review. Accepting is
+    // the only thing that writes a crawled figure onto a bill.
+    Route::controller(\App\Http\Controllers\Web\BillAmountSuggestionController::class)
+        ->prefix('bills/{bill}/suggestions')
+        ->name('bills.suggestions.')
+        ->group(function () {
+            Route::post('/{suggestion}/accept', 'accept')->name('accept');
+            Route::post('/{suggestion}/reject', 'reject')->name('reject');
+        });
+
     // Accounts — where money actually sits. Incomes deposit into them, bill
     // payments withdraw from them, transfers move between them.
     Route::controller(App\Http\Controllers\Web\AccountController::class)
@@ -140,6 +150,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/two-factor-setup', [TwoFactorController::class, 'setup'])->name('2fa.setup');
     Route::post('/two-factor-enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
     Route::post('/two-factor-disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
+
+    // Read-only IMAP account the invoice crawler uses.
+    Route::controller(\App\Http\Controllers\Web\MailboxController::class)
+        ->prefix('mailbox')
+        ->name('mailbox.')
+        ->group(function () {
+            Route::post('/', 'update')->name('update');
+            Route::post('/test', 'test')->name('test');
+            Route::post('/scan', 'scan')->name('scan');
+        });
 
     // Translations management
     Route::prefix('translations')->name('translations.')->controller(\App\Http\Controllers\Web\TranslationController::class)->group(function () {

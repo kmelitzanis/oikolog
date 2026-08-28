@@ -142,6 +142,13 @@
             @endif
         </div>
 
+        {{-- ── Parsed from the provider's mail, awaiting review ─────────── --}}
+        @foreach($bill->amountSuggestions()->pending()->latest('email_date')->get() as $suggestion)
+            <div class="mb-4">
+                <x-amount-suggestion :bill="$bill" :suggestion="$suggestion" />
+            </div>
+        @endforeach
+
         {{-- ── At a glance ─────────────────────────────────────────────── --}}
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
             <x-stat-tile tone="brand"

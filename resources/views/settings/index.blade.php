@@ -165,6 +165,103 @@
                     </div>
                 </x-card>
 
+                {{-- Invoice mail. A separate form: it carries a password and
+                     must not ride along with the profile save. --}}
+                <x-card flush class="p-6">
+                    <div class="{{ $cardTitle }}">{{ __('messages.invoice_mail') }}</div>
+                    <p class="text-xs text-gray-400 dark:text-slate-400 -mt-2 mb-4">{{ __('messages.mailbox_hint') }}</p>
+
+                    @error('mailbox')
+                        <p class="mb-3 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="col-span-2">
+                                <label class="{{ $label }}">{{ __('messages.imap_host') }}</label>
+                                <input form="mailbox-form" type="text" name="host" required
+                                       value="{{ old('host', $mailbox->host ?? 'imap.gmail.com') }}" class="{{ $input }}">
+                            </div>
+                            <div>
+                                <label class="{{ $label }}">{{ __('messages.imap_port') }}</label>
+                                <input form="mailbox-form" type="number" name="port" required
+                                       value="{{ old('port', $mailbox->port ?? 993) }}" class="{{ $input }}">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="{{ $label }}">{{ __('messages.email') }}</label>
+                            <input form="mailbox-form" type="text" name="username" required autocomplete="off"
+                                   value="{{ old('username', $mailbox->username ?? '') }}" class="{{ $input }}">
+                        </div>
+
+                        <div>
+                            <label class="{{ $label }}">
+                                {{ __('messages.app_password') }}
+                                @if($mailbox?->exists)
+                                    <span class="text-gray-400 dark:text-slate-500 font-normal">({{ __('messages.leave_blank') }})</span>
+                                @endif
+                            </label>
+                            {{-- Never rendered back to the browser, only replaced. --}}
+                            <input form="mailbox-form" type="password" name="password" autocomplete="new-password"
+                                   class="{{ $input }}" @if(! $mailbox?->exists) required @endif>
+                            <p class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">{{ __('messages.app_password_hint') }}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="{{ $label }}">{{ __('messages.imap_folder') }}</label>
+                                <input form="mailbox-form" type="text" name="folder" required
+                                       value="{{ old('folder', $mailbox->folder ?? 'INBOX') }}" class="{{ $input }}">
+                            </div>
+                            <div>
+                                <label class="{{ $label }}">{{ __('messages.encryption') }}</label>
+                                <select form="mailbox-form" name="encryption" class="{{ $input }}">
+                                    @foreach(['ssl' => 'SSL', 'tls' => 'TLS', 'none' => '—'] as $v => $l)
+                                        <option value="{{ $v }}" @selected(old('encryption', $mailbox->encryption ?? 'ssl') === $v)>{{ $l }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-3 cursor-pointer pt-1">
+                            <input form="mailbox-form" type="hidden" name="is_active" value="0">
+                            <input form="mailbox-form" type="checkbox" name="is_active" value="1"
+                                   class="w-4 h-4 accent-amber-500" @checked(old('is_active', $mailbox->is_active ?? true))>
+                            <span class="text-sm text-gray-700 dark:text-slate-200">{{ __('messages.mailbox_active') }}</span>
+                        </label>
+
+                        @if($mailbox?->last_scanned_at)
+                            <p class="text-xs text-gray-400 dark:text-slate-500">
+                                {{ __('messages.last_scanned', ['when' => $mailbox->last_scanned_at->diffForHumans()]) }}
+                            </p>
+                        @endif
+                        @if($mailbox?->last_error)
+                            <p class="text-xs text-red-500">{{ $mailbox->last_error }}</p>
+                        @endif
+
+                        {{-- Save is the commitment; test and scan act on what is
+                             already stored, so they read as one secondary pair.
+                             x-btn keeps all three the same height — hand-rolled
+                             markup had drifted apart. --}}
+                        <div class="pt-2 space-y-2">
+                            <x-btn form="mailbox-form" type="submit" icon="save" class="w-full sm:w-auto">
+                                {{ __('messages.save') }}
+                            </x-btn>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <x-btn form="mailbox-test-form" type="submit" variant="outline" icon="wifi_tethering">
+                                    {{ __('messages.test_connection') }}
+                                </x-btn>
+                                <x-btn form="mailbox-scan-form" type="submit" variant="outline" icon="sync"
+                                       @disabled(! $mailbox?->exists)>
+                                    {{ __('messages.scan_now') }}
+                                </x-btn>
+                            </div>
+                        </div>
+                    </div>
+                </x-card>
+
                 {{-- 2FA — a link out, not a field, but it belongs beside the
                      password box rather than in a stray card below the form. --}}
                 <x-card flush class="p-6">
@@ -199,4 +296,10 @@
             </div>
         </form>
     </div>
+
+    {{-- Targets for the form="" attributes above. A form cannot be nested
+         inside another, and the profile form wraps the whole grid. --}}
+    <form id="mailbox-form" method="POST" action="{{ route('mailbox.update') }}" class="hidden">@csrf</form>
+    <form id="mailbox-test-form" method="POST" action="{{ route('mailbox.test') }}" class="hidden">@csrf</form>
+    <form id="mailbox-scan-form" method="POST" action="{{ route('mailbox.scan') }}" class="hidden">@csrf</form>
 @endsection

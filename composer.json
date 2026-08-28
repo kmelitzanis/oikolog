@@ -13,7 +13,8 @@
         "minishlink/web-push": "^11.0",
         "pragmarx/google2fa-laravel": "^3.0",
         "spatie/laravel-medialibrary": "^11.0",
-        "spatie/laravel-permission": "^6.7"
+        "spatie/laravel-permission": "^6.7",
+        "webklex/php-imap": "^6.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

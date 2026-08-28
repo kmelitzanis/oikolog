@@ -70,6 +70,12 @@ class Bill extends Model
         return $this->hasMany(Payment::class);
     }
 
+    /** Amounts parsed out of provider mail, awaiting review. */
+    public function amountSuggestions(): HasMany
+    {
+        return $this->hasMany(BillAmountSuggestion::class);
+    }
+
     // Provide guarded media collection registration (no-op when medialibrary not installed)
     public function registerMediaCollections(): void
     {

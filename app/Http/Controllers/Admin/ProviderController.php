@@ -42,7 +42,18 @@ class ProviderController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'notes' => ['nullable', 'string'],
             'logo' => ['nullable', 'image', 'max:2048'],
+            // Invoice-mail crawling. Validated as regexes so a typo is caught
+            // here rather than silently never matching.
+            'email_from_pattern'    => ['nullable', 'string', 'max:190', 'regex:/^[^\x00]*$/'],
+            'email_subject_pattern' => ['nullable', 'string', 'max:190'],
+            'email_amount_pattern'  => ['nullable', 'string', 'max:500'],
         ]);
+
+        foreach (['email_from_pattern', 'email_subject_pattern', 'email_amount_pattern'] as $field) {
+            if (filled($data[$field] ?? null) && @preg_match('/' . str_replace('/', '\/', $data[$field]) . '/iu', '') === false) {
+                return back()->withInput()->withErrors([$field => __('messages.invalid_regex')]);
+            }
+        }
 
         $logoUrl = null;
         if ($request->hasFile('logo')) {
@@ -56,6 +67,9 @@ class ProviderController extends Controller
             'phone' => $data['phone'] ?? null,
             'notes' => $data['notes'] ?? null,
             'logo_url' => $logoUrl,
+            'email_from_pattern'    => $data['email_from_pattern'] ?? null,
+            'email_subject_pattern' => $data['email_subject_pattern'] ?? null,
+            'email_amount_pattern'  => $data['email_amount_pattern'] ?? null,
         ]);
 
         $provider->categories()->sync($data['category_ids']);
@@ -83,13 +97,27 @@ class ProviderController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'notes' => ['nullable', 'string'],
             'logo' => ['nullable', 'image', 'max:2048'],
+            // Invoice-mail crawling. Validated as regexes so a typo is caught
+            // here rather than silently never matching.
+            'email_from_pattern'    => ['nullable', 'string', 'max:190', 'regex:/^[^\x00]*$/'],
+            'email_subject_pattern' => ['nullable', 'string', 'max:190'],
+            'email_amount_pattern'  => ['nullable', 'string', 'max:500'],
         ]);
+
+        foreach (['email_from_pattern', 'email_subject_pattern', 'email_amount_pattern'] as $field) {
+            if (filled($data[$field] ?? null) && @preg_match('/' . str_replace('/', '\/', $data[$field]) . '/iu', '') === false) {
+                return back()->withInput()->withErrors([$field => __('messages.invalid_regex')]);
+            }
+        }
 
         $updateData = [
             'name' => $data['name'],
             'website' => $data['website'] ?? null,
             'phone' => $data['phone'] ?? null,
             'notes' => $data['notes'] ?? null,
+            'email_from_pattern'    => $data['email_from_pattern'] ?? null,
+            'email_subject_pattern' => $data['email_subject_pattern'] ?? null,
+            'email_amount_pattern'  => $data['email_amount_pattern'] ?? null,
         ];
 
         if ($request->hasFile('logo')) {

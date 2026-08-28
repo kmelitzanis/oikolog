@@ -207,7 +207,9 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $avatar = $user->avatar_url ?? null;
-        return view('settings.index', compact('user', 'avatar'));
+        $mailbox = \App\Models\Mailbox::where('user_id', $user->id)->first();
+
+        return view('settings.index', compact('user', 'avatar', 'mailbox'));
     }
 
     // Update settings

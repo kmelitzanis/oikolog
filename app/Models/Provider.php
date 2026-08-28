@@ -11,7 +11,18 @@ class Provider extends Model
 {
     use HasUlids;
 
-    protected $fillable = ['name', 'website', 'phone', 'notes', 'logo_url'];
+    protected $fillable = [
+        'name', 'website', 'phone', 'notes', 'logo_url',
+        // How the invoice-mail crawler recognises this provider and finds the
+        // total. See App\Services\BillAmountExtractor.
+        'email_from_pattern', 'email_subject_pattern', 'email_amount_pattern',
+    ];
+
+    /** Whether the crawler has enough to go on for this provider. */
+    public function canParseInvoiceMail(): bool
+    {
+        return filled($this->email_from_pattern) && filled($this->email_amount_pattern);
+    }
 
     public function categories(): BelongsToMany
     {
