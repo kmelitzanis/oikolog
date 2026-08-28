@@ -15,4 +15,5 @@ import './pages/recipe-form';
 import './pages/recipes';
 import './pages/meal-planner';
 import './pages/push';
+import './pages/editable-amount';
 

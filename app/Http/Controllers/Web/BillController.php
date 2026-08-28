@@ -308,6 +308,43 @@ class BillController extends Controller
         return redirect()->route('bills.index')->with('success', 'Bill deleted.');
     }
 
+    /**
+     * Record what the current cycle costs, without paying it.
+     *
+     * A bill whose cost varies shows "varies" until the invoice arrives; this
+     * is what turns that into a number, so the dashboard and the list can say
+     * what is actually owed days before anyone pays it. Sending an empty value
+     * clears it back to unknown.
+     */
+    public function updateCurrentAmount(Request $request, Bill $bill)
+    {
+        $this->authorizeEdit($bill);
+
+        abort_unless($bill->cost_varies, 422, 'This bill has a fixed amount.');
+
+        $data = $request->validate([
+            'current_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+        ]);
+
+        $amount = $data['current_amount'] === null || $data['current_amount'] === ''
+            ? null
+            : round((float) $data['current_amount'], 2);
+
+        $bill->update(['current_amount' => $amount]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'current_amount'   => $amount,
+                'formatted'        => $amount === null
+                    ? null
+                    : $bill->currency_code . ' ' . number_format($amount, 2),
+                'monthly_formatted' => number_format($bill->fresh()->monthlyEquivalent(), 2),
+            ]);
+        }
+
+        return back()->with('success', __('messages.amount_updated'));
+    }
+
     public function markPaid(Request $request, Bill $bill, Ledger $ledger)
     {
         $this->authorizeView($bill);
@@ -342,7 +379,9 @@ class BillController extends Controller
         if ($bill->cost_varies && $request->filled('custom_amount')) {
             $periodAmount = (float)$request->input('custom_amount');
         } else {
-            $periodAmount = (float)$bill->amount;
+            // periodAmount() prefers this cycle's recorded figure over the
+            // template amount, which for a varying bill is only an estimate.
+            $periodAmount = $bill->periodAmount();
         }
 
         // Calculate how much is being paid now and what the new remaining balance will be
@@ -404,6 +443,8 @@ class BillController extends Controller
                 $nextDue = $bill->calculateNextDueDate();
                 $bill->update([
                     'remaining_balance' => null,
+                    // A new cycle starts with its cost unknown again.
+                    'current_amount' => null,
                     'last_paid_date' => $paidAt->toDateString(),
                     'next_due_date' => $nextDue?->toDateString() ?? $bill->next_due_date,
                 ]);

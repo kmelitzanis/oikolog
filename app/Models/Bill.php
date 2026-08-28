@@ -14,7 +14,7 @@ class Bill extends Model
     use HasUlids, HasFactory;
 
     protected $fillable = [
-        'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'cost_varies',
+        'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'current_amount', 'cost_varies',
         'remaining_balance', 'currency_code', 'default_account_id',
         'frequency', 'frequency_interval', 'start_date', 'end_date', 'next_due_date',
         'last_paid_date', 'is_active', 'is_shared', 'notify_enabled', 'notify_days_before',
@@ -25,6 +25,7 @@ class Bill extends Model
     {
         return [
             'amount'             => 'decimal:2',
+            'current_amount'    => 'decimal:2',
             'remaining_balance' => 'decimal:2',
             'cost_varies' => 'boolean',
             'start_date'         => 'date',
@@ -141,7 +142,7 @@ class Bill extends Model
     // Helpers
     public function monthlyEquivalent(): float
     {
-        $amount = (float) $this->amount;
+        $amount = $this->periodAmount();
         $freq = $this->frequency ?? 'monthly';
         $interval = (int) ($this->frequency_interval ?? 1);
 
@@ -377,12 +378,39 @@ class Bill extends Model
         return in_array($this->status(), ['overdue', 'partial', 'soon'], true);
     }
 
+    /**
+     * What this billing cycle costs.
+     *
+     * For most bills that is simply `amount`. For one whose cost varies it is
+     * whatever the provider billed this period, once someone has entered it —
+     * `amount` is only ever an estimate there.
+     */
+    public function periodAmount(): float
+    {
+        return (float) ($this->current_amount ?? $this->amount);
+    }
+
+    /** Whether this cycle's real cost is known yet. */
+    public function hasCurrentAmount(): bool
+    {
+        return $this->current_amount !== null;
+    }
+
+    /**
+     * Whether the amount shown for this bill is still a guess — a varying bill
+     * nobody has entered this period's invoice for.
+     */
+    public function amountIsUnknown(): bool
+    {
+        return $this->cost_varies && ! $this->hasCurrentAmount();
+    }
+
     /** Returns the amount still owed for the current billing cycle. */
     public function getEffectiveRemainingBalance(): float
     {
         return $this->remaining_balance !== null
             ? (float)$this->remaining_balance
-            : (float)$this->amount;
+            : $this->periodAmount();
     }
 
     // Helper to get receipt urls (if medialibrary installed)

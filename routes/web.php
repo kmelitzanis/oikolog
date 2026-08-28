@@ -62,6 +62,9 @@ Route::middleware('auth')->group(function () {
             Route::put('/{bill}', 'update')->name('update');
             Route::delete('/{bill}', 'destroy')->name('destroy');
             Route::post('/{bill}/pay', 'markPaid')->name('pay');
+            // Record what this cycle costs without paying it — the inline edit
+            // on the list, and the field on the bill page.
+            Route::patch('/{bill}/amount', 'updateCurrentAmount')->name('amount');
             // `unpay` reverses the latest payment only — it is the row-level
             // "undo what I just did". Removing an arbitrary historical payment
             // is a deliberate act and lives on its own route, reachable from the

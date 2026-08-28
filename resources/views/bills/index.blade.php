@@ -334,9 +334,17 @@
                 <div class="w-full flex items-center justify-between gap-3 lg:w-auto lg:contents">
 
                 {{-- 5 · Amount --}}
-                <div class="text-right shrink-0" @click="window.location='{{ route('bills.show', $bill) }}'">
+                {{-- A varying bill's cell is an editor, not a link: clicking
+                     through to the bill would fight the double-click. --}}
+                <div class="text-right shrink-0"
+                     @if(! $bill->cost_varies) @click="window.location='{{ route('bills.show', $bill) }}'" @endif>
                     @if($bill->cost_varies)
-                        <div class="text-sm text-gray-400 dark:text-slate-500 font-medium italic">{{ __('messages.varies') }}</div>
+                        <x-editable-amount :bill="$bill" class="w-full" />
+                        <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
+                            {{ $bill->hasCurrentAmount()
+                                ? number_format($bill->monthlyEquivalent(), 2) . '/mo'
+                                : __('messages.amount_unknown') }}
+                        </div>
                     @else
                         {{-- On a part-paid bill this column shows what is still
                              owed, tinted amber, with the full amount beneath —
@@ -369,7 +377,7 @@
                                 payRoute:       '{{ route('bills.pay', $bill) }}',
                                 costVaries:     {{ $bill->cost_varies ? 'true' : 'false' }},
                                 defaultAccountId: '{{ $bill->default_account_id }}',
-                                lastPaidAmount: '{{ $bill->cost_varies && $lastPayment ? number_format((float)$lastPayment->amount, 2, '.', '') : '' }}',
+                                lastPaidAmount: '{{ $bill->cost_varies ? number_format($bill->hasCurrentAmount() ? (float) $bill->current_amount : ($lastPayment ? (float) $lastPayment->amount : 0), 2, '.', '') : '' }}',
                                 remainingBalance: {{ $bill->hasPartialPayment() ? number_format($bill->getEffectiveRemainingBalance(), 2, '.', '') : 'null' }}
                             })"
                             class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition">

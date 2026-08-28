@@ -71,16 +71,27 @@
                     <div class="text-[0.66rem] font-semibold uppercase tracking-[0.09em] text-gray-500 dark:text-slate-400">
                         {{ $isPartial ? __('messages.remaining') : __('messages.amount') }}
                     </div>
-                    <div class="text-[2.4rem] leading-none font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white mt-2">
-                        {{ $bill->currency_code }}
-                        {{ number_format($isPartial ? $bill->getEffectiveRemainingBalance() : $bill->amount, 2) }}
-                    </div>
-                    @if($isPartial)
-                        <div class="text-xs text-gray-500 dark:text-slate-400 mt-2">
-                            {{ __('messages.amount') }}: {{ $bill->currency_code }} {{ number_format($bill->amount, 2) }}
+                    @if(! $isPartial && $bill->cost_varies)
+                        {{-- Editable in place: this is where you record what the
+                             provider billed this period, before paying it. --}}
+                        <div class="mt-2">
+                            <x-editable-amount :bill="$bill" size="lg" />
                         </div>
-                    @elseif($bill->cost_varies)
-                        <div class="text-xs text-gray-500 dark:text-slate-400 mt-2 italic">{{ __('messages.varies') }}</div>
+                        <div class="text-xs text-gray-500 dark:text-slate-400 mt-2">
+                            {{ $bill->hasCurrentAmount()
+                                ? __('messages.amount_this_period')
+                                : __('messages.set_amount_hint') }}
+                        </div>
+                    @else
+                        <div class="text-[2.4rem] leading-none font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white mt-2">
+                            {{ $bill->currency_code }}
+                            {{ number_format($isPartial ? $bill->getEffectiveRemainingBalance() : $bill->amount, 2) }}
+                        </div>
+                        @if($isPartial)
+                            <div class="text-xs text-gray-500 dark:text-slate-400 mt-2">
+                                {{ __('messages.amount') }}: {{ $bill->currency_code }} {{ number_format($bill->periodAmount(), 2) }}
+                            </div>
+                        @endif
                     @endif
                 </div>
 
@@ -117,12 +128,12 @@
                     <x-btn variant="success" block type="button" icon="check_circle"
                            @click="$dispatch('open-pay-modal', {
                                billName:         {{ Illuminate\Support\Js::from($bill->name) }},
-                               amount:           '{{ number_format($bill->amount, 2) }}',
+                               amount:           '{{ number_format($bill->periodAmount(), 2) }}',
                                currency:         '{{ $bill->currency_code }}',
                                payRoute:         '{{ route('bills.pay', $bill) }}',
                                costVaries:       {{ $bill->cost_varies ? 'true' : 'false' }},
                                defaultAccountId: '{{ $bill->default_account_id }}',
-                               lastPaidAmount:   '{{ $bill->cost_varies && $lastPayment ? number_format((float)$lastPayment->amount, 2, '.', '') : '' }}',
+                               lastPaidAmount:   '{{ $bill->cost_varies ? number_format($bill->hasCurrentAmount() ? (float) $bill->current_amount : ($lastPayment ? (float) $lastPayment->amount : 0), 2, '.', '') : '' }}',
                                remainingBalance: {{ $bill->hasPartialPayment() ? number_format($bill->getEffectiveRemainingBalance(), 2, '.', '') : 'null' }}
                            })">
                         {{ __('messages.mark_paid') }}
