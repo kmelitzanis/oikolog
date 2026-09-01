@@ -590,12 +590,18 @@ class BillController extends Controller
         abort_unless($ok, 403, 'Access denied.');
     }
 
+    /**
+     * Editing a bill is open to whoever can see it.
+     *
+     * This used to require `isFamilyAdmin()`, which meant a plain family member
+     * could open a shared bill and then be refused when editing it, deleting it
+     * or setting this period's amount. Sharing a bill with the household is the
+     * decision to let the household manage it; the app has no separate notion of
+     * read-only members outside the admin section.
+     */
     private function authorizeEdit(Bill $bill): void
     {
-        $user = request()->user();
-        $ok   = $user instanceof \App\Models\User
-             && ($bill->created_by === $user->id || $user->isFamilyAdmin());
-        abort_unless($ok, 403, 'You cannot edit this bill.');
+        $this->authorizeView($bill);
     }
 }
 

@@ -279,11 +279,10 @@ class BillController extends Controller
         abort_unless($canView, 403, 'Access denied.');
     }
 
+    /** Editing is open to whoever can see it — see the web controller. */
     private function authorizeEdit(Request $request, Bill $bill): void
     {
-        $user    = $request->user();
-        $canEdit = $bill->created_by === $user->id || $user->isFamilyAdmin();
-        abort_unless($canEdit, 403, 'You cannot edit this bill.');
+        $this->authorizeView($request, $bill);
     }
 
     private function billResource(Bill $bill): array

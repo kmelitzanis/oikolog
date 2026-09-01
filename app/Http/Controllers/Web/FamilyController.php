@@ -111,7 +111,7 @@ class FamilyController extends Controller
 
     public function regenerateCode(Request $request)
     {
-        abort_unless($request->user()->isFamilyAdmin(), 403, 'Admins only.');
+        abort_unless($request->user()->family_id, 422, 'Not in a family.');
         $request->user()->family->regenerateInviteCode();
 
         return back()->with('success', 'Invite code regenerated.');
@@ -120,7 +120,9 @@ class FamilyController extends Controller
     public function removeMember(Request $request, User $member)
     {
         $user = $request->user();
-        // Only family owner (creator) may remove members
+        // Still owner-only. This is the one action here that takes another
+        // person's access away, and it is not what "everyone can use the app"
+        // was asking for.
         abort_unless($user->isFamilyOwner(), 403, 'Only family owner may remove members.');
         abort_unless($member->family_id === $user->family_id, 422, 'Not in your family.');
         abort_if($member->id === $user->id, 422, 'Cannot remove yourself.');

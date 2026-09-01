@@ -52,7 +52,7 @@ class FamilyController extends Controller
 
     public function regenerateCode(Request $request): JsonResponse
     {
-        abort_unless($request->user()->isFamilyAdmin(), 403, 'Admins only.');
+        abort_unless($request->user()->family_id, 422, 'Not in a family.');
         $code = $request->user()->family->regenerateInviteCode();
         return response()->json(['invite_code' => $code]);
     }
@@ -60,7 +60,9 @@ class FamilyController extends Controller
     public function removeMember(Request $request, User $member): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user->isFamilyAdmin(), 403, 'Admins only.');
+        // Owner-only, matching the web controller — removing someone takes
+        // their access away, so the two front ends must not disagree.
+        abort_unless($user->isFamilyOwner(), 403, 'Only family owner may remove members.');
         abort_unless($member->family_id === $user->family_id, 422, 'Not in your family.');
         abort_if($member->id === $user->id, 422, 'Cannot remove yourself.');
         $member->update(['family_id' => null, 'family_role' => null]);

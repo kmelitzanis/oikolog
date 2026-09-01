@@ -101,7 +101,7 @@ class AuthController extends Controller
             'family'                => $user->relationLoaded('family') && $user->family ? [
                 'id'          => $user->family->id,
                 'name'        => $user->family->name,
-                'invite_code' => $user->isFamilyAdmin() ? $user->family->invite_code : null,
+                'invite_code' => $user->family->invite_code,
             ] : null,
             'created_at' => $user->created_at?->toIso8601String(),
         ];

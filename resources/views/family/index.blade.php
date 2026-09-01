@@ -185,7 +185,9 @@
 
             {{-- ── Invite code + shared bills ─────────────────────────── --}}
             <div>
-                @if(auth()->user()->isFamilyAdmin())
+                {{-- Every member can read and share the invite code; it was
+                     hidden from plain members for no reason the app enforces. --}}
+                @if($family)
                     <div x-data="{ copied: false }"
                          class="rounded-[24px] bg-amber-500 p-[22px] mb-4">
                         <div class="text-[0.66rem] font-semibold uppercase tracking-[0.09em] text-slate-900/70">
