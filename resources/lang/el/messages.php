@@ -371,6 +371,7 @@ return [
     'amount_pattern' => 'Μοτίβο ποσού',
     'amount_pattern_hint' => 'Η πρώτη ομάδα σε παρενθέσεις είναι το ποσό.',
     'invalid_regex' => 'Μη έγκυρη regular expression.',
+    'mailbox_needs_migration' => 'Εκκρεμεί migration — τρέξε php artisan migrate στον server.',
     'mailbox_hint' => 'Διαβάζει μόνο· δεν στέλνει, δεν διαγράφει, δεν σημειώνει ως αναγνωσμένα.',
     'imap_host' => 'Διακομιστής IMAP',
     'imap_port' => 'Θύρα',

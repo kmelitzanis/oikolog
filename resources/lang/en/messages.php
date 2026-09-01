@@ -371,6 +371,7 @@ return [
     'amount_pattern' => 'Amount pattern',
     'amount_pattern_hint' => 'The first capture group is the amount.',
     'invalid_regex' => 'Not a valid regular expression.',
+    'mailbox_needs_migration' => 'Pending migration — run php artisan migrate on the server.',
     'mailbox_hint' => 'Read only — never sends, deletes, or marks anything read.',
     'imap_host' => 'IMAP host',
     'imap_port' => 'Port',

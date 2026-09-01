@@ -166,7 +166,12 @@
                 </x-card>
 
                 {{-- Invoice mail. A separate form: it carries a password and
-                     must not ride along with the profile save. --}}
+                     must not ride along with the profile save.
+
+                     The conditional wraps the whole card rather than sitting
+                     inside its slot: a Blade @if that straddles a component's
+                     slot boundary compiles to an unbalanced endif. --}}
+                @if($mailboxReady ?? true)
                 <x-card flush class="p-6">
                     <div class="{{ $cardTitle }}">{{ __('messages.invoice_mail') }}</div>
                     <p class="text-xs text-gray-400 dark:text-slate-400 -mt-2 mb-4">{{ __('messages.mailbox_hint') }}</p>
@@ -253,14 +258,26 @@
                                 <x-btn form="mailbox-test-form" type="submit" variant="outline" icon="wifi_tethering">
                                     {{ __('messages.test_connection') }}
                                 </x-btn>
+                                {{-- A bound attribute, not @disabled(): a Blade
+                                     directive inside a component tag stops the
+                                     tag being compiled as a component at all,
+                                     which unbalances the whole file. --}}
                                 <x-btn form="mailbox-scan-form" type="submit" variant="outline" icon="sync"
-                                       @disabled(! $mailbox?->exists)>
+                                       :disabled="! $mailbox?->exists">
                                     {{ __('messages.scan_now') }}
                                 </x-btn>
                             </div>
                         </div>
                     </div>
                 </x-card>
+                @else
+                {{-- The table is missing, so the form has nowhere to save to.
+                     Say why rather than showing dead fields. --}}
+                <x-card flush class="p-6">
+                    <div class="{{ $cardTitle }}">{{ __('messages.invoice_mail') }}</div>
+                    <p class="text-xs text-amber-600 dark:text-amber-400">{{ __('messages.mailbox_needs_migration') }}</p>
+                </x-card>
+                @endif
 
                 {{-- 2FA — a link out, not a field, but it belongs beside the
                      password box rather than in a stray card below the form. --}}

@@ -207,9 +207,17 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $avatar = $user->avatar_url ?? null;
-        $mailbox = \App\Models\Mailbox::where('user_id', $user->id)->first();
 
-        return view('settings.index', compact('user', 'avatar', 'mailbox'));
+        // The invoice-mail crawler is optional, and its table arrives with a
+        // migration that may not have run yet — a deployment where migrations
+        // failed must still leave profile and password reachable, so this page
+        // degrades instead of 500-ing.
+        $mailboxReady = \Illuminate\Support\Facades\Schema::hasTable('mailboxes');
+        $mailbox = $mailboxReady
+            ? \App\Models\Mailbox::where('user_id', $user->id)->first()
+            : null;
+
+        return view('settings.index', compact('user', 'avatar', 'mailbox', 'mailboxReady'));
     }
 
     // Update settings
