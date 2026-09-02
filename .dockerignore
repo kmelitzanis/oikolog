@@ -9,4 +9,9 @@ storage/*.key
 .DS_Store
 .git
 
+# Generated at build time by composer's package:discover. Copying a local one in
+# ships a manifest that lists dev-only providers (Collision) which --no-dev then
+# does not install, and the app cannot boot.
+bootstrap/cache/*.php
+
 /design-system

@@ -45,7 +45,6 @@ services:
       start_period: 20s
     volumes:
       - app-storage:/var/www/html/storage
-      - app-cache:/var/www/html/bootstrap/cache
       - app-public:/var/www/html/public
     networks:
       - oikolog
@@ -59,7 +58,6 @@ services:
     volumes:
       - app-public:/var/www/html/public:ro
       - app-storage:/var/www/html/storage:ro
-      - app-cache:/var/www/html/bootstrap/cache:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       app:
@@ -93,7 +91,6 @@ services:
 volumes:
   dbdata:
   app-storage:
-  app-cache:
   app-public:
 
 networks:
