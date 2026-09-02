@@ -2,7 +2,11 @@
 @section('title', __('messages.shopping_lists'))
 
 @section('content')
-<div x-data="shoppingListsApp()" x-init="init()" class="max-w-5xl mx-auto">
+<div x-data="shoppingListsApp({
+        pending: @js(__('messages.left_to_buy')),
+        nothing: @js(__('messages.nothing_to_buy')),
+        empty:   @js(__('messages.no_items')),
+     })" x-init="init()" class="max-w-5xl mx-auto">
 
     {{-- Header --}}
     <div class="flex items-center justify-between mb-6">
@@ -61,17 +65,11 @@
                         </div>
                     </div>
 
-                    {{-- Progress --}}
-                    <div class="mb-1.5 flex items-center justify-between text-xs">
-                        <span class="font-semibold text-gray-500 dark:text-slate-400"
-                              x-text="progressLabel(list)"></span>
-                        <span class="font-bold" :class="pct(list) === 100 ? 'text-emerald-500' : 'text-amber-500'" x-text="pct(list) + '%'"></span>
-                    </div>
-                    <div class="h-2 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-500"
-                             :class="pct(list) === 100 ? 'bg-emerald-500' : 'bg-linear-to-r from-amber-500 to-amber-400'"
-                             :style="`width: ${pct(list)}%`"></div>
-                    </div>
+                    {{-- A shopping list is never "complete" — items come back
+                         every week — so it carries a plain item count rather
+                         than a progress bar. --}}
+                    <div class="text-xs font-semibold text-gray-500 dark:text-slate-400"
+                         x-text="itemsLabel(list)"></div>
                 </a>
 
                 {{-- Actions --}}

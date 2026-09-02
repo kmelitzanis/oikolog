@@ -70,18 +70,6 @@
                         <span x-show="roundPending === 0" x-cloak>{{ __('messages.nothing_to_buy') }}</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    {{-- Both the figure and the bar belong to the round in
-                         progress; with nothing pending there is nothing to
-                         report, so they step aside rather than sit at 100%. --}}
-                    <div x-show="hasRound" x-cloak
-                         class="text-[1.3rem] font-extrabold text-amber-500 dark:text-amber-300" x-text="progress + '%'"></div>
-                </div>
-            </div>
-            <div x-show="hasRound" x-cloak class="h-2 rounded-full bg-gray-100 dark:bg-slate-900 mt-3 overflow-hidden">
-                <div class="h-full rounded-full transition-[width] duration-[350ms] ease-out"
-                     :class="progress === 100 ? 'bg-emerald-500' : 'bg-linear-to-r from-amber-500 to-amber-700'"
-                     :style="`width: ${progress}%`"></div>
             </div>
 
             {{-- Search + barcode — not in the mockup, kept as real features --}}

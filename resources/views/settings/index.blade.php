@@ -109,6 +109,19 @@
                         </select>
                     </div>
 
+                    {{-- Default account — what the pay modal opens on --}}
+                    <div class="mt-5">
+                        <label class="{{ $label }}">{{ __('messages.default_account') }}</label>
+                        <select name="default_account_id" class="{{ $input }}">
+                            <option value="">{{ __('messages.no_default_account') }}</option>
+                            @foreach($accounts as $acc)
+                                <option value="{{ $acc->id }}"
+                                    @selected(old('default_account_id', $user->default_account_id) === $acc->id)>{{ $acc->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">{{ __('messages.default_account_hint') }}</div>
+                    </div>
+
                     {{-- Language --}}
                     <div class="mt-5">
                         <label class="{{ $label }}">{{ __('messages.language') }}</label>

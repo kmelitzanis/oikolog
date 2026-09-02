@@ -16,7 +16,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'gender', 'email', 'password', 'avatar_url',
-        'currency_code', 'timezone', 'notifications_enabled',
+        'currency_code', 'default_account_id', 'timezone', 'notifications_enabled',
         'family_id', 'family_role', 'locale', 'is_admin',
         'two_factor_secret', 'two_factor_enabled',
     ];
@@ -51,6 +51,12 @@ class User extends Authenticatable
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'paid_by');
+    }
+
+    /** The account the pay modal opens on unless the bill names its own. */
+    public function defaultAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'default_account_id');
     }
 
     public function pushSubscriptions(): HasMany

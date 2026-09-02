@@ -114,7 +114,7 @@ class FamilyMemberPermissionsTest extends TestCase
         [, $member] = $this->household();
 
         foreach (['admin.categories.index', 'admin.providers.index',
-                  'admin.products.index', 'admin.users.index'] as $route) {
+                  'admin.users.index'] as $route) {
             $this->actingAs($member)->get(route($route))->assertForbidden();
         }
     }

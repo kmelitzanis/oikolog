@@ -142,16 +142,16 @@
          below narrow further. --}}
     @php
         $statusPills = [
-            ''           => [__('messages.filter_all'),      $billCounts['all']],
-            'overdue'    => [__('messages.overdue'),         $billCounts['overdue']],
             'this_month' => [__('messages.this_month'),      $billCounts['this_month']],
+            'overdue'    => [__('messages.overdue'),         $billCounts['overdue']],
             'shared'     => [__('messages.shared'),          $billCounts['shared']],
+            'all'        => [__('messages.filter_all'),      $billCounts['all']],
         ];
     @endphp
     <div class="flex flex-wrap items-center gap-2 mb-4">
         @foreach($statusPills as $value => [$label, $count])
-            @php $isActive = (string) request('status') === (string) $value; @endphp
-            <a href="{{ route('bills.index', array_merge(request()->except('status', 'page'), $value === '' ? [] : ['status' => $value])) }}"
+            @php $isActive = $status === $value; @endphp
+            <a href="{{ route('bills.index', array_merge(request()->except('status', 'page'), ['status' => $value])) }}"
                class="px-3.5 py-2 rounded-full text-[0.78rem] font-semibold transition
                       {{ $isActive
                           ? 'bg-amber-500 text-slate-900'
@@ -164,9 +164,8 @@
     {{-- Filters --}}
     <form method="GET" action="{{ route('bills.index') }}"
           class="flex flex-wrap gap-3 mb-6" x-data>
-        @if(request('status'))
-            <input type="hidden" name="status" value="{{ request('status') }}">
-        @endif
+        {{-- Carry the chosen cut through the search/select form. --}}
+        <input type="hidden" name="status" value="{{ $status }}">
         <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('messages.search') }}…"
                class="flex-1 min-w-40 bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
         <select name="category_id" @change="$el.form.submit()"
@@ -195,7 +194,7 @@
                 class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
             <span class="material-icons-round text-base">search</span> {{ __('messages.search') }}
         </button>
-        @if(request()->hasAny(['search','category_id','frequency','status']))
+        @if(request()->hasAny(['search','category_id','frequency']) || $status !== 'this_month')
             <a href="{{ route('bills.index') }}"
                class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                 <span class="material-icons-round text-base">close</span> Clear
@@ -416,10 +415,12 @@
                 </div>
             </div>
         @empty
-            @if(request()->hasAny(['search','category_id','frequency','status']))
+            {{-- Here `this_month` *is* a filter — it hides bills due later —
+                 so the escape hatch points at the full list, not the default. --}}
+            @if(request()->hasAny(['search','category_id','frequency']) || $status !== 'all')
                 <x-empty-state quiet icon="filter_alt_off" :title="__('messages.no_bills')"
                                :text="__('messages.try_adjusting_filters')">
-                    <x-btn variant="ghost" :href="route('bills.index')" icon="close">{{ __('messages.clear_filters') }}</x-btn>
+                    <x-btn variant="ghost" :href="route('bills.index', ['status' => 'all'])" icon="close">{{ __('messages.clear_filters') }}</x-btn>
                 </x-empty-state>
             @else
                 <x-empty-state icon="receipt_long" :title="__('messages.no_bills')">

@@ -35,17 +35,20 @@ class BillController extends Controller
         if ($request->filled('frequency')) {
             $query->where('frequency', $request->frequency);
         }
-        if ($request->filled('status')) {
-            match ($request->status) {
-                'active'     => $query->where('is_active', true),
-                'overdue'    => $query->where('is_active', true)->whereDate('next_due_date', '<', now()),
-                'this_month' => $query->where('is_active', true)
-                    ->whereBetween('next_due_date', [now()->startOfMonth(), now()->endOfMonth()]),
-                'shared'     => $query->where('is_shared', true),
-                'inactive'   => $query->where('is_active', false),
-                default      => null,
-            };
-        }
+        // The page opens on this month: the full list is rarely what someone
+        // came for. "all" is now an explicit value rather than an absent one,
+        // so the pills can tell "no filter chosen yet" from "show me all".
+        $status = (string) $request->input('status', 'this_month');
+
+        match ($status) {
+            'active'     => $query->where('is_active', true),
+            'overdue'    => $query->where('is_active', true)->whereDate('next_due_date', '<', now()),
+            'this_month' => $query->where('is_active', true)
+                ->whereBetween('next_due_date', [now()->startOfMonth(), now()->endOfMonth()]),
+            'shared'     => $query->where('is_shared', true),
+            'inactive'   => $query->where('is_active', false),
+            default      => null,
+        };
 
         $bills = $query->paginate(50);
 
@@ -59,7 +62,7 @@ class BillController extends Controller
             'shared'     => $all->where('is_shared', true)->count(),
         ];
 
-        return view('bills.index', compact('bills', 'billCounts'));
+        return view('bills.index', compact('bills', 'billCounts', 'status'));
     }
 
     public function create()

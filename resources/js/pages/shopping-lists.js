@@ -1,6 +1,11 @@
 // Shopping lists index Alpine component
-window.shoppingListsApp = function () {
+// Labels come from the Blade side so the copy stays in messages.*.
+window.shoppingListsApp = function (labels = {}) {
     return {
+        pendingLabel: labels.pending ?? '',
+        nothingLabel: labels.nothing ?? '',
+        emptyLabel:   labels.empty ?? '',
+
         lists: [],
         loading: false,
         saving: false,
@@ -26,17 +31,17 @@ window.shoppingListsApp = function () {
             this.loading = false;
         },
 
-        // Progress helpers (API returns items_count + checked_items_count)
-        pct(list) {
+        /**
+         * How much is still to buy. A list is never "done" — the same items
+         * come back every week — so the card states what is pending rather
+         * than a completion percentage.
+         */
+        itemsLabel(list) {
             const total = list.items_count || 0;
-            if (!total) return 0;
-            return Math.round((list.checked_items_count || 0) / total * 100);
-        },
-        progressLabel(list) {
-            const total = list.items_count || 0;
-            const done = list.checked_items_count || 0;
-            if (!total) return '0';
-            return `${done} / ${total}`;
+            const pending = total - (list.checked_items_count || 0);
+
+            if (!total) return this.emptyLabel;
+            return pending > 0 ? `${pending} ${this.pendingLabel}` : this.nothingLabel;
         },
 
         openCreate() {

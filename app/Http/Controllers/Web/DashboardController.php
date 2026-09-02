@@ -217,7 +217,9 @@ class DashboardController extends Controller
             ? \App\Models\Mailbox::where('user_id', $user->id)->first()
             : null;
 
-        return view('settings.index', compact('user', 'avatar', 'mailbox', 'mailboxReady'));
+        $accounts = \App\Models\Account::forUser($user)->active()->orderBy('name')->get();
+
+        return view('settings.index', compact('user', 'avatar', 'mailbox', 'mailboxReady', 'accounts'));
     }
 
     // Update settings
@@ -230,6 +232,7 @@ class DashboardController extends Controller
             'gender' => ['nullable', 'in:male,female'],
             'email' => ['required', 'email', 'unique:users,email,' . $user->id],
             'currency_code' => ['nullable', 'string', 'size:3'],
+            'default_account_id' => ['nullable', 'exists:accounts,id'],
             'password' => ['nullable', 'confirmed', 'min:8'],
             'avatar' => ['nullable', 'image', 'max:2048'],
             'avatar_url' => ['nullable', 'url'],
@@ -241,6 +244,11 @@ class DashboardController extends Controller
             'gender' => $data['gender'] ?? $user->gender,
             'email' => $data['email'],
             'currency_code' => $data['currency_code'] ?? $user->currency_code,
+            // Absent (an API caller) leaves it alone; blank means "no
+            // preference" and the modal falls back as before.
+            'default_account_id' => array_key_exists('default_account_id', $data)
+                ? ($data['default_account_id'] ?: null)
+                : $user->default_account_id,
             'avatar_url' => $data['avatar_url'] ?? $user->avatar_url,
             'locale' => $data['locale'] ?? $user->locale ?? 'en',
         ];

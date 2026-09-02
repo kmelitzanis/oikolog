@@ -30,6 +30,12 @@
             ->active()
             ->orderBy('name')
             ->get();
+
+        // What the picker starts on when the bill names no account of its own:
+        // the user's chosen default, and only then whichever sorts first.
+        $fallbackAccountId = $userAccounts->contains('id', $authUser->default_account_id)
+            ? $authUser->default_account_id
+            : optional($userAccounts->first())->id;
     }
 @endphp
 
@@ -68,7 +74,9 @@
             this.remainingBalance = data.remainingBalance ?? null;
             this.partialAmount   = '';
             this.paidByUserId    = '{{ auth()->id() }}';
-            this.accountId       = data.defaultAccountId || '{{ optional($userAccounts->first())->id }}';
+            // Precedence: the bill's own account, then the user's default,
+            // then whichever happens to sort first.
+            this.accountId       = data.defaultAccountId || '{{ $fallbackAccountId }}';
             this.paidAt          = '{{ now()->toDateString() }}';
             this.paymentMode     = 'full';
             this.open            = true;

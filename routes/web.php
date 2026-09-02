@@ -25,8 +25,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('users', App\Http\Controllers\Admin\UserController::class);
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
     Route::resource('providers', App\Http\Controllers\Admin\ProviderController::class);
-    Route::post('products/lookup-barcode', [App\Http\Controllers\Admin\ProductController::class, 'lookupBarcode'])->name('products.lookup-barcode');
-    Route::resource('products', App\Http\Controllers\Admin\ProductController::class);
 });
 
 Route::get('/login',  fn() => view('auth.login'))->name('login')->middleware('guest');

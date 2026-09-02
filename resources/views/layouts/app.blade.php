@@ -95,7 +95,6 @@
                     @foreach([
                         ['route'=>'admin.categories.index','icon'=>'category',        'label'=>__('messages.categories'),'match'=>'admin.categories.*'],
                         ['route'=>'admin.providers.index', 'icon'=>'business',        'label'=>__('messages.providers'),  'match'=>'admin.providers.*'],
-                        ['route'=>'admin.products.index',  'icon'=>'inventory_2',    'label'=>__('messages.products'),   'match'=>'admin.products.*'],
                         ['route'=>'admin.users.index',     'icon'=>'manage_accounts', 'label'=>__('messages.users'),      'match'=>'admin.users.*'],
                     ] as $al)
                         <a href="{{ route($al['route']) }}" @click="sidebarOpen=false"
