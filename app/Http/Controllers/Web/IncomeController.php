@@ -104,9 +104,7 @@ class IncomeController extends Controller
         // schedule waiting to be confirmed — so it lands in the account right
         // away. Recurring sources still get confirmed once per period, because
         // there the entry describes what is *expected*.
-        $account = $income->frequency === 'once'
-            ? $this->receiveOneOff($income, $request->user(), $ledger)
-            : null;
+        $account = $this->syncOneOffDeposit($income, $request->user(), $ledger);
 
         return redirect()->route('income.index')->with('success', $account
             ? __('messages.income_deposited', ['account' => $account->name])
@@ -114,32 +112,65 @@ class IncomeController extends Controller
     }
 
     /**
-     * Settle a one-off income immediately: mark it received and, when it has a
-     * destination account, deposit it. Returns the account credited, if any.
+     * Bring a one-off income's ledger movement in line with the income itself.
      *
-     * A start date in the future is left alone — that is a windfall someone is
-     * expecting, and crediting it now would make the balance describe money
-     * that has not arrived.
+     * Called on create *and* on edit: the deposit is derived data, so changing
+     * the amount, the date, the name or the destination account has to reach
+     * it. Returns the account credited, if any.
+     *
+     * Two things are deliberately left alone. A recurring source is confirmed
+     * per period through markReceived(), and those deposits are the user's
+     * record of what actually arrived — not ours to rewrite. Likewise a
+     * one-off that somehow carries several movements: that means someone
+     * recorded receipts by hand, and guessing which one is "the" deposit would
+     * be worse than doing nothing.
+     *
+     * A start date in the future credits nothing — that is a windfall someone
+     * is expecting, and the balance must not describe money that has not
+     * arrived. Moving the date forward therefore withdraws the deposit again.
      */
-    private function receiveOneOff(Income $income, User $user, Ledger $ledger): ?Account
+    private function syncOneOffDeposit(Income $income, User $user, Ledger $ledger): ?Account
     {
+        if ($income->frequency !== 'once') {
+            return null;
+        }
+
+        $movements = $income->deposits()->get();
+
+        if ($movements->count() > 1) {
+            return null;
+        }
+
+        $deposit = $movements->first();
+
         $receivedAt = $income->start_date
             ? Carbon::parse($income->start_date)->setTimeFrom(now())
             : now();
 
-        if ($receivedAt->isAfter(now()->endOfDay())) {
+        $hasArrived = ! $receivedAt->isAfter(now()->endOfDay());
+        $account = $income->account_id
+            ? Account::forUser($user)->find($income->account_id)
+            : null;
+
+        // Nothing to credit: not due yet, or no account to credit it to.
+        if (! $hasArrived || ! $account) {
+            $deposit?->delete();
+            $income->update([
+                'last_received_date' => $hasArrived ? $receivedAt->toDateString() : null,
+            ]);
+
             return null;
         }
 
-        $income->update(['last_received_date' => $receivedAt->toDateString()]);
-
-        if (! $income->account_id) {
-            return null;
-        }
-
-        $account = Account::forUser($user)->find($income->account_id);
-
-        if ($account) {
+        if ($deposit) {
+            $deposit->update([
+                'account_id'    => $account->id,
+                'amount'        => round((float) $income->amount, 2),
+                'currency_code' => $account->currency_code,
+                'occurred_at'   => $receivedAt,
+                'description'   => $income->name,
+            ]);
+        } else {
             $ledger->deposit(
                 $account,
                 (float) $income->amount,
@@ -149,6 +180,8 @@ class IncomeController extends Controller
                 $income,
             );
         }
+
+        $income->update(['last_received_date' => $receivedAt->toDateString()]);
 
         return $account;
     }
@@ -175,7 +208,7 @@ class IncomeController extends Controller
         return view('income.form', compact('income', 'accounts'));
     }
 
-    public function update(Request $request, Income $income)
+    public function update(Request $request, Income $income, Ledger $ledger)
     {
         $this->authorizeAccess($income);
 
@@ -199,6 +232,11 @@ class IncomeController extends Controller
         $data['frequency_interval'] = $data['frequency_interval'] ?? 1;
 
         $income->update($data);
+
+        // A one-off's deposit is derived from the income, so an edit has to
+        // carry through to it. Without this the ledger kept the figure from
+        // the moment the source was created and the balance silently drifted.
+        $this->syncOneOffDeposit($income->fresh(), $request->user(), $ledger);
 
         return redirect()->route('income.show', $income)->with('success', 'Income updated.');
     }
