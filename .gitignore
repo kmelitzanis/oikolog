@@ -28,3 +28,6 @@ Thumbs.db
 /.claude
 AGENTS.md
 CLAUDE.md
+
+# Debug/one-off scripts — never in a public release (see check_login.php leak)
+/scripts
