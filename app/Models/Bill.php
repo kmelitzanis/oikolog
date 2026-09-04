@@ -15,7 +15,7 @@ class Bill extends Model
 
     protected $fillable = [
         'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'current_amount', 'cost_varies',
-        'remaining_balance', 'currency_code', 'default_account_id',
+        'remaining_balance', 'debt_remaining', 'debt_initial', 'currency_code', 'default_account_id',
         'frequency', 'frequency_interval', 'start_date', 'end_date', 'next_due_date',
         'last_paid_date', 'is_active', 'is_shared', 'notify_enabled', 'notify_days_before',
         'url', 'notes', 'created_by', 'family_id', 'created_at', 'updated_at', 'created_by'
@@ -27,6 +27,8 @@ class Bill extends Model
             'amount'             => 'decimal:2',
             'current_amount'    => 'decimal:2',
             'remaining_balance' => 'decimal:2',
+            'debt_remaining'    => 'decimal:2',
+            'debt_initial'      => 'decimal:2',
             'cost_varies' => 'boolean',
             'start_date'         => 'date',
             'end_date'           => 'date',
@@ -365,6 +367,51 @@ class Bill extends Model
         }
 
         return $this->next_due_date && Carbon::parse($this->next_due_date)->gt(Carbon::today());
+    }
+
+    /**
+     * Whether this bill is working towards a total — a loan or a card balance
+     * rather than a subscription that simply recurs.
+     */
+    public function tracksDebt(): bool
+    {
+        return $this->debt_remaining !== null;
+    }
+
+    /** Whether the debt is cleared, so the schedule has run its course. */
+    public function isPaidOff(): bool
+    {
+        return $this->tracksDebt() && (float) $this->debt_remaining <= 0.0;
+    }
+
+    /**
+     * What to actually take for this cycle.
+     *
+     * Normally the period's amount, but the final instalment of a loan is
+     * whatever is left — asking for the usual 200 against a 43.17 balance would
+     * overpay the debt and leave it negative.
+     */
+    public function amountDueNow(): float
+    {
+        $due = $this->getEffectiveRemainingBalance();
+
+        if (! $this->tracksDebt()) {
+            return $due;
+        }
+
+        return min($due, max(0.0, (float) $this->debt_remaining));
+    }
+
+    /** How much of the original debt has been cleared, as a percentage. */
+    public function debtProgress(): ?int
+    {
+        if (! $this->tracksDebt() || ! $this->debt_initial || (float) $this->debt_initial <= 0) {
+            return null;
+        }
+
+        $paid = (float) $this->debt_initial - (float) $this->debt_remaining;
+
+        return (int) round(min(100, max(0, $paid / (float) $this->debt_initial * 100)));
     }
 
     /** Whether the current cycle is fully settled. */

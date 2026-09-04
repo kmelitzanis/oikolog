@@ -118,6 +118,22 @@
                     </p>
                 </div>
 
+                {{-- A loan or a card: the whole outstanding total, which each
+                     payment chips away at until the bill retires itself. --}}
+                <x-field :label="__('messages.debt_remaining')" name="debt_remaining" optional>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-semibold text-sm pointer-events-none">{{ $symbol }}</span>
+                        <x-input type="number" name="debt_remaining" id="debt_remaining" step="0.01" min="0"
+                                 :invalid="$errors->has('debt_remaining')"
+                                 class="pl-10"
+                                 value="{{ old('debt_remaining', $editing && $bill->debt_remaining !== null ? $bill->debt_remaining : '') }}"
+                                 placeholder="0.00" />
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-slate-400">
+                        {{ __('messages.debt_remaining_hint') }}
+                    </p>
+                </x-field>
+
                 <x-field :label="__('messages.category')" name="category_id" required>
                     <x-input as="select" name="category_id" id="category_id" required
                              :invalid="$errors->has('category_id')"

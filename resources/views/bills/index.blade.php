@@ -356,6 +356,10 @@
                         <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
                             @if($isPartial)
                                 {{ __('messages.of_amount', ['amount' => number_format($bill->amount, 2)]) }}
+                            @elseif($bill->tracksDebt())
+                                {{-- On a loan, the total still owed says more
+                                     than the monthly equivalent. --}}
+                                {{ __('messages.debt_left', ['amount' => number_format((float) $bill->debt_remaining, 2)]) }}
                             @else
                                 {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
                             @endif
@@ -371,7 +375,7 @@
                             title="{{ __('messages.mark_paid') }}"
                             @click="$dispatch('open-pay-modal', {
                                 billName:       {{ Illuminate\Support\Js::from($bill->name) }},
-                                amount:         '{{ number_format($bill->amount, 2) }}',
+                                amount:         '{{ number_format($bill->tracksDebt() ? min((float) $bill->amount, max(0, (float) $bill->debt_remaining)) : $bill->amount, 2) }}',
                                 currency:       '{{ $bill->currency_code }}',
                                 payRoute:       '{{ route('bills.pay', $bill) }}',
                                 costVaries:     {{ $bill->cost_varies ? 'true' : 'false' }},

@@ -407,6 +407,11 @@ return [
     'estimated_optional' => 'Estimated (optional)',
     'receipts_drop_hint' => 'Drag & drop receipts here or click to select (images or PDFs).',
     'validation_failed' => 'Please check the highlighted fields below.',
+    'debt_remaining' => 'Total still owed',
+    'debt_remaining_hint' => 'For loans or cards: the whole outstanding total, not just this instalment. Leave empty for bills that simply recur.',
+    'debt_paid_off' => 'Paid off',
+    'debt_progress' => ':paid of :total paid off',
+    'debt_left' => ':amount left',
     // ── Meal planner redesign ────────────────────────────────────────────
     'meal_pick_recipe_or_title' => 'Pick a recipe or type a meal.',
     'meal_save_failed' => 'Could not save the meal.',

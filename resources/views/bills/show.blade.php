@@ -128,7 +128,7 @@
                     <x-btn variant="success" block type="button" icon="check_circle"
                            @click="$dispatch('open-pay-modal', {
                                billName:         {{ Illuminate\Support\Js::from($bill->name) }},
-                               amount:           '{{ number_format($bill->periodAmount(), 2) }}',
+                               amount:           '{{ number_format($bill->tracksDebt() ? min($bill->periodAmount(), max(0, (float) $bill->debt_remaining)) : $bill->periodAmount(), 2) }}',
                                currency:         '{{ $bill->currency_code }}',
                                payRoute:         '{{ route('bills.pay', $bill) }}',
                                costVaries:       {{ $bill->cost_varies ? 'true' : 'false' }},
@@ -141,6 +141,38 @@
                 </div>
             @endif
         </div>
+
+        {{-- ── Debt: how far along a loan or a card balance is ─────────── --}}
+        @if($bill->tracksDebt())
+            @php $progress = $bill->debtProgress(); @endphp
+            <x-card class="mb-4">
+                <div class="flex items-end justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="text-[0.66rem] font-semibold uppercase tracking-[0.09em] text-gray-500 dark:text-slate-400">
+                            {{ __('messages.debt_remaining') }}
+                        </div>
+                        <div class="text-2xl font-extrabold tracking-[-0.02em] text-gray-900 dark:text-white mt-1.5">
+                            {{ $bill->currency_code }} {{ number_format((float) $bill->debt_remaining, 2) }}
+                        </div>
+                    </div>
+                    @if($bill->isPaidOff())
+                        <x-badge tone="paid">{{ __('messages.debt_paid_off') }}</x-badge>
+                    @elseif($progress !== null)
+                        <div class="text-right text-xs text-gray-500 dark:text-slate-400">
+                            {{ __('messages.debt_progress', [
+                                'paid'  => $bill->currency_code . ' ' . number_format((float) $bill->debt_initial - (float) $bill->debt_remaining, 2),
+                                'total' => $bill->currency_code . ' ' . number_format((float) $bill->debt_initial, 2),
+                            ]) }}
+                        </div>
+                    @endif
+                </div>
+                @if($progress !== null)
+                    <div class="mt-3 h-2 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+                        <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: {{ $progress }}%"></div>
+                    </div>
+                @endif
+            </x-card>
+        @endif
 
         {{-- ── Parsed from the provider's mail, awaiting review ─────────── --}}
         @foreach($bill->amountSuggestions()->pending()->latest('email_date')->get() as $suggestion)

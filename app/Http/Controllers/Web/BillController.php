@@ -90,6 +90,8 @@ class BillController extends Controller
             'default_account_id' => ['nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'cost_varies' => ['nullable', 'boolean'],
+            // Optional: the total still owed on a loan or a card.
+            'debt_remaining' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],
             'end_date'           => ['nullable', 'date', 'after:start_date'],
@@ -104,6 +106,9 @@ class BillController extends Controller
             ...$data,
             'currency_code' => $request->user()->currency_code,
             'cost_varies' => (bool)($data['cost_varies'] ?? false),
+            'debt_remaining' => $data['debt_remaining'] ?? null,
+            // Recorded once so the bill can show how far along it is.
+            'debt_initial'   => $data['debt_remaining'] ?? null,
             'is_shared'      => (bool) ($data['is_shared'] ?? false),
             'notify_enabled' => (bool) ($data['notify_enabled'] ?? false),
             'created_by'     => $request->user()->id,
@@ -258,6 +263,8 @@ class BillController extends Controller
             'default_account_id' => ['nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'cost_varies' => ['nullable', 'boolean'],
+            // Optional: the total still owed on a loan or a card.
+            'debt_remaining' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],
             'end_date'           => ['nullable', 'date'],
@@ -271,6 +278,14 @@ class BillController extends Controller
         $data['cost_varies'] = (bool)($data['cost_varies'] ?? false);
         $data['is_shared']      = (bool) ($data['is_shared'] ?? false);
         $data['notify_enabled'] = (bool) ($data['notify_enabled'] ?? false);
+
+        // Raising the outstanding total (a new drawdown, a bigger card balance)
+        // raises the starting figure with it, so the progress reading stays
+        // honest. Paying it down never touches the original.
+        $data['debt_remaining'] = $data['debt_remaining'] ?? null;
+        $data['debt_initial'] = $data['debt_remaining'] === null
+            ? null
+            : max((float) $data['debt_remaining'], (float) ($bill->debt_initial ?? 0));
 
         if (isset($data['is_shared'])) {
             $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
@@ -412,6 +427,19 @@ class BillController extends Controller
             $newRemaining = null;
         }
 
+        // The last instalment of a loan is whatever is left of it. Taking the
+        // usual amount against a smaller balance would overpay the debt and
+        // push it negative, so the payment is capped at the outstanding total.
+        if ($bill->tracksDebt()) {
+            $payAmount = min($payAmount, max(0.0, (float) $bill->debt_remaining));
+
+            // Nothing left to settle the cycle against either.
+            if ($payAmount <= 0) {
+                $newRemaining = null;
+                $isPartial = false;
+            }
+        }
+
         $payment = DB::transaction(function () use ($bill, $request, $paidByUserId, $account, $payAmount, $isPartial, $newRemaining, $paidAt, $ledger) {
             $payment = Payment::create([
                 'bill_id'       => $bill->id,
@@ -452,6 +480,8 @@ class BillController extends Controller
                     'next_due_date' => $nextDue?->toDateString() ?? $bill->next_due_date,
                 ]);
             }
+
+            $this->drawDownDebt($bill, $payAmount);
 
             return $payment;
         });
@@ -535,6 +565,48 @@ class BillController extends Controller
      * history correction: it must not drag the schedule backwards, so it updates
      * `last_paid_date` and nothing else.
      */
+    /**
+     * Take a payment off the outstanding debt, and retire the bill once it is
+     * cleared.
+     *
+     * A loan is not a subscription: it has an end. When the last instalment
+     * lands the schedule has done its job, so the bill is deactivated rather
+     * than rolled forward into a cycle that will never be owed.
+     */
+    private function drawDownDebt(Bill $bill, float $paidAmount): void
+    {
+        if (! $bill->tracksDebt() || $paidAmount <= 0) {
+            return;
+        }
+
+        $remaining = round(max(0.0, (float) $bill->debt_remaining - $paidAmount), 2);
+
+        $bill->update([
+            'debt_remaining' => $remaining,
+            'is_active'      => $remaining > 0 ? $bill->is_active : false,
+        ]);
+    }
+
+    /** Put an undone payment back onto the debt, and revive a retired bill. */
+    private function restoreDebt(Bill $bill, float $undoneAmount): void
+    {
+        if (! $bill->tracksDebt() || $undoneAmount <= 0) {
+            return;
+        }
+
+        $remaining = round((float) $bill->debt_remaining + $undoneAmount, 2);
+
+        if ($bill->debt_initial !== null) {
+            $remaining = min($remaining, (float) $bill->debt_initial);
+        }
+
+        $bill->update([
+            'debt_remaining' => $remaining,
+            // Undoing the final instalment means the loan is owed again.
+            'is_active'      => $remaining > 0 ? true : $bill->is_active,
+        ]);
+    }
+
     private function removePayment(Bill $bill, Payment $payment): void
     {
         DB::transaction(function () use ($bill, $payment) {
@@ -546,6 +618,10 @@ class BillController extends Controller
             $undoneAmount = (float) $payment->amount;
 
             $payment->delete();
+
+            // Whatever the payment settled, the money is owed again. Done here
+            // rather than per branch below: each of them returns early.
+            $this->restoreDebt($bill, $undoneAmount);
 
             // Whatever remains is the new "last paid" — null when none is left.
             $prevPayment = $bill->payments()->latest('paid_at')->first();
