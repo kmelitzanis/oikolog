@@ -29,23 +29,30 @@ ingredients straight into a list.
 - Recurring and one-off bills — weekly through yearly, with automatic next-due-date calculation
 - Full and **partial** payments, with per-payment history and one-click undo
 - Bills with a variable amount ("cost varies") — enter the real figure at payment time
+- **Debt tracking** for loans and credit cards: a bill carries the total still owed, each payment draws it
+  down, the last instalment is capped at whatever is left, and the bill retires itself once cleared
+- Accounts you define yourself, with transfers between them and balances derived from a ledger rather than
+  stored, so they cannot drift out of step with the history
 - Income sources with expected dates, and a month-to-date "received" view
 - Dashboard: net for the month, what needs attention now, six-month trend and spend by category
 - Month overview — the month as a countdown line, showing what is left to pay
 - Calendar with per-day status indicators (overdue / due soon / paid / upcoming)
 - Receipts and attachments on any bill
+- Optional mailbox scanning (configured under `/settings`) that reads provider invoices over IMAP and proposes an
+  amount for you to accept — read-only, and never writes a figure to a bill on its own
 
 **Household**
 
 - Family groups with an invite code, owner/member roles and ownership transfer
 - Shared bills visible to every member, with a recent-activity feed
-- Shopping lists with quantities, barcode lookup and a product catalogue
-- Recipes with ingredients, steps and timings
+- Shopping lists with quantities and a shared product catalogue
+- **Barcode scanning with the phone camera**, plus lookup against Open Food Facts for names and nutrition
+- Recipes with ingredients, steps and timings, importable from a URL
 - Weekly meal planner that can send a week's ingredients to a shopping list
 
 **Platform**
 
-- Installable PWA with offline fallback and a service worker
+- Installable PWA with offline fallback, a service worker and web push notifications
 - Greek and English throughout, with database-backed translation overrides you can edit in the UI
 - Two-factor authentication (TOTP) with QR enrolment
 - Role-based admin area for categories, providers, products and users
@@ -53,15 +60,19 @@ ingredients straight into a list.
 
 ## Tech stack
 
-| Layer    | Choice                                              |
-|----------|-----------------------------------------------------|
-| Backend  | Laravel 11, PHP 8.2+                                |
-| Frontend | Blade, Alpine.js, Tailwind CSS 4, Vite              |
-| Database | MySQL 8 (Docker default) or SQLite (local dev)      |
-| Auth     | Laravel Sanctum, `pragmarx/google2fa` for TOTP      |
-| Media    | `spatie/laravel-medialibrary`, `intervention/image` |
-| Calendar | FullCalendar                                        |
-| Testing  | Pest / PHPUnit                                      |
+| Layer    | Choice                                                    |
+|----------|-----------------------------------------------------------|
+| Backend  | Laravel 11, PHP 8.2+                                      |
+| Frontend | Blade, Alpine.js, Tailwind CSS 4, Vite                    |
+| Database | MySQL 8 (Docker default) or SQLite (local dev)            |
+| Auth     | Laravel Sanctum, `pragmarx/google2fa` for TOTP            |
+| Roles    | `spatie/laravel-permission`                               |
+| Media    | `spatie/laravel-medialibrary`, `intervention/image`       |
+| Push     | `minishlink/web-push` (VAPID)                             |
+| Mail     | `webklex/php-imap` for invoice scanning                   |
+| Barcodes | Native `BarcodeDetector`, ZXing fallback, Open Food Facts |
+| Calendar | FullCalendar                                              |
+| Testing  | Pest / PHPUnit                                            |
 
 ## Getting started
 
@@ -110,14 +121,21 @@ Either serve on the configured port, or add the one you use:
 SANCTUM_STATEFUL_DOMAINS=localhost:8000,127.0.0.1:8000
 ```
 
+### ⚠️ The camera needs HTTPS
+
+Browsers only hand out a camera to a secure context. Barcode scanning therefore works on `localhost` and over
+HTTPS, but **not** over plain HTTP on a LAN address — the button appears and the permission prompt never comes. If
+you run Oikolog on a NAS at `http://192.168.x.x:8000`, put it behind a reverse proxy with a certificate before
+expecting the scanner to work. Typing a barcode by hand works everywhere.
+
 ## Docker
 
 ```bash
 docker compose up -d
 ```
 
-Brings up `app`, `webserver` and a MySQL 8 database. Migrations run on boot by default; set `FORCE_MIGRATE=0` to
-skip them.
+Brings up `app`, `webserver` and `db` (MySQL 8). Migrations run on boot by default; set `FORCE_MIGRATE=0` to
+skip them. See [README.DOCKER.md](README.DOCKER.md) for NAS deployment.
 
 ## Development
 
@@ -129,11 +147,34 @@ php artisan test       # Pest + PHPUnit
 
 Useful commands:
 
-| Command                            | Purpose                                                                        |
-|------------------------------------|--------------------------------------------------------------------------------|
-| `php artisan make:user`            | Create a user (`--admin` for an owner account)                                 |
-| `php artisan admin:reset-password` | Reset the admin password                                                       |
+| Command                            | Purpose                                                                         |
+|------------------------------------|---------------------------------------------------------------------------------|
+| `php artisan make:user`            | Create a user (`--admin` for an owner account)                                  |
+| `php artisan admin:reset-password` | Reset the admin password                                                        |
 | `php artisan bills:realign`        | Snap drifted `next_due_date`s back onto their schedule (`--dry-run` to preview) |
+| `php artisan bills:scan-mail`      | Read configured mailboxes and queue amount suggestions                          |
+| `php artisan push:vapid`           | Generate the VAPID keypair for web push                                         |
+| `php artisan products:prune`       | Drop catalogue entries nothing references (`--dry-run` to preview)              |
+| `php artisan recipes:prune-images` | Delete recipe images abandoned by unfinished uploads                            |
+
+### Scheduled work
+
+Invoice scanning and the two pruning jobs are registered in `routes/console.php` and only run if Laravel's
+scheduler is running. Without this cron entry the app works fine — mailboxes simply go unscanned and orphaned
+files accumulate:
+
+```
+* * * * * cd /path/to/oikolog && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### Push notifications
+
+Web push needs a VAPID keypair. Generate one and put it in `.env` as `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and
+`VAPID_SUBJECT` (a `mailto:` address). Like the camera, push requires HTTPS.
+
+```bash
+php artisan push:vapid
+```
 
 ### Translations
 
@@ -150,13 +191,19 @@ The logo is the "beam stack": there is no separate icon mark, the wordmark *is* 
 redrawn as four ledger beams of unequal length. It lives in `resources/views/components/logo.blade.php`, sized in
 `em` so the mark tracks the wordmark at any size. App icons are generated from `public/icons/icon.svg`.
 
+The app shell disables pinch and double-tap zoom so it behaves like an installed app rather than a web page. That
+is a deliberate accessibility trade-off; if you would rather keep zoom, drop `user-scalable=no` from the viewport
+meta in `resources/views/layouts/` and remove `resources/js/no-zoom.js` from `resources/js/app.js`.
+
 ## Project layout
 
 ```
 app/Http/Controllers/Web/    Blade-rendered pages
 app/Http/Controllers/Api/    JSON endpoints used by the Alpine components
 app/Models/                  Eloquent models (Bill, Income, ShoppingList, Recipe, …)
+app/Services/                Ledger, invoice scanning, recipe import, product lookup
 app/Policies/                Authorisation rules
+app/Console/Commands/        Maintenance and scheduled tasks
 resources/views/             Blade templates and components
 resources/js/pages/          Per-page Alpine components
 ```
