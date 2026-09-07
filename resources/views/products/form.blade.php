@@ -68,9 +68,19 @@
 
                     <x-field :label="__('messages.barcode')" name="barcode" optional
                              :hint="__('messages.barcode_hint')">
-                        <x-input name="barcode" id="barcode" maxlength="50" inputmode="numeric"
-                                 :invalid="$errors->has('barcode')"
-                                 value="{{ old('barcode', $editing ? $product->barcode : '') }}" />
+                        {{-- Typing 13 digits off a packet is where they get
+                             mistyped, so the camera writes them instead. --}}
+                        {{-- `x-data` is not decoration: the rest of this form is
+                             plain HTML, and Alpine ignores directives outside a
+                             component, so without it the listener never runs. --}}
+                        <div class="flex gap-2" x-data
+                             @barcode-detected.window="$refs.barcode.value = $event.detail.code">
+                            <x-input name="barcode" id="barcode" maxlength="50" inputmode="numeric"
+                                     x-ref="barcode" class="flex-1"
+                                     :invalid="$errors->has('barcode')"
+                                     value="{{ old('barcode', $editing ? $product->barcode : '') }}" />
+                            <x-barcode-scanner />
+                        </div>
                     </x-field>
 
                     <x-field :label="__('messages.category')" name="category" optional>

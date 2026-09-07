@@ -85,6 +85,11 @@
                         class="shrink-0 w-10 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-500 hover:text-amber-600 rounded-xl flex items-center justify-center transition">
                     <span class="material-icons-round text-lg">qr_code_scanner</span>
                 </button>
+
+                {{-- The camera fills the same box the keyboard would: a scan
+                     drops the digits into `barcodeInput` and runs the lookup
+                     that typing them by hand would have run. --}}
+                <x-barcode-scanner />
             </div>
         </div>
 

@@ -339,11 +339,13 @@
                      @if(! $bill->cost_varies) @click="window.location='{{ route('bills.show', $bill) }}'" @endif>
                     @if($bill->cost_varies)
                         <x-editable-amount :bill="$bill" class="w-full" />
-                        <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
-                            {{ $bill->hasCurrentAmount()
-                                ? number_format($bill->monthlyEquivalent(), 2) . '/mo'
-                                : __('messages.amount_unknown') }}
-                        </div>
+                        @unless($bill->hasCurrentAmount() && $bill->isOneOff())
+                            <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
+                                {{ $bill->hasCurrentAmount()
+                                    ? number_format($bill->monthlyEquivalent(), 2) . '/mo'
+                                    : __('messages.amount_unknown') }}
+                            </div>
+                        @endunless
                     @else
                         {{-- On a part-paid bill this column shows what is still
                              owed, tinted amber, with the full amount beneath —
@@ -360,7 +362,7 @@
                                 {{-- On a loan, the total still owed says more
                                      than the monthly equivalent. --}}
                                 {{ __('messages.debt_left', ['amount' => number_format((float) $bill->debt_remaining, 2)]) }}
-                            @else
+                            @elseif(! $bill->isOneOff())
                                 {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
                             @endif
                         </div>

@@ -1,5 +1,7 @@
 import '../css/app.css';
 import './bootstrap';
+import './no-zoom';
+import './barcode-scanner';
 
 import Alpine from 'alpinejs';
 window.Alpine = Alpine;

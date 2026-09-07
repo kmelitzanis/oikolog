@@ -36,6 +36,14 @@ window.shoppingListApp = function () {
             this.list = listData;
             this.loadItems();
             this.loadProducts();
+
+            // A camera scan is the same event as typing the digits: it fills the
+            // field and runs the same lookup, so there is one code path for both
+            // and the number stays visible for correcting a bad read.
+            window.addEventListener('barcode-detected', (e) => {
+                this.barcodeInput = e.detail.code;
+                this.scanBarcode();
+            });
         },
 
         async loadItems() {

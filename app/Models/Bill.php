@@ -356,6 +356,18 @@ class Bill extends Model
      * that date is still ahead of us — once it comes due again the bill is owed
      * anew, however recently it was last paid.
      */
+    /**
+     * Whether this bill happens exactly once rather than on a schedule.
+     *
+     * A one-off has no rhythm to average out, so anything phrased "per month"
+     * — the monthly equivalent above all — is meaningless for it and should be
+     * left off rather than printed as a figure that reads like a subscription.
+     */
+    public function isOneOff(): bool
+    {
+        return $this->frequency === 'once';
+    }
+
     public function isCurrentCyclePaid(): bool
     {
         if (! $this->last_paid_date || $this->hasPartialPayment()) {

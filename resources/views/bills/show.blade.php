@@ -183,14 +183,19 @@
 
         {{-- ── At a glance ─────────────────────────────────────────────── --}}
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-            <x-stat-tile tone="brand"
-                         :label="__('messages.monthly_equivalent')"
-                         :value="$bill->currency_code . ' ' . number_format($bill->monthlyEquivalent(), 2)" />
+            {{-- A one-off has no monthly rate; quoting one would read as a
+                 recurring charge that will never come round again. Dropping the
+                 tile leaves two, which sit side by side on their own. --}}
+            @unless($bill->isOneOff())
+                <x-stat-tile tone="brand"
+                             :label="__('messages.monthly_equivalent')"
+                             :value="$bill->currency_code . ' ' . number_format($bill->monthlyEquivalent(), 2)" />
+            @endunless
             <x-stat-tile :tone="$lastPayment ? 'success' : 'neutral'"
                          :label="__('messages.last_paid')"
                          :value="$lastPayment?->paid_at->translatedFormat('j M Y') ?? __('messages.never_paid')"
                          :hint="$lastPayment?->paidBy?->name" />
-            <x-stat-tile class="col-span-2 sm:col-span-1"
+            <x-stat-tile class="{{ $bill->isOneOff() ? '' : 'col-span-2' }} sm:col-span-1"
                          :label="__('messages.payment_history')"
                          :value="(string) $payments->count()" />
         </div>
