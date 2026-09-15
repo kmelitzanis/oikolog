@@ -99,6 +99,32 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{account}/movements/{transaction}', 'destroyTransaction')->name('movements.destroy');
         });
 
+    // Vehicles — cars and bikes, which cost money on two clocks at once: the
+    // calendar (insurance, road tax) and the odometer (service, tyres).
+    Route::controller(App\Http\Controllers\Web\VehicleController::class)
+        ->prefix('vehicles')
+        ->name('vehicles.')
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{vehicle}', 'show')->name('show');
+            Route::get('/{vehicle}/edit', 'edit')->name('edit');
+            Route::put('/{vehicle}', 'update')->name('update');
+            Route::delete('/{vehicle}', 'destroy')->name('destroy');
+            Route::post('/{vehicle}/odometer', 'updateOdometer')->name('odometer');
+
+            Route::post('/{vehicle}/reminders', 'storeReminder')->name('reminders.store');
+            Route::post('/{vehicle}/reminders/{reminder}/complete', 'completeReminder')->name('reminders.complete');
+            Route::delete('/{vehicle}/reminders/{reminder}', 'destroyReminder')->name('reminders.destroy');
+
+            Route::post('/{vehicle}/services', 'storeService')->name('services.store');
+            Route::delete('/{vehicle}/services/{service}', 'destroyService')->name('services.destroy');
+
+            Route::post('/{vehicle}/expenses', 'storeExpense')->name('expenses.store');
+            Route::delete('/{vehicle}/expenses/{expense}', 'destroyExpense')->name('expenses.destroy');
+        });
+
     // Income
     Route::controller(IncomeController::class)
         ->prefix('income')
