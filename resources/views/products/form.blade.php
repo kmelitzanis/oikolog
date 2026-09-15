@@ -178,7 +178,11 @@
                                 <label for="nutrition_{{ $key }}" class="block text-xs text-gray-500 dark:text-slate-400 mb-1 truncate">
                                     {{ __('messages.nutrient_' . $key) }} ({{ $suffix }})
                                 </label>
-                                <x-input type="number" step="0.1" min="0"
+                                {{-- `any`, not a fixed step: Open Food Facts hands
+                                     back figures like 0.13 g of salt, and a step
+                                     of 0.1 makes the browser reject its own
+                                     imported value as invalid. --}}
+                                <x-input type="number" step="any" min="0"
                                          name="nutrition[{{ $key }}]" id="nutrition_{{ $key }}"
                                          class="!px-3 !py-2"
                                          value="{{ $nutrition[$key] ?? '' }}" />

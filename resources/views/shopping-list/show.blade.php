@@ -257,7 +257,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">{{ __('messages.quantity') }}</label>
-                        <input type="number" step="0.1" min="0.1" x-model="itemForm.quantity"
+                        <input type="number" step="any" min="0.01" x-model="itemForm.quantity"
                                class="w-full bg-gray-50 dark:bg-slate-700 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500">
                     </div>
                     <div>

@@ -52,6 +52,19 @@ class BillController extends Controller
 
         $bills = $query->paginate(50);
 
+        // Group the page by urgency, keeping the due-date order inside each
+        // group. Sorting here rather than in SQL because `status()` is derived
+        // from partial payments and today's date, neither of which is a column.
+        $bills->setCollection(
+            $bills->getCollection()
+                ->sortBy([
+                    fn(Bill $a, Bill $b) => $a->statusRank() <=> $b->statusRank(),
+                    fn(Bill $a, Bill $b) => ($a->next_due_date?->timestamp ?? PHP_INT_MAX)
+                        <=> ($b->next_due_date?->timestamp ?? PHP_INT_MAX),
+                ])
+                ->values()
+        );
+
         // Counts for the filter pills — computed off the unfiltered set so the
         // pills keep showing the full picture while a filter is applied.
         $all = Bill::forUser($user)->get(['is_active', 'is_shared', 'next_due_date']);

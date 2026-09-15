@@ -29,6 +29,16 @@ window.pushToggle = function () {
         },
 
         async init() {
+            // A page served over plain http has no service worker and no
+            // PushManager at all, so `supported` is false for a reason that has
+            // nothing to do with the browser. Saying "unsupported" there sends
+            // people hunting through Safari's settings for a switch that was
+            // never the problem.
+            if (!window.isSecureContext) {
+                this.state = 'insecure';
+                return;
+            }
+
             if (!this.supported) {
                 this.state = 'unavailable';
                 return;
@@ -50,9 +60,26 @@ window.pushToggle = function () {
                 return;
             }
 
-            const reg = await navigator.serviceWorker.ready;
+            const reg = await this.registration();
+            if (!reg) {
+                this.state = 'unavailable';
+                return;
+            }
+
             const sub = await reg.pushManager.getSubscription();
             this.state = sub ? 'on' : 'off';
+        },
+
+        /**
+         * `serviceWorker.ready` never rejects: with no worker registered it
+         * simply never settles, which left the toggle disabled on 'unknown'
+         * with nothing on screen to explain why. Time it out instead.
+         */
+        async registration() {
+            return Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise((resolve) => setTimeout(() => resolve(null), 5000)),
+            ]);
         },
 
         async toggle() {
@@ -72,7 +99,9 @@ window.pushToggle = function () {
                 return;
             }
 
-            const reg = await navigator.serviceWorker.ready;
+            const reg = await this.registration();
+            if (!reg) { this.state = 'unavailable'; return; }
+
             const sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(this.publicKey),
@@ -89,7 +118,12 @@ window.pushToggle = function () {
                 body: JSON.stringify({
                     endpoint: json.endpoint,
                     keys: json.keys,
-                    content_encoding: (PushManager.supportedContentEncodings || ['aesgcm'])[0],
+                    // RFC 8291. Safari does not expose
+                    // `supportedContentEncodings`, and the old fallback of
+                    // 'aesgcm' — a superseded draft Safari never implemented —
+                    // had the server encrypt in a scheme the browser could not
+                    // read, so the notification silently never arrived.
+                    content_encoding: (PushManager.supportedContentEncodings || ['aes128gcm'])[0],
                 }),
             });
 
@@ -104,8 +138,8 @@ window.pushToggle = function () {
         },
 
         async disable() {
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.getSubscription();
+            const reg = await this.registration();
+            const sub = reg ? await reg.pushManager.getSubscription() : null;
 
             if (sub) {
                 await fetch('/push/subscribe', {

@@ -37,7 +37,7 @@ class PushSubscriptionController extends Controller
                 'endpoint'         => $data['endpoint'],
                 'public_key'       => $data['keys']['p256dh'],
                 'auth_token'       => $data['keys']['auth'],
-                'content_encoding' => $data['content_encoding'] ?? 'aesgcm',
+                'content_encoding' => $data['content_encoding'] ?? 'aes128gcm',
                 'user_agent'       => substr((string) $request->userAgent(), 0, 255),
             ],
         );

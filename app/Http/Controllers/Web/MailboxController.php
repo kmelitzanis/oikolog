@@ -58,7 +58,9 @@ class MailboxController extends Controller
         try {
             $scanner->openFolder($mailbox);
         } catch (\Throwable $e) {
-            return back()->withErrors(['mailbox' => $e->getMessage()]);
+            return back()->withErrors([
+                'mailbox' => InvoiceMailScanner::explainError($e->getMessage()),
+            ]);
         }
 
         return back()->with('success', __('messages.mailbox_ok'));

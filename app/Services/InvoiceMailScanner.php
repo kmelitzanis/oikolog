@@ -119,6 +119,33 @@ class InvoiceMailScanner
         return $result;
     }
 
+    /**
+     * Turn a provider's refusal into something the user can act on.
+     *
+     * Microsoft switched Basic Authentication off for Outlook.com and Exchange
+     * Online, and Google did the same for plain passwords: both now answer a
+     * correct username and password with a flat refusal. The raw IMAP line
+     * ("NO Basic authentication is disabled") reads like a wrong password, so
+     * people retype credentials that were never the problem.
+     */
+    public static function explainError(string $message): string
+    {
+        $m = strtolower($message);
+
+        if (str_contains($m, 'basic authentication is disabled')
+            || str_contains($m, 'authenticate failed')
+            || str_contains($m, 'basicauth')) {
+            return __('messages.mailbox_basic_auth_disabled');
+        }
+
+        if (str_contains($m, 'application-specific password')
+            || str_contains($m, 'app password')) {
+            return __('messages.mailbox_needs_app_password');
+        }
+
+        return $message;
+    }
+
     /** Opens the configured folder, throwing on bad credentials or host. */
     public function openFolder(Mailbox $mailbox)
     {

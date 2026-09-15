@@ -218,7 +218,32 @@
             <div class="text-right">{{ __('messages.amount') }}</div>
             <div></div>
         </div>
+        {{-- Tracks which group the loop is in, so a heading is emitted only
+             when the status changes. The collection arrives already sorted by
+             urgency from the controller. --}}
+        @php $currentGroup = null; @endphp
         @forelse($bills as $bill)
+            @if($bill->status() !== $currentGroup)
+                @php
+                    $currentGroup = $bill->status();
+                    $groupCount = $bills->filter(fn($b) => $b->status() === $currentGroup)->count();
+                    $groupDot = match ($currentGroup) {
+                        'overdue' => 'bg-red-500',
+                        'soon'    => 'bg-orange-500',
+                        'partial' => 'bg-amber-500',
+                        'paid'    => 'bg-emerald-500',
+                        'upcoming'=> 'bg-blue-400',
+                        default   => 'bg-gray-300 dark:bg-slate-600',
+                    };
+                @endphp
+                <div class="flex items-center gap-2 px-5 py-2 bg-gray-50/80 dark:bg-slate-900/40
+                            border-y border-gray-100 dark:border-slate-800
+                            text-[0.66rem] font-bold uppercase tracking-[0.08em] text-gray-500 dark:text-slate-400">
+                    <span class="w-1.5 h-1.5 rounded-full {{ $groupDot }}"></span>
+                    {{ __('messages.group_' . $currentGroup) }}
+                    <span class="text-gray-400 dark:text-slate-600 font-semibold">{{ $groupCount }}</span>
+                </div>
+            @endif
             @php
                 // One source of truth — see Bill::status(). The row no longer
                 // recomputes "is it paid?" on its own, which is what let the

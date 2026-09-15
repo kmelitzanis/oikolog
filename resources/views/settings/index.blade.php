@@ -166,9 +166,14 @@
                             <p x-show="state === 'unavailable'" x-cloak class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">
                                 {{ __('messages.push_unavailable') }}
                             </p>
+                            {{-- The commonest reason this toggle does nothing is
+                                 plain http, which no browser allows push on. --}}
+                            <p x-show="state === 'insecure'" x-cloak class="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+                                {{ __('messages.push_needs_https') }}
+                            </p>
                         </div>
                         <button type="button" @click="toggle()"
-                                :disabled="busy || blocked || state === 'unavailable' || state === 'unknown'"
+                                :disabled="busy || blocked || state === 'unavailable' || state === 'insecure' || state === 'unknown'"
                                 :aria-pressed="enabled ? 'true' : 'false'"
                                 class="relative shrink-0 w-11 h-6 rounded-full transition disabled:opacity-40 disabled:cursor-not-allowed"
                                 :class="enabled ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-slate-600'">

@@ -322,6 +322,23 @@ class Bill extends Model
      *
      * Returns one of: paid · partial · overdue · soon · upcoming · inactive.
      */
+    /**
+     * The order the statuses are worth a person's attention in.
+     *
+     * Money owed and late comes first, settled work last. Used to group the
+     * list, so the ranking lives next to `status()` rather than being restated
+     * by every caller that wants to sort by urgency.
+     */
+    public const STATUS_ORDER = ['overdue', 'partial', 'soon', 'upcoming', 'paid', 'inactive'];
+
+    /** Position of this bill's status in STATUS_ORDER; unknown states sort last. */
+    public function statusRank(): int
+    {
+        $i = array_search($this->status(), self::STATUS_ORDER, true);
+
+        return $i === false ? count(self::STATUS_ORDER) : $i;
+    }
+
     public function status(): string
     {
         if (! $this->is_active) {
