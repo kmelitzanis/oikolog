@@ -15,3 +15,12 @@ storage/*.key
 bootstrap/cache/*.php
 
 /design-system
+
+# Local build output and vulnerability reports are not application inputs.
+/public/build
+/public/hot
+scout-report*.md
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*

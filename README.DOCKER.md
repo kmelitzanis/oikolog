@@ -21,7 +21,7 @@ docker compose pull && docker compose up -d
 
 To pin a release instead of `latest`, change the `image:` tag in `docker-compose.yml` (e.g.
 `kostasmel/oikolog-app:0.0.3`). To try local changes, build the image yourself:
-`docker build -t kostasmel/oikolog-app:latest .`
+`docker build --pull --no-cache -t kostasmel/oikolog-app:latest .`
 
 Notes:
 
@@ -65,3 +65,23 @@ Troubleshooting:
   user. The entrypoint sets these to `www-data:www-data`.
 - For production, set `APP_ENV=production`, a real `APP_KEY`, and strong database passwords. Assets are already built
   into the image.
+
+Security rebuilds:
+
+- The multi-stage Dockerfile builds assets and installs Composer dependencies separately.
+  Node, pnpm, Composer and extension compilation tools are excluded from the runtime image.
+- PHP stays on the 8.3 Debian trixie line. OS packages are upgraded during each fresh build;
+  CI uses `pull: true` and `no-cache: true` so cached layers do not retain old security updates.
+- Composer resolves dependencies for PHP 8.3 even when a developer uses a newer local PHP.
+- After dependency changes, run `composer audit --locked`, `pnpm audit`, `php artisan test`,
+  and `pnpm run build`. Build and scan the actual runtime image as well:
+
+```bash
+docker build --pull --no-cache -t oikolog:security-check .
+docker scout cves local://oikolog:security-check
+docker scout cves --only-fixed --exit-code local://oikolog:security-check
+```
+
+A clean dependency audit does not imply a clean OS scan. Review remaining distribution
+advisories separately, including entries with no vendor fix; do not suppress them simply
+to make the scan green. Rebuild and deploy the new image to apply fixes to a running service.
