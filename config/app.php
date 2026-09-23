@@ -15,6 +15,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // Release version, baked into the Docker image by CI from the git tag.
+    'version' => env('APP_VERSION', 'dev'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

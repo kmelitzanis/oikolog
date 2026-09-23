@@ -1,5 +1,9 @@
 FROM php:8.3-fpm
 
+# Set by CI from the release tag; readable at runtime as env("APP_VERSION").
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION}
+
 # System dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -13,7 +17,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 
 # Node.js (for Vite/Mix)
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs
+    && apt-get install -y nodejs \
+    && corepack enable   # provides the pnpm version pinned in package.json
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -29,7 +34,7 @@ RUN sed -i 's|^listen = .*|listen = 0.0.0.0:9000|' /usr/local/etc/php-fpm.d/www.
 RUN composer install --no-dev --optimize-autoloader
 
 # Build assets (if using Vite/Mix)
-RUN npm ci && npm run build
+RUN CI=true pnpm install --frozen-lockfile && pnpm run build
 
 # Keep a pristine copy of the built public/ OUTSIDE the mount point. Compose
 # mounts a named volume over /var/www/html/public, which otherwise shadows (and

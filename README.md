@@ -80,7 +80,7 @@ ingredients straight into a list.
 git clone https://github.com/kmelitzanis/oikolog.git
 cd oikolog
 composer install
-npm install
+pnpm install
 cp .env.example .env
 php artisan key:generate
 ```
@@ -105,7 +105,7 @@ Create an account and start the app:
 
 ```bash
 php artisan make:user --admin
-npm run build
+pnpm run build
 php artisan serve
 ```
 
@@ -140,8 +140,8 @@ skip them. See [README.DOCKER.md](README.DOCKER.md) for NAS deployment.
 ## Development
 
 ```bash
-npm run dev            # Vite dev server with HMR
-npm run build          # production assets
+pnpm run dev           # Vite dev server with HMR
+pnpm run build         # production assets
 php artisan test       # Pest + PHPUnit
 ```
 

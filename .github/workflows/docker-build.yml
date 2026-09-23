@@ -3,6 +3,16 @@ name: Build and push Docker image (multi-arch)
 on:
   push:
     branches: [ "main", "master" ]
+  # Manual rebuild from the Actions tab. With a version (e.g. 1.0.3) it rebuilds
+  # that release without tagging anything new; left empty it bumps as usual.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to rebuild (e.g. 1.0.3) — empty = bump patch"
+        required: false
+
+permissions:
+  contents: write   # to push the version tag
 
 jobs:
   build-and-push:
@@ -11,6 +21,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needs the tags to find the last version
+
+      # Every push to master is a release: take the highest vX.Y.Z tag, bump
+      # the patch and tag this commit. Bump minor/major by pushing a tag by hand
+      # (e.g. v1.1.0); the next build continues from it.
+      - name: Bump version
+        id: version
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          if [ -n "$REQUESTED" ]; then
+            v="${REQUESTED#v}"
+            git rev-parse -q --verify "refs/tags/v$v" >/dev/null \
+              || { echo "::error::Tag v$v does not exist"; exit 1; }
+            git checkout -q "v$v"
+            echo "version=$v" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          last=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          last=${last:-v0.0.0}
+          IFS=. read -r major minor patch <<< "${last#v}"
+          next="$major.$minor.$((patch + 1))"
+          git tag "v$next"
+          git push origin "v$next"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -30,7 +66,10 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
           tags: |
-            kostasmel/oikolog-app:latest
-            kostasmel/oikolog-app:${{ github.sha }}
+            kostasmel/oikolog-app:${{ steps.version.outputs.version }}
+            ${{ inputs.version == '' && 'kostasmel/oikolog-app:latest' || '' }}
+            ${{ inputs.version == '' && format('kostasmel/oikolog-app:{0}', github.sha) || '' }}
 

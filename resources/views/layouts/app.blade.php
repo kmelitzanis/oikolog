@@ -130,6 +130,9 @@
                 </div>
                 <span class="material-icons-round text-gray-400 dark:text-slate-500 text-lg">expand_more</span>
             </div>
+            <div class="mt-2 text-center text-[0.65rem] text-gray-300 dark:text-slate-600 select-all">
+                v{{ config('app.version') }}
+            </div>
             {{-- User dropdown --}}
             <div x-show="userMenuOpen" @click.outside="userMenuOpen=false" x-cloak
                  x-transition:enter="transition ease-out duration-100"
