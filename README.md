@@ -49,6 +49,7 @@ ingredients straight into a list.
 - **Barcode scanning with the phone camera**, plus lookup against Open Food Facts for names and nutrition
 - Recipes with ingredients, steps and timings, importable from a URL
 - Weekly meal planner that can send a week's ingredients to a shopping list
+- Vehicles with service reminders (by date or mileage), running costs and maintenance history
 
 **Platform**
 
@@ -75,6 +76,9 @@ ingredients straight into a list.
 | Testing  | Pest / PHPUnit                                            |
 
 ## Getting started
+
+Requires PHP 8.2+, Composer, and Node 22.12+ with pnpm (`corepack enable` provides the version pinned in
+`package.json`).
 
 ```bash
 git clone https://github.com/kmelitzanis/oikolog.git
@@ -136,6 +140,17 @@ docker compose up -d
 
 Brings up `app`, `webserver` and `db` (MySQL 8). Migrations run on boot by default; set `FORCE_MIGRATE=0` to
 skip them. See [README.DOCKER.md](README.DOCKER.md) for NAS deployment.
+
+## Releases
+
+Every push to `master` builds the Docker image in GitHub Actions and tags it with the next patch version: the
+workflow takes the highest `vX.Y.Z` git tag, bumps the patch, pushes the new tag and publishes
+`kostasmel/oikolog-app:<version>` alongside `latest`. To bump the minor or major version, push a tag by hand
+(e.g. `git tag v1.1.0 && git push origin v1.1.0`); the next build continues from it.
+
+An existing version can be rebuilt from the Actions tab (**Run workflow**, enter the version). That rebuild creates
+no new tag and does not move `latest`. The running version is shown under the user card in the sidebar
+(`config('app.version')`, `dev` outside Docker).
 
 ## Development
 

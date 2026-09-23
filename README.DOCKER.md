@@ -1,6 +1,7 @@
-# Running Oikolog in Docker (development)
+# Running Oikolog in Docker
 
-This repository includes a simple Docker setup for local development.
+`docker-compose.yml` runs the published image `kostasmel/oikolog-app` (built by CI, see Releases in the README)
+behind nginx, with MySQL 8.
 
 Prerequisites:
 
@@ -10,24 +11,28 @@ Quick start:
 
 1. Copy your `.env` from `.env.example` and set values. For local testing the compose file provides defaults.
 
-2. Build and start the containers:
+2. Pull and start the containers:
 
 ```bash
-docker compose up --build -d
+docker compose pull && docker compose up -d
 ```
 
-3. The web app will be available at: http://localhost:8000
+3. The web app will be available at http://localhost:8000 (change with `NGINX_PORT`).
+
+To pin a release instead of `latest`, change the `image:` tag in `docker-compose.yml` (e.g.
+`kostasmel/oikolog-app:0.0.3`). To try local changes, build the image yourself:
+`docker build -t kostasmel/oikolog-app:latest .`
 
 Notes:
 
-- The `app` service uses PHP-FPM and runs an entrypoint that will run `composer install` if `vendor` doesn't exist and (
-  optionally) run migrations when `APP_ENV=local` or `FORCE_MIGRATE=1`.
-- MySQL is configured with root/secret and database `oikolog` in `docker-compose.yml`. Adjust `.env` and
-  `docker-compose.yml` to match your preferred credentials.
+- The `app` service runs PHP-FPM. Its entrypoint waits for the database, runs migrations when `FORCE_MIGRATE=1`
+  (the default) and, when `APP_ENV=production`, caches config, routes and views.
+- MySQL defaults: database `oikolog`, user `oikolog` / `secret`, root password `rootsecret`. Override them with
+  `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` and `DB_ROOT_PASSWORD` in the compose `.env`.
 - The application code is **baked into the image**, not mounted. Only `storage`, `bootstrap/cache` and `public` are
   named volumes. Editing files on the host does nothing until you rebuild the image — and there is no Laravel `.env`
-  inside the container: configuration comes from the `environment:` block, which the entrypoint freezes with
-  `config:cache` on every start.
+  inside the container: configuration comes from the `environment:` block (frozen with `config:cache` on start when
+  `APP_ENV=production`).
 
 Configuration:
 
@@ -58,4 +63,5 @@ Troubleshooting:
 
 - If you hit permission issues, ensure the `storage` and `bootstrap/cache` directories are writable by the container
   user. The entrypoint sets these to `www-data:www-data`.
-- For production use you'll want to build assets, run migrations in a safe way, and configure a proper secret APP_KEY.
+- For production, set `APP_ENV=production`, a real `APP_KEY`, and strong database passwords. Assets are already built
+  into the image.
