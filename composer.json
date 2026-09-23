@@ -7,12 +7,12 @@
         "php": "^8.2",
         "bacon/bacon-qr-code": "^3.1",
         "intervention/image": "^3.11",
-        "laravel/framework": "^11.0",
+        "laravel/framework": "^12.61.1",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "minishlink/web-push": "^11.0",
         "pragmarx/google2fa-laravel": "^3.0",
-        "spatie/laravel-medialibrary": "^11.0",
+        "spatie/laravel-medialibrary": "^11.23.0",
         "spatie/laravel-permission": "^6.7",
         "webklex/php-imap": "^6.2"
     },
@@ -66,6 +66,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.3.0"
         }
     },
     "minimum-stability": "stable",
