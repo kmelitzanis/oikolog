@@ -203,7 +203,7 @@
                                     $accSymbol = ['EUR'=>'€','USD'=>'$','GBP'=>'£'][$acc->currency_code] ?? $acc->currency_code;
                                 @endphp
                                 <option value="{{ $acc->id }}">
-                                    {{ $acc->name }} · {{ $accSymbol }}{{ number_format($acc->balance(), 2) }}
+                                    {{ $acc->name }} · {{ $accSymbol }}{{ number_format($acc->available(), 2) }}
                                 </option>
                             @endforeach
                         </select>

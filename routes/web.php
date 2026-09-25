@@ -95,6 +95,7 @@ Route::middleware('auth')->group(function () {
             Route::put('/{account}', 'update')->name('update');
             Route::delete('/{account}', 'destroy')->name('destroy');
             Route::post('/{account}/transfer', 'transfer')->name('transfer');
+            Route::post('/{account}/settle-cycle', 'settleCycle')->name('settle-cycle');
             Route::post('/{account}/movements', 'storeTransaction')->name('movements.store');
             Route::delete('/{account}/movements/{transaction}', 'destroyTransaction')->name('movements.destroy');
         });

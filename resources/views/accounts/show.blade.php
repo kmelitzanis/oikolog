@@ -36,14 +36,36 @@
         <div class="rounded-2xl p-6 text-white mb-4"
              style="background: linear-gradient(135deg, {{ $account->color_hex }}, {{ $account->color_hex }}bb)">
             <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                    <div class="text-sm/none opacity-80 mb-2">{{ __('messages.balance') }}</div>
-                    <div class="text-4xl font-extrabold tracking-tight">{{ $symbol }}{{ number_format($balance, 2) }}</div>
-                    <div class="text-sm opacity-90 mt-2">
-                        +{{ $symbol }}{{ number_format($movements['in'], 2) }}
-                        · −{{ $symbol }}{{ number_format($movements['out'], 2) }}
-                        · {{ __('messages.this_month') }}
-                    </div>
+                <div class="min-w-0 flex-1">
+                    @if($cycle)
+                        @php $pct = $cycle['available'] > 0 ? min(100, round($cycle['spent'] / $cycle['available'] * 100)) : 100; @endphp
+                        <div class="text-sm/none opacity-80 mb-2">{{ __('messages.cycle_left') }}</div>
+                        <div class="text-4xl font-extrabold tracking-tight">{{ $symbol }}{{ number_format($cycle['left'], 2) }}</div>
+                        @if($cycle['over'] > 0)
+                            <div class="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-lg bg-red-600/90 text-xs font-bold">
+                                <span class="material-icons-round" style="font-size:14px;">warning</span>
+                                {{ __('messages.cycle_over', ['amount' => $symbol . number_format($cycle['over'], 2)]) }}
+                            </div>
+                        @endif
+                        <div class="mt-3 h-2 rounded-full bg-white/25 overflow-hidden max-w-sm">
+                            <div class="h-full rounded-full bg-white" style="width: {{ $pct }}%"></div>
+                        </div>
+                        <div class="text-sm opacity-90 mt-2">
+                            {{ __('messages.cycle_spent_of', ['spent' => $symbol . number_format($cycle['spent'], 2), 'total' => $symbol . number_format($cycle['available'], 2)]) }}
+                        </div>
+                        <div class="text-xs opacity-80 mt-1">
+                            {{ $cycle['start']->translatedFormat('j M') }} – {{ $cycle['end']->translatedFormat('j M') }}
+                            · {{ __('messages.cycle_resets', ['date' => $cycle['end']->copy()->addSecond()->translatedFormat('j M')]) }}
+                        </div>
+                    @else
+                        <div class="text-sm/none opacity-80 mb-2">{{ __('messages.balance') }}</div>
+                        <div class="text-4xl font-extrabold tracking-tight">{{ $symbol }}{{ number_format($balance, 2) }}</div>
+                        <div class="text-sm opacity-90 mt-2">
+                            +{{ $symbol }}{{ number_format($movements['in'], 2) }}
+                            · −{{ $symbol }}{{ number_format($movements['out'], 2) }}
+                            · {{ __('messages.this_month') }}
+                        </div>
+                    @endif
                     @if($account->is_shared)
                         <div class="text-xs opacity-80 mt-2 flex items-center gap-1">
                             <span class="material-icons-round" style="font-size:14px;">group</span>
@@ -56,6 +78,56 @@
                 </div>
             </div>
         </div>
+
+        {{-- The last cycle closed with money left: ask once what to do
+             with it. Nothing moves unless the user says so. --}}
+        @if($leftover)
+            <div class="rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 p-5 mb-5">
+                <div class="flex items-start gap-3">
+                    <span class="material-icons-round text-emerald-600 dark:text-emerald-400">savings</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-bold text-gray-900 dark:text-white">
+                            {{ __('messages.leftover_title', [
+                                'period' => $leftover['start']->translatedFormat('j M') . ' – ' . $leftover['end']->translatedFormat('j M'),
+                                'amount' => $symbol . number_format($leftover['left'], 2),
+                            ]) }}
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{{ __('messages.leftover_hint') }}</div>
+
+                        @if($targets->count() > 0)
+                            <form method="POST" action="{{ route('accounts.settle-cycle', $account) }}"
+                                  class="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_160px_auto] gap-3 items-end">
+                                @csrf
+                                <x-field :label="__('messages.transfer_to')" name="to_account_id">
+                                    <x-input as="select" name="to_account_id" required>
+                                        {{-- Savings first: that is where leftovers usually go. --}}
+                                        @foreach($targets->sortBy(fn($t) => $t->isBudget()) as $t)
+                                            <option value="{{ $t->id }}">{{ $t->name }}</option>
+                                        @endforeach
+                                    </x-input>
+                                </x-field>
+                                <x-field :label="__('messages.amount')" name="amount">
+                                    <x-input name="amount" type="number" step="0.01" min="0.01" max="{{ $leftover['left'] }}"
+                                             required :value="number_format($leftover['left'], 2, '.', '')" />
+                                </x-field>
+                                <button type="submit"
+                                        class="h-11 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold flex items-center justify-center gap-2 transition">
+                                    <span class="material-icons-round text-lg">savings</span>{{ __('messages.leftover_move') }}
+                                </button>
+                            </form>
+                        @endif
+
+                        <form method="POST" action="{{ route('accounts.settle-cycle', $account) }}" class="mt-2">
+                            @csrf
+                            <input type="hidden" name="action" value="keep">
+                            <button type="submit" class="text-xs font-semibold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 underline">
+                                {{ __('messages.leftover_keep') }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         {{-- Actions --}}
         <div class="flex flex-wrap gap-2.5 mb-5">

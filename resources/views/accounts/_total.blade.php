@@ -27,8 +27,19 @@
         </div>
 
         <div class="text-[0.72rem] text-gray-500 dark:text-slate-400 mt-1">
-            {{ __('messages.accounts_count', ['count' => $stats['count']]) }}
+            {{ __('messages.accounts_count', ['count' => $stats['count'] - $stats['budget_count']]) }}
         </div>
+
+        {{-- Envelopes are allowances, not savings, so they are kept out of
+             the total above and summed on their own line. --}}
+        @if($stats['budget_count'] > 0)
+            <div class="flex items-center gap-1.5 text-[0.76rem] text-gray-600 dark:text-slate-300 mt-2">
+                <span class="material-icons-round text-amber-500" style="font-size:15px;">wallet</span>
+                {{ __('messages.budget_left_line') }}:
+                <span class="font-bold tabular-nums">{{ $symbol }}{{ number_format($stats['budget_left'], 2) }}</span>
+                <span class="text-gray-400 dark:text-slate-500 tabular-nums">/ {{ $symbol }}{{ number_format($stats['budget_total'], 2) }}</span>
+            </div>
+        @endif
 
         <div class="grid grid-cols-2 gap-3 mt-[18px] pt-3.5 border-t border-emerald-500/20">
             <div>

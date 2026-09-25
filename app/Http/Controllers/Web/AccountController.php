@@ -62,6 +62,8 @@ class AccountController extends Controller
         return view('accounts.show', [
             'account' => $account,
             'balance' => $account->balance(),
+            'cycle' => $account->isBudget() ? $account->cycleSummary() : null,
+            'leftover' => $account->pendingLeftover(),
             'transactions' => $transactions,
             'targets' => $targets,
             'movements' => $movements,
@@ -132,6 +134,49 @@ class AccountController extends Controller
         return back()->with('success', __('messages.transfer_recorded'));
     }
 
+    /**
+     * Deal with what the last cycle left over: move some or all of it to
+     * another account, or leave it. Either way the question is not asked
+     * again for that cycle.
+     *
+     * The transfer is dated on the old cycle's last second so it counts
+     * against that cycle — it is its leftover — and leaves the new cycle's
+     * allowance untouched.
+     */
+    public function settleCycle(Request $request, Account $account)
+    {
+        $this->authorizeAccess($account);
+
+        $leftover = $account->pendingLeftover();
+        abort_unless($leftover, 422, __('messages.no_leftover_to_settle'));
+
+        if ($request->input('action') === 'keep') {
+            $account->update(['cycle_settled_until' => $leftover['end']]);
+
+            return back()->with('success', __('messages.leftover_left'));
+        }
+
+        $data = $request->validate([
+            'to_account_id' => ['required', 'exists:accounts,id'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:' . $leftover['left']],
+        ]);
+
+        $target = Account::forUser($request->user())->findOrFail($data['to_account_id']);
+        abort_if($target->id === $account->id, 422, 'Cannot transfer to the same account.');
+
+        $this->ledger->transfer(
+            $account,
+            $target,
+            (float) $data['amount'],
+            $leftover['end'],
+            $request->user()->id,
+            __('messages.leftover_transfer_note', ['period' => $leftover['start']->translatedFormat('j M') . ' – ' . $leftover['end']->translatedFormat('j M')]),
+        );
+        $account->update(['cycle_settled_until' => $leftover['end']]);
+
+        return back()->with('success', __('messages.transfer_recorded'));
+    }
+
     /** A manual movement — cash in hand, an interest credit, a correction. */
     public function storeTransaction(Request $request, Account $account)
     {
@@ -183,6 +228,9 @@ class AccountController extends Controller
             'icon' => ['nullable', 'string', 'max:40'],
             'color_hex' => ['nullable', 'string', 'max:7'],
             'opening_balance' => ['nullable', 'numeric'],
+            'kind' => ['nullable', 'in:standard,budget'],
+            'cycle_amount' => ['nullable', 'required_if:kind,budget', 'numeric', 'min:0', 'max:99999999'],
+            'cycle_day' => ['nullable', 'required_if:kind,budget', 'integer', 'min:1', 'max:31'],
             'is_shared' => ['nullable'],
             'is_active' => ['nullable'],
             'notes' => ['nullable', 'string'],
@@ -190,8 +238,13 @@ class AccountController extends Controller
 
         $data['is_shared'] = (bool) ($data['is_shared'] ?? false);
         $data['opening_balance'] = (float) ($data['opening_balance'] ?? 0);
-        $data['icon'] = $data['icon'] ?: 'account_balance';
-        $data['color_hex'] = $data['color_hex'] ?: '#10b981';
+        $data['kind'] = $data['kind'] ?? 'standard';
+        if ($data['kind'] !== 'budget') {
+            $data['cycle_amount'] = null;
+            $data['cycle_day'] = null;
+        }
+        $data['icon'] = ($data['icon'] ?? null) ?: 'account_balance';
+        $data['color_hex'] = ($data['color_hex'] ?? null) ?: '#10b981';
 
         return $data;
     }

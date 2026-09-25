@@ -46,9 +46,20 @@
                     @endunless
                 </div>
 
-                {{-- The in/out line is only worth the room when something
-                     actually moved this month. --}}
-                @if($row['movements']['in'] > 0 || $row['movements']['out'] > 0)
+                {{-- An envelope shows its cycle instead: how much of the
+                     allowance is gone, and when it starts over. --}}
+                @if($row['cycle'])
+                    @php($c = $row['cycle'])
+                    @php($pct = $c['available'] > 0 ? min(100, round($c['spent'] / $c['available'] * 100)) : 100)
+                    <div class="mt-1.5 h-1.5 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+                        <div class="h-full rounded-full {{ $c['over'] > 0 ? 'bg-red-500' : ($pct >= 85 ? 'bg-orange-500' : 'bg-emerald-500') }}"
+                             style="width: {{ $pct }}%"></div>
+                    </div>
+                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 mt-1 tabular-nums">
+                        {{ __('messages.cycle_spent_of', ['spent' => $symbol . number_format($c['spent'], 2), 'total' => $symbol . number_format($c['available'], 2)]) }}
+                        · {{ __('messages.cycle_resets', ['date' => $c['end']->copy()->addSecond()->translatedFormat('j M')]) }}
+                    </div>
+                @elseif($row['movements']['in'] > 0 || $row['movements']['out'] > 0)
                     <div class="flex items-center gap-2 text-[0.68rem] mt-0.5 tabular-nums">
                         @if($row['movements']['in'] > 0)
                             <span class="text-emerald-600 dark:text-emerald-400">+{{ $symbol }}{{ number_format($row['movements']['in'], 2) }}</span>
@@ -66,9 +77,24 @@
             </div>
 
             <div class="shrink-0 flex items-center gap-1.5">
-                <span class="text-[0.95rem] font-extrabold tabular-nums {{ $row['balance'] < 0 ? 'text-red-500' : 'text-gray-900 dark:text-white' }}">
-                    {{ $symbol }}{{ number_format($row['balance'], 2) }}
-                </span>
+                @if($row['cycle'])
+                    <span class="text-right">
+                        <span class="block text-[0.95rem] font-extrabold tabular-nums text-gray-900 dark:text-white">
+                            {{ $symbol }}{{ number_format($row['cycle']['left'], 2) }}
+                        </span>
+                        @if($row['cycle']['over'] > 0)
+                            <span class="block text-[0.64rem] font-bold text-red-500 tabular-nums">
+                                {{ __('messages.cycle_over', ['amount' => $symbol . number_format($row['cycle']['over'], 2)]) }}
+                            </span>
+                        @else
+                            <span class="block text-[0.64rem] text-gray-400 dark:text-slate-500">{{ __('messages.cycle_left') }}</span>
+                        @endif
+                    </span>
+                @else
+                    <span class="text-[0.95rem] font-extrabold tabular-nums {{ $row['balance'] < 0 ? 'text-red-500' : 'text-gray-900 dark:text-white' }}">
+                        {{ $symbol }}{{ number_format($row['balance'], 2) }}
+                    </span>
+                @endif
                 <span class="material-icons-round text-gray-300 dark:text-slate-600 group-hover:text-gray-400 dark:group-hover:text-slate-400 transition"
                       style="font-size:18px;">chevron_right</span>
             </div>

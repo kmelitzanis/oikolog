@@ -52,6 +52,7 @@
               x-data="{
                   icon: '{{ old('icon', $editing ? $account->icon : 'account_balance') }}',
                   color: '{{ old('color_hex', $editing ? $account->color_hex : '#10b981') }}',
+                  kind: '{{ old('kind', $editing ? $account->kind : 'standard') }}',
               }">
             @csrf
             @if($editing) @method('PUT') @endif
@@ -66,7 +67,46 @@
                              :value="old('name', $editing ? $account->name : '')" />
                 </x-field>
 
-                <x-field :label="__('messages.opening_balance')" name="opening_balance"
+                {{-- The two kinds behave differently enough that the choice
+                     comes before the money fields it decides between. --}}
+                <x-field :label="__('messages.account_kind')" name="kind">
+                    <input type="hidden" name="kind" :value="kind">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        @foreach(['standard' => 'savings', 'budget' => 'wallet'] as $k => $ic)
+                            <button type="button" @click="kind = '{{ $k }}'"
+                                    :class="kind === '{{ $k }}'
+                                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/15'
+                                        : 'border-gray-200 dark:border-slate-600'"
+                                    class="text-left rounded-xl border p-3 flex gap-3 transition">
+                                <span class="material-icons-round text-amber-500">{{ $ic }}</span>
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-gray-800 dark:text-slate-100">{{ __('messages.account_kind_' . $k) }}</span>
+                                    <span class="block text-xs text-gray-400 dark:text-slate-500 mt-0.5">{{ __('messages.account_kind_' . $k . '_hint') }}</span>
+                                </span>
+                            </button>
+                        @endforeach
+                    </div>
+                </x-field>
+
+                <div x-show="kind === 'budget'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <x-field :label="__('messages.cycle_amount')" name="cycle_amount"
+                             :hint="__('messages.cycle_amount_hint')">
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 text-sm">{{ $symbol }}</span>
+                            <x-input name="cycle_amount" id="cycle_amount" type="number" step="0.01" min="0"
+                                     class="!pl-9" placeholder="1200.00" ::required="kind === 'budget'"
+                                     :value="old('cycle_amount', $editing ? $account->cycle_amount : '')" />
+                        </div>
+                    </x-field>
+                    <x-field :label="__('messages.cycle_day')" name="cycle_day"
+                             :hint="__('messages.cycle_day_hint')">
+                        <x-input name="cycle_day" id="cycle_day" type="number" min="1" max="31" placeholder="25"
+                                 ::required="kind === 'budget'"
+                                 :value="old('cycle_day', $editing ? $account->cycle_day : '')" />
+                    </x-field>
+                </div>
+
+                <x-field x-show="kind !== 'budget'" :label="__('messages.opening_balance')" name="opening_balance"
                          :hint="__('messages.opening_balance_hint')">
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 text-sm">{{ $symbol }}</span>
