@@ -625,6 +625,8 @@ return [
     'leftover_left' => 'Εντάξει — τα υπόλοιπα μένουν ως έχουν.',
     'leftover_transfer_note' => 'Περίσσευμα :period',
     'no_leftover_to_settle' => 'Δεν υπάρχει περίσσευμα για τακτοποίηση.',
+    'add_another_payment' => 'Προσθήκη πληρωμής',
+    'add_another_payment_hint' => 'Καταγράφει την πληρωμή για τον κύκλο που λήγει στις :date.',
     'transfer_recorded' => 'Η μεταφορά καταγράφηκε.',
     'transfer_note_placeholder' => 'π.χ. Αποταμίευση διακοπών',
     'type_deposit' => 'Κατάθεση',

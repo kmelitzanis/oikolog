@@ -625,6 +625,8 @@ return [
     'leftover_left' => 'Got it — the leftover stays where it is.',
     'leftover_transfer_note' => 'Leftover :period',
     'no_leftover_to_settle' => 'There is no leftover to settle.',
+    'add_another_payment' => 'Add another payment',
+    'add_another_payment_hint' => 'Records the payment for the cycle due :date.',
     'transfer_recorded' => 'Transfer recorded.',
     'transfer_note_placeholder' => 'e.g. Holiday savings',
     'type_deposit' => 'Deposit',

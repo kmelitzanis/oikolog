@@ -414,21 +414,9 @@
                         <span class="material-icons-round text-base">check_circle</span>
                     </button>
 
-                    {{-- Undo — strictly "take back the payment that settled this
-                         cycle". It used to show whenever the bill had *any*
-                         payment, i.e. forever, which read as "delete history".
-                         Removing an older payment lives in the bill's history. --}}
-                    @if($cyclePaid)
-                        <form method="POST" action="{{ route('bills.unpay', $bill) }}">
-                            @csrf @method('DELETE')
-                            <button type="submit" title="{{ __('messages.undo_payment') }}"
-                                    @click="if(!confirm({{ Illuminate\Support\Js::from(__('messages.undo_payment') . '?') }})) $event.preventDefault()"
-                                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-500 dark:text-orange-400 hover:bg-orange-100 transition">
-                                <span class="material-icons-round text-base">undo</span>
-                            </button>
-                        </form>
-                    @endif
 
+                    {{-- Undo lives on the bill's own page only: from the list it
+                         was too easy to hit by mistake. --}}
                     <a href="{{ route('bills.edit', $bill) }}" title="{{ __('messages.edit') }}"
                        class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-600 transition">
                         <span class="material-icons-round text-base">edit</span>

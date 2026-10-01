@@ -82,19 +82,20 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->assertStringContainsString('text-amber-600 dark:text-amber-400', $html);
     }
 
-    public function test_a_settled_bill_does_not_offer_the_pay_action(): void
+    public function test_a_settled_bill_reads_as_paid_but_can_take_another_payment(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['locale' => 'en']);
         $bill = $this->makeBill($user, [
             'last_paid_date' => now()->toDateString(),
-            'next_due_date'  => now()->addMonth()->toDateString(),
+            'next_due_date'  => now()->addMonthNoOverflow()->endOfMonth()->toDateString(),
         ]);
 
+        // The paid state is a fact, not a button; a second payment — e.g. the
+        // next cycle paid early — is a separate, explicit action.
         $this->actingAs($user)->get(route('bills.show', $bill))->assertOk()
-            // The button reads as a fact and cannot be clicked, so a second
-            // payment can't be recorded against a settled cycle.
-            ->assertDontSee("\$dispatch('open-pay-modal'", false)
-            ->assertSee('disabled', false);
+            ->assertSee('disabled', false)
+            ->assertSee('Add another payment')
+            ->assertSee("\$dispatch('open-pay-modal'", false);
     }
 
     public function test_an_unpaid_bill_still_offers_the_pay_action(): void
@@ -300,5 +301,45 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->actingAs($user)->get(route('bills.show', $bill))->assertOk();
         $this->actingAs($user)->get(route('bills.create'))->assertOk();
         $this->actingAs($user)->get(route('bills.edit', $bill))->assertOk();
+    }
+
+    public function test_a_bill_paid_last_month_is_owed_again_when_the_month_turns(): void
+    {
+        $user = User::factory()->create();
+        // Paid last month; this month's occurrence is still weeks away.
+        $bill = $this->makeBill($user, [
+            'last_paid_date' => now()->startOfMonth()->subDays(10)->toDateString(),
+            'next_due_date'  => now()->endOfMonth()->toDateString(),
+        ]);
+
+        $this->assertFalse($bill->isCurrentCyclePaid());
+        $this->assertNotSame('paid', $bill->status());
+        $this->assertContains($bill->id, Bill::thisMonthIdsFor($user));
+    }
+
+    public function test_paying_this_months_bill_early_keeps_it_on_this_month_as_paid(): void
+    {
+        $user = User::factory()->create();
+        // Paid on the last day of the previous month, so the due date has
+        // already moved on to next month.
+        $bill = $this->makeBill($user, [
+            'last_paid_date' => now()->startOfMonth()->subDay()->toDateString(),
+            'next_due_date'  => now()->startOfMonth()->addDays(4)->addMonthNoOverflow()->toDateString(),
+        ]);
+
+        $this->assertSame('paid', $bill->status());
+        $this->assertContains($bill->id, Bill::thisMonthIdsFor($user));
+    }
+
+    public function test_the_list_no_longer_offers_undo(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user);
+        $this->actingAs($user)->post(route('bills.pay', $bill))->assertRedirect();
+
+        $this->actingAs($user)->get(route('bills.index', ['status' => 'all']))->assertOk()
+            ->assertDontSee(route('bills.unpay', $bill), false);
+        $this->actingAs($user)->get(route('bills.show', $bill))->assertOk()
+            ->assertSee(route('bills.unpay', $bill), false);
     }
 }

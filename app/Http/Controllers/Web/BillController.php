@@ -43,8 +43,9 @@ class BillController extends Controller
         match ($status) {
             'active'     => $query->where('is_active', true),
             'overdue'    => $query->where('is_active', true)->whereDate('next_due_date', '<', now()),
-            'this_month' => $query->where('is_active', true)
-                ->whereBetween('next_due_date', [now()->startOfMonth(), now()->endOfMonth()]),
+            // Due this month (paid or not), overdue from before, or paid
+            // this month. Decided per bill — see Bill::belongsToMonth().
+            'this_month' => $query->whereIn('id', $thisMonthIds = Bill::thisMonthIdsFor($user)),
             'shared'     => $query->where('is_shared', true),
             'inactive'   => $query->where('is_active', false),
             default      => null,
@@ -71,7 +72,7 @@ class BillController extends Controller
         $billCounts = [
             'all'        => $all->count(),
             'overdue'    => $all->filter(fn($b) => $b->is_active && $b->next_due_date && $b->next_due_date->isPast())->count(),
-            'this_month' => $all->filter(fn($b) => $b->is_active && $b->next_due_date && $b->next_due_date->isSameMonth(now()))->count(),
+            'this_month' => count($thisMonthIds ?? Bill::thisMonthIdsFor($user)),
             'shared'     => $all->where('is_shared', true)->count(),
         ];
 
@@ -514,10 +515,16 @@ class BillController extends Controller
             ]);
         }
 
-        // `undo_route` drives the toast's Undo action.
-        return back()
-            ->with('success', __($isPartial ? 'messages.partial_payment_recorded' : 'messages.payment_recorded'))
-            ->with('undo_route', route('bills.unpay', $bill));
+        $response = back()
+            ->with('success', __($isPartial ? 'messages.partial_payment_recorded' : 'messages.payment_recorded'));
+
+        // `undo_route` drives the toast's Undo action. Undo is offered only on
+        // the bill's own page — from the list it was too easy to hit by mistake.
+        if (strtok(url()->previous(), '?') === route('bills.show', $bill)) {
+            $response->with('undo_route', route('bills.unpay', $bill));
+        }
+
+        return $response;
     }
 
     public function undoLastPayment(Bill $bill)

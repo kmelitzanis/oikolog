@@ -304,6 +304,22 @@ class Bill extends Model
         };
     }
 
+    /** The inverse of advanceDate(): the due date one cycle earlier. */
+    private function retreatDate(Carbon $date): ?Carbon
+    {
+        $interval = (int)($this->frequency_interval ?? 1);
+
+        return match ($this->frequency ?? 'monthly') {
+            'once' => null,
+            'daily' => $date->copy()->subDays($interval),
+            'weekly' => $date->copy()->subWeeks($interval),
+            'biweekly' => $date->copy()->subWeeks(2 * $interval),
+            'quarterly' => $date->copy()->subMonthsNoOverflow(3 * $interval),
+            'yearly' => $date->copy()->subYearsNoOverflow($interval),
+            default => $date->copy()->subMonthsNoOverflow($interval),
+        };
+    }
+
     /** Returns true if there is an outstanding partial balance for the current cycle. */
     public function hasPartialPayment(): bool
     {
@@ -395,7 +411,78 @@ class Bill extends Model
             return true;
         }
 
-        return $this->next_due_date && Carbon::parse($this->next_due_date)->gt(Carbon::today());
+        if (! $this->next_due_date) {
+            return false;
+        }
+
+        $next = Carbon::parse($this->next_due_date);
+
+        // Bills that come round once a month or less are thought of per
+        // month: on the 1st, everything due this month is owed again, even
+        // if its due date is still weeks away. Paying it (early or not)
+        // pushes the due date past the month, and only then is it paid.
+        if ($this->recursMonthlyOrLonger()) {
+            return $next->gt(Carbon::today()->endOfMonth());
+        }
+
+        // Shorter cycles would never read as paid under that rule, so they
+        // keep the plain one: paid while the next due date is still ahead.
+        return $next->gt(Carbon::today());
+    }
+
+    private function recursMonthlyOrLonger(): bool
+    {
+        return in_array($this->frequency ?? 'monthly', ['monthly', 'quarterly', 'yearly'], true);
+    }
+
+    /**
+     * Whether the bill belongs on the "this month" list for the month
+     * containing $at: still owed by the month's end (due in it, or overdue
+     * from before), due in it but already paid — including paid early, at
+     * the end of the previous month — or paid during it.
+     *
+     * Payments are read from the loaded `payments` relation when present,
+     * so callers listing many bills should eager-load them for the month.
+     */
+    public function belongsToMonth(?Carbon $at = null): bool
+    {
+        if (! $this->is_active) {
+            return false;
+        }
+
+        $at    = $at ?? Carbon::now();
+        $start = $at->copy()->startOfMonth();
+        $end   = $at->copy()->endOfMonth();
+
+        if ($this->next_due_date && Carbon::parse($this->next_due_date)->lte($end)) {
+            return true;
+        }
+
+        // The due date has moved past this month. If the cycle before it fell
+        // inside the month, that is this month's bill, paid already (perhaps
+        // early, on the 31st) — it still belongs here.
+        if ($this->next_due_date && ($previous = $this->retreatDate(Carbon::parse($this->next_due_date)))
+            && $previous->between($start, $end)) {
+            return true;
+        }
+
+        $payments = $this->relationLoaded('payments') ? $this->payments : $this->payments()->get();
+
+        return $payments->contains(fn ($p) => $p->paid_at && $p->paid_at->between($start, $end));
+    }
+
+    /** IDs of the user's bills that belong on this month's list. */
+    public static function thisMonthIdsFor(?User $user): array
+    {
+        $start = Carbon::now()->startOfMonth();
+        $end   = Carbon::now()->endOfMonth();
+
+        return static::forUser($user)->active()
+            ->with(['payments' => fn ($q) => $q->whereBetween('paid_at', [$start, $end])])
+            ->get()
+            ->filter(fn (self $bill) => $bill->belongsToMonth())
+            ->pluck('id')
+            ->all();
     }
 
     /**

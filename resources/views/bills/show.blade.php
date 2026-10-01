@@ -114,30 +114,43 @@
                 </div>
             </div>
 
-            @if($bill->is_active && $status === 'paid')
-                {{-- Nothing is owed on this cycle. The button states that rather
-                     than offering an action that would record a second payment
-                     against a settled bill. --}}
-                <div class="mt-6">
-                    <x-btn variant="success" block type="button" icon="check_circle" disabled>
-                        {{ __('messages.paid') }}
-                    </x-btn>
-                </div>
-            @elseif($bill->is_active)
+            @if($bill->is_active)
+                @php
+                    $payData = "{
+                        billName:         " . e(Illuminate\Support\Js::from($bill->name)) . ",
+                        amount:           '" . number_format($bill->tracksDebt() ? min($bill->periodAmount(), max(0, (float) $bill->debt_remaining)) : $bill->periodAmount(), 2) . "',
+                        currency:         '" . $bill->currency_code . "',
+                        payRoute:         '" . route('bills.pay', $bill) . "',
+                        costVaries:       " . ($bill->cost_varies ? 'true' : 'false') . ",
+                        defaultAccountId: '" . $bill->default_account_id . "',
+                        lastPaidAmount:   '" . ($bill->cost_varies ? number_format($bill->hasCurrentAmount() ? (float) $bill->current_amount : ($lastPayment ? (float) $lastPayment->amount : 0), 2, '.', '') : '') . "',
+                        remainingBalance: " . ($bill->hasPartialPayment() ? number_format($bill->getEffectiveRemainingBalance(), 2, '.', '') : 'null') . "
+                    }";
+                @endphp
                 <div class="mt-6" x-data>
-                    <x-btn variant="success" block type="button" icon="check_circle"
-                           @click="$dispatch('open-pay-modal', {
-                               billName:         {{ Illuminate\Support\Js::from($bill->name) }},
-                               amount:           '{{ number_format($bill->tracksDebt() ? min($bill->periodAmount(), max(0, (float) $bill->debt_remaining)) : $bill->periodAmount(), 2) }}',
-                               currency:         '{{ $bill->currency_code }}',
-                               payRoute:         '{{ route('bills.pay', $bill) }}',
-                               costVaries:       {{ $bill->cost_varies ? 'true' : 'false' }},
-                               defaultAccountId: '{{ $bill->default_account_id }}',
-                               lastPaidAmount:   '{{ $bill->cost_varies ? number_format($bill->hasCurrentAmount() ? (float) $bill->current_amount : ($lastPayment ? (float) $lastPayment->amount : 0), 2, '.', '') : '' }}',
-                               remainingBalance: {{ $bill->hasPartialPayment() ? number_format($bill->getEffectiveRemainingBalance(), 2, '.', '') : 'null' }}
-                           })">
-                        {{ __('messages.mark_paid') }}
-                    </x-btn>
+                    @if($status === 'paid')
+                        {{-- This cycle is settled. Another payment is still
+                             possible — e.g. next month's, paid early because
+                             the money came in on the 31st — and it moves the
+                             due date on by one more cycle. --}}
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <x-btn variant="success" block type="button" icon="check_circle" disabled>
+                                {{ __('messages.paid') }}
+                            </x-btn>
+                            <x-btn variant="ghost" block type="button" icon="add_card"
+                                   x-on:click="$dispatch('open-pay-modal', {!! $payData !!})">
+                                {{ __('messages.add_another_payment') }}
+                            </x-btn>
+                        </div>
+                        <div class="text-xs text-gray-400 dark:text-slate-500 mt-2 text-center">
+                            {{ __('messages.add_another_payment_hint', ['date' => $bill->next_due_date?->translatedFormat('j M Y')]) }}
+                        </div>
+                    @else
+                        <x-btn variant="success" block type="button" icon="check_circle"
+                               x-on:click="$dispatch('open-pay-modal', {!! $payData !!})">
+                            {{ __('messages.mark_paid') }}
+                        </x-btn>
+                    @endif
                 </div>
             @endif
         </div>
