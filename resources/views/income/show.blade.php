@@ -116,7 +116,14 @@
                 ['label'=>'Frequency',     'value'=> $income->frequencyLabel()],
                 ['label'=>'Start Date',    'value'=> $income->start_date->format('d M Y')],
                 ['label'=>'End Date',      'value'=> $income->end_date ? $income->end_date->format('d M Y') : '—'],
-                ['label'=>'Last Received', 'value'=> $income->last_received_date ? $income->last_received_date->format('d M Y') : 'Never'],
+                ['label'=>'Last Received', 'value'=> $income->last_received_date
+                    ? $income->last_received_date->translatedFormat('j M Y') . match (true) {
+                        $income->lastReceiptDelay() === null => '',
+                        $income->lastReceiptDelay() > 0 => ' · ' . __('messages.income_came_late', ['days' => $income->lastReceiptDelay()]),
+                        $income->lastReceiptDelay() < 0 => ' · ' . __('messages.income_came_early', ['days' => -$income->lastReceiptDelay()]),
+                        default => ' · ' . __('messages.income_came_on_time'),
+                    }
+                    : 'Never'],
                 ['label'=>'Status',        'value'=> $income->is_active ? __('messages.active') : __('messages.inactive')],
             ] as $row)
                 <div class="flex items-center px-5 py-3.5 gap-4">
@@ -136,14 +143,18 @@
 
         {{-- Actions --}}
         <div class="flex flex-wrap gap-3">
-            @if($isRecurring && $income->is_active)
+            @if($income->canReceiveNow())
                 <form method="POST" action="{{ route('income.receive', $income) }}">
                     @csrf
                     <button type="submit"
                             class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition">
-                        <span class="material-icons-round text-base">check_circle</span> Mark as Received
+                        <span class="material-icons-round text-base">check_circle</span> {{ __('messages.mark_received') }}
                     </button>
                 </form>
+            @elseif($isRecurring && $income->isReceivedThisCycle())
+                <span class="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm font-semibold rounded-xl px-4 py-2.5">
+                    <span class="material-icons-round text-base">check_circle</span> {{ __('messages.income_received_badge') }}
+                </span>
             @endif
 
             <a href="{{ route('income.edit', $income) }}"

@@ -38,12 +38,9 @@ class IncomeController extends Controller
         $allActive = Income::forUser($user)->active()->get();
         $monthlyIncome = round($allActive->sum(fn($i) => $i->monthlyEquivalent()), 2);
 
-        // "Received this month" — there is no income-payments table, so this is
-        // derived from `last_received_date`: a source counts once its most
-        // recent receipt falls inside the current month.
-        $receivedSources = $allActive->filter(
-            fn($i) => $i->last_received_date && $i->last_received_date->isSameMonth(now())
-        );
+        // "Received this month" — a source counts once the receipt meant for
+        // this month is recorded, even if the money landed a few days early.
+        $receivedSources = $allActive->filter(fn($i) => $i->receivedForMonth());
         $received = round($receivedSources->sum('amount'), 2);
 
         $stats = [
@@ -277,9 +274,17 @@ class IncomeController extends Controller
             $account = Account::forUser($request->user())->find($income->account_id);
         }
 
+        // One receipt per cycle: until the expected date is close (or past),
+        // there is nothing to receive — and a second tap would deposit the
+        // same money twice and skip a month.
+        abort_unless($income->canReceiveNow(), 422, __('messages.income_not_due_yet'));
+
         $nextDate = $income->calculateNextDate();
         $income->update([
             'last_received_date' => $receivedAt->toDateString(),
+            // The date this receipt settles — how late or early it came is
+            // measured against it.
+            'last_expected_date' => $income->next_date?->toDateString(),
             'next_date' => $nextDate ? $nextDate->toDateString() : $income->next_date,
         ]);
 

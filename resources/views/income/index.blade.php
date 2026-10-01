@@ -113,11 +113,22 @@
                 @php
                     $daysUntil = $income->daysUntilNext();
                     $isOnce    = $income->frequency === 'once';
-                    $isLate    = !$isOnce && $income->is_active && $daysUntil !== null && $daysUntil < 0;
-                    $isSoon    = !$isOnce && !$isLate && $daysUntil !== null && $daysUntil <= 7;
+                    $received  = !$isOnce && $income->isReceivedThisCycle();
+                    $isLate    = !$isOnce && $income->is_active && $income->daysLate() > 0;
+                    $isSoon    = !$isOnce && !$isLate && !$received && $daysUntil !== null && $daysUntil <= 7;
+                    $delay     = $income->lastReceiptDelay();
+
+                    // How the last receipt compared with the day it was due.
+                    $delayLabel = match (true) {
+                        $delay === null => null,
+                        $delay > 0  => __('messages.income_came_late', ['days' => $delay]),
+                        $delay < 0  => __('messages.income_came_early', ['days' => -$delay]),
+                        default     => __('messages.income_came_on_time'),
+                    };
 
                     [$stateLabel, $stateClass] = match (true) {
                         ! $income->is_active => [__('messages.inactive'), 'text-gray-400 dark:text-slate-500'],
+                        $received => [__('messages.income_received_badge') . ($delayLabel ? ' · ' . $delayLabel : ''), 'text-emerald-600 dark:text-emerald-400'],
                         $isLate => [__('messages.income_late'), 'text-red-500'],
                         $isSoon => [__('messages.income_soon'), 'text-amber-600 dark:text-amber-400'],
                         default => [$income->source ?: __('messages.income'), 'text-gray-400 dark:text-slate-500'],
@@ -125,7 +136,7 @@
 
                     $nextLabel = match (true) {
                         $isOnce => $income->start_date?->translatedFormat('j M Y') ?? '—',
-                        $isLate => __('messages.expected_ago', ['days' => abs($daysUntil)]),
+                        $isLate => __('messages.income_late_by', ['days' => $income->daysLate()]),
                         $daysUntil === 0 => __('messages.expected_today'),
                         $daysUntil !== null => __('messages.in_days', ['days' => $daysUntil]),
                         default => '—',
@@ -185,12 +196,15 @@
 
                     {{-- 5 · Actions --}}
                     <div class="flex items-center gap-1.5 shrink-0 lg:justify-end" @click.stop>
-                        @unless($isOnce)
+                        {{-- Only once the money is due (or a few days before):
+                             a tap any earlier would deposit the same salary
+                             twice and skip a month. --}}
+                        @if($income->canReceiveNow())
                             <form method="POST" action="{{ route('income.receive', $income) }}">
                                 @csrf
                                 <x-icon-btn tone="pay" icon="check_circle" title="{{ __('messages.mark_received') }}" />
                             </form>
-                        @endunless
+                        @endif
                         <x-icon-btn tone="neutral" icon="edit" :href="route('income.edit', $income)"
                                     title="{{ __('messages.edit') }}" />
                         <form method="POST" action="{{ route('income.destroy', $income) }}">
