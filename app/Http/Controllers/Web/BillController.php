@@ -123,10 +123,11 @@ class BillController extends Controller
             'debt_remaining' => $data['debt_remaining'] ?? null,
             // Recorded once so the bill can show how far along it is.
             'debt_initial'   => $data['debt_remaining'] ?? null,
-            'is_shared'      => (bool) ($data['is_shared'] ?? false),
+            // Sharing needs someone to share with.
+            'is_shared'      => $shared = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id,
             'notify_enabled' => (bool) ($data['notify_enabled'] ?? false),
             'created_by'     => $request->user()->id,
-            'family_id'      => ($data['is_shared'] ?? false) ? $request->user()->family_id : null,
+            'family_id'      => $shared ? $request->user()->family_id : null,
             'next_due_date'  => $data['start_date'],
         ]);
 
@@ -290,7 +291,7 @@ class BillController extends Controller
         ]);
 
         $data['cost_varies'] = (bool)($data['cost_varies'] ?? false);
-        $data['is_shared']      = (bool) ($data['is_shared'] ?? false);
+        $data['is_shared']      = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
         $data['notify_enabled'] = (bool) ($data['notify_enabled'] ?? false);
 
         // Raising the outstanding total (a new drawdown, a bigger card balance)
@@ -301,9 +302,7 @@ class BillController extends Controller
             ? null
             : max((float) $data['debt_remaining'], (float) ($bill->debt_initial ?? 0));
 
-        if (isset($data['is_shared'])) {
-            $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
-        }
+        $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
 
         // Detect whether the recurrence schedule itself changed so we can snap
         // next_due_date back onto the new cadence (otherwise it keeps drifting
@@ -682,11 +681,7 @@ class BillController extends Controller
 
     private function authorizeView(Bill $bill): void
     {
-        $user = request()->user();
-        $ok   = $user instanceof \App\Models\User
-             && ($bill->created_by === $user->id
-             || ($bill->is_shared && $bill->family_id === $user->family_id));
-        abort_unless($ok, 403, 'Access denied.');
+        abort_unless($bill->isVisibleTo(request()->user()), 403, 'Access denied.');
     }
 
     /**

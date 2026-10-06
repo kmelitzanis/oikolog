@@ -52,11 +52,7 @@ class BillAmountSuggestionController extends Controller
     {
         abort_unless($suggestion->bill_id === $bill->id, 404);
 
-        $user = $request->user();
-        $ok = $bill->created_by === $user->id
-            || ($bill->is_shared && $bill->family_id && $bill->family_id === $user->family_id);
-
-        abort_unless($ok, 403, 'You cannot act on this bill.');
+        abort_unless($bill->isVisibleTo($request->user()), 403, 'You cannot act on this bill.');
         abort_unless($suggestion->status === 'pending', 409, 'Already resolved.');
     }
 }

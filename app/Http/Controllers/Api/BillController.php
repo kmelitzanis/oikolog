@@ -64,11 +64,14 @@ class BillController extends Controller
             'notes'              => ['nullable', 'string'],
         ]);
 
+        $shared = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
+
         $bill = Bill::create([
             ...$data,
+            'is_shared'     => $shared,
             'created_by'    => $request->user()->id,
             'currency_code' => $request->user()->currency_code,
-            'family_id'     => ($data['is_shared'] ?? false) ? $request->user()->family_id : null,
+            'family_id'     => $shared ? $request->user()->family_id : null,
             'next_due_date' => $data['start_date'],
         ]);
 
@@ -108,6 +111,7 @@ class BillController extends Controller
         ]);
 
         if (isset($data['is_shared'])) {
+            $data['is_shared'] = $data['is_shared'] && $request->user()->family_id;
             $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
         }
 
@@ -273,10 +277,7 @@ class BillController extends Controller
 
     private function authorizeView(Request $request, Bill $bill): void
     {
-        $user    = $request->user();
-        $canView = $bill->created_by === $user->id
-            || ($bill->is_shared && $bill->family_id === $user->family_id);
-        abort_unless($canView, 403, 'Access denied.');
+        abort_unless($bill->isVisibleTo($request->user()), 403, 'Access denied.');
     }
 
     /** Editing is open to whoever can see it — see the web controller. */

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SharedWithFamily;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bill extends Model
 {
-    use HasUlids, HasFactory;
+    use HasUlids, HasFactory, SharedWithFamily;
 
     protected $fillable = [
         'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'current_amount', 'cost_varies',
@@ -94,18 +95,7 @@ class Bill extends Model
     }
 
     // Scopes
-    public function scopeForUser($query, ?User $user)
-    {
-        if (! $user) return $query->whereRaw('1=0');
-
-        return $query->where(function ($q) use ($user) {
-            $q->where('created_by', $user->id)
-              ->orWhere(function ($q2) use ($user) {
-                  $q2->where('is_shared', true)
-                     ->where('family_id', $user->family_id);
-              });
-        });
-    }
+    // forUser() comes from SharedWithFamily.
 
     public function scopeActive($query)
     {

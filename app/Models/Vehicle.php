@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SharedWithFamily;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class Vehicle extends Model
 {
-    use HasUlids;
+    use HasUlids, SharedWithFamily;
 
     public const TYPES = ['car', 'motorcycle', 'other'];
 
@@ -61,22 +62,6 @@ class Vehicle extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(VehicleExpense::class)->orderByDesc('spent_at');
-    }
-
-    /** Same sharing rule as bills and accounts: mine, or my family's shared ones. */
-    public function scopeForUser($query, $user)
-    {
-        if (! $user) {
-            return $query->whereRaw('1=0');
-        }
-
-        return $query->where(function ($q) use ($user) {
-            $q->where('created_by', $user->id)
-                ->orWhere(function ($q2) use ($user) {
-                    $q2->where('is_shared', true)
-                        ->where('family_id', $user->family_id);
-                });
-        });
     }
 
     public function scopeActive($query)

@@ -236,7 +236,8 @@ class AccountController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $data['is_shared'] = (bool) ($data['is_shared'] ?? false);
+        // Sharing needs someone to share with.
+        $data['is_shared'] = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
         $data['opening_balance'] = (float) ($data['opening_balance'] ?? 0);
         $data['kind'] = $data['kind'] ?? 'standard';
         if ($data['kind'] !== 'budget') {
@@ -251,10 +252,6 @@ class AccountController extends Controller
 
     private function authorizeAccess(Account $account): void
     {
-        $user = Auth::user();
-        $ok = $account->created_by === $user->id
-            || ($account->is_shared && $account->family_id === $user->family_id);
-
-        abort_unless($ok, 403, 'Access denied.');
+        abort_unless($account->isVisibleTo(Auth::user()), 403, 'Access denied.');
     }
 }

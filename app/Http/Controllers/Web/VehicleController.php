@@ -309,7 +309,8 @@ class VehicleController extends Controller
 
         $data['odometer_km'] = $data['odometer_km'] ?? 0;
         $data['is_active']   = (bool) ($data['is_active'] ?? true);
-        $data['is_shared']   = (bool) ($data['is_shared'] ?? false);
+        // Sharing needs someone to share with.
+        $data['is_shared']   = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
 
         return $data;
     }
@@ -324,8 +325,6 @@ class VehicleController extends Controller
     /** Sharing is the same rule as bills: mine, or my family's shared ones. */
     private function authorizeVehicle(Request $request, Vehicle $vehicle): void
     {
-        $visible = Vehicle::forUser($request->user())->whereKey($vehicle->id)->exists();
-
-        abort_unless($visible, 403);
+        abort_unless($vehicle->isVisibleTo($request->user()), 403);
     }
 }

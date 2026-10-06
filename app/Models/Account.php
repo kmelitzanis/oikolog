@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SharedWithFamily;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Account extends Model
 {
-    use HasUlids;
+    use HasUlids, SharedWithFamily;
 
     protected $fillable = [
         'name', 'description', 'kind', 'cycle_amount', 'cycle_day', 'cycle_settled_until', 'icon', 'color_hex', 'opening_balance',
@@ -66,18 +67,7 @@ class Account extends Model
     }
 
     // ── Scopes ─────────────────────────────────────────────────────────────────
-    public function scopeForUser($query, $user)
-    {
-        if (!$user) return $query->whereRaw('1=0');
-
-        return $query->where(function ($q) use ($user) {
-            $q->where('created_by', $user->id)
-                ->orWhere(function ($q2) use ($user) {
-                    $q2->where('is_shared', true)
-                        ->where('family_id', $user->family_id);
-                });
-        });
-    }
+    // forUser() comes from SharedWithFamily.
 
     public function scopeActive($query)
     {

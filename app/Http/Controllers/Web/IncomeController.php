@@ -309,10 +309,7 @@ class IncomeController extends Controller
 
     private function authorizeAccess(Income $income): void
     {
-        $user = Auth::user();
-        $ok = $income->created_by === $user->id
-            || ($income->is_shared && $income->family_id === $user->family_id);
-        abort_unless($ok, 403, 'Access denied.');
+        abort_unless($income->isVisibleTo(Auth::user()), 403, 'Access denied.');
     }
 }
 
