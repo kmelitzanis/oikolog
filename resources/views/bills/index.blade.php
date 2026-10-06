@@ -130,7 +130,7 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {{ __('messages.paid') }}
                     </div>
                     <div class="flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> {{ __('messages.upcoming') }}
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> {{ __('messages.upcoming') }}
                     </div>
                 </div>
             </x-card>
@@ -170,7 +170,7 @@
                class="flex-1 min-w-40 bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
         <select name="category_id" @change="$el.form.submit()"
                 class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 transition">
-            <option value="">{{ __('messages.filter_all') }} {{ __('messages.categories') }}</option>
+            <option value="">{{ __('messages.all_categories') }}</option>
             @foreach(\App\Models\Category::orderBy('name')->get() as $cat)
                 <option
                     value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
@@ -178,7 +178,7 @@
         </select>
         <select name="frequency" @change="$el.form.submit()"
                 class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 transition">
-            <option value="">{{ __('messages.filter_all') }} {{ __('messages.frequency') }}</option>
+            <option value="">{{ __('messages.all_frequencies') }}</option>
             @foreach([
                 'once'      => __('messages.once'),
                 'weekly'    => __('messages.weekly'),
@@ -293,8 +293,10 @@
                         @endif
                     </div>
                     <div class="min-w-0">
-                        <div class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
-                            {{ $bill->name }}
+                        {{-- The name gets its own truncating box: text directly in
+                             a flex row is clipped without an ellipsis. --}}
+                        <div class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
+                            <span class="truncate">{{ $bill->name }}</span>
                             @if($bill->is_shared)
                                 <span class="material-icons-round text-gray-300 dark:text-slate-500"
                                       style="font-size:14px;">group</span>
@@ -344,8 +346,8 @@
                         </div>
                         <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 truncate mt-px">
                             {{ $bill->currency_code }} {{ number_format($lastPayment->amount, 2) }}
-                            @if($lastPayment->income)
-                                · {{ __('messages.paid_from', ['source' => $lastPayment->income->name]) }}
+                            @if($lastPayment->account)
+                                · {{ __('messages.paid_from', ['source' => $lastPayment->account->name]) }}
                             @endif
                         </div>
                     @else
@@ -367,7 +369,7 @@
                         @unless($bill->hasCurrentAmount() && $bill->isOneOff())
                             <div class="text-[0.68rem] text-gray-400 dark:text-slate-500">
                                 {{ $bill->hasCurrentAmount()
-                                    ? number_format($bill->monthlyEquivalent(), 2) . '/mo'
+                                    ? number_format($bill->monthlyEquivalent(), 2) . __('messages.per_month_short')
                                     : __('messages.amount_unknown') }}
                             </div>
                         @endunless
@@ -388,7 +390,7 @@
                                      than the monthly equivalent. --}}
                                 {{ __('messages.debt_left', ['amount' => number_format((float) $bill->debt_remaining, 2)]) }}
                             @elseif(! $bill->isOneOff())
-                                {{ number_format($bill->monthlyEquivalent(), 2) }}/mo
+                                {{ number_format($bill->monthlyEquivalent(), 2) }}{{ __('messages.per_month_short') }}
                             @endif
                         </div>
                     @endif
@@ -400,16 +402,7 @@
                     {{-- Pay --}}
                     <button type="button" x-show="!paid" x-cloak
                             title="{{ __('messages.mark_paid') }}"
-                            @click="$dispatch('open-pay-modal', {
-                                billName:       {{ Illuminate\Support\Js::from($bill->name) }},
-                                amount:         '{{ number_format($bill->tracksDebt() ? min((float) $bill->amount, max(0, (float) $bill->debt_remaining)) : $bill->amount, 2) }}',
-                                currency:       '{{ $bill->currency_code }}',
-                                payRoute:       '{{ route('bills.pay', $bill) }}',
-                                costVaries:     {{ $bill->cost_varies ? 'true' : 'false' }},
-                                defaultAccountId: '{{ $bill->default_account_id }}',
-                                lastPaidAmount: '{{ $bill->cost_varies ? number_format($bill->hasCurrentAmount() ? (float) $bill->current_amount : ($lastPayment ? (float) $lastPayment->amount : 0), 2, '.', '') : '' }}',
-                                remainingBalance: {{ $bill->hasPartialPayment() ? number_format($bill->getEffectiveRemainingBalance(), 2, '.', '') : 'null' }}
-                            })"
+                            @click="$dispatch('open-pay-modal', {{ \Illuminate\Support\Js::from($bill->payModalPayload()) }})"
                             class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition">
                         <span class="material-icons-round text-base">check_circle</span>
                     </button>

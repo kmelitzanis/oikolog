@@ -28,7 +28,16 @@ Notes:
 - The `app` service runs PHP-FPM. Its entrypoint waits for the database, runs migrations when `FORCE_MIGRATE=1`
   (the default) and, when `APP_ENV=production`, caches config, routes and views.
 - MySQL defaults: database `oikolog`, user `oikolog` / `secret`, root password `rootsecret`. Override them with
-  `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` and `DB_ROOT_PASSWORD` in the compose `.env`.
+  `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` and `DB_ROOT_PASSWORD` in the compose `.env` — and do, before the
+  first start. The database port is published on `127.0.0.1` only, so it is reachable from the NAS itself but not
+  from the rest of the network.
+- The stack starts with `APP_ENV=production` and `APP_DEBUG=false` unless the compose `.env` says otherwise. Debug
+  pages show stack traces and configuration to whoever triggers an error, so only turn them on where nobody else
+  can reach the app.
+- Set `ADMIN_EMAIL` in the compose `.env` to the admin's address. `php artisan admin:reset-password` uses it, and
+  prints a generated password when you do not pass `--password`.
+- Uploads up to 10 MB per file are accepted (nginx `client_max_body_size`, PHP `upload_max_filesize` and
+  `post_max_size` in `docker/php/oikolog.ini`).
 - The application code is **baked into the image**, not mounted. Only `storage`, `bootstrap/cache` and `public` are
   named volumes. Editing files on the host does nothing until you rebuild the image — and there is no Laravel `.env`
   inside the container: configuration comes from the `environment:` block (frozen with `config:cache` on start when

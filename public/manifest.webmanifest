@@ -9,7 +9,7 @@
     "orientation": "portrait-primary",
     "lang": "el",
     "background_color": "#0f172a",
-    "theme_color": "#2563eb",
+    "theme_color": "#ffffff",
     "icons": [
         {
             "src": "/icons/icon-192.png",
@@ -38,12 +38,12 @@
     ],
     "shortcuts": [
         {
-            "name": "Bills",
+            "name": "Λογαριασμοί",
             "url": "/bills",
             "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
         },
         {
-            "name": "Shopping Lists",
+            "name": "Λίστες αγορών",
             "url": "/shopping-lists",
             "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
         }

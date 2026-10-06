@@ -32,7 +32,7 @@ class BillController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        $bills = $query->paginate($request->integer('per_page', 50));
+        $bills = $query->paginate(min(100, max(1, $request->integer('per_page', 50))));
 
         return response()->json([
             'data' => $bills->map(fn($b) => $this->billResource($b)),
@@ -49,9 +49,9 @@ class BillController extends Controller
     {
         $data = $request->validate([
             'name'               => ['required', 'string', 'max:120'],
-            'description'        => ['nullable', 'string'],
+            'description'        => ['nullable', 'string', 'max:2000'],
             'category_id'        => ['required', 'exists:categories,id'],
-            'assigned_to'        => ['nullable', 'exists:users,id'],
+            'assigned_to'        => ['nullable', 'string', $this->householdMember($request)],
             'amount'             => ['required', 'numeric', 'min:0.01'],
             'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
@@ -60,15 +60,18 @@ class BillController extends Controller
             'is_shared'          => ['nullable', 'boolean'],
             'notify_enabled'     => ['nullable', 'boolean'],
             'notify_days_before' => ['nullable', 'integer', 'min:1', 'max:30'],
-            'url'                => ['nullable', 'url'],
-            'notes'              => ['nullable', 'string'],
+            'url'                => ['nullable', 'url:http,https', 'max:2048'],
+            'notes'              => ['nullable', 'string', 'max:5000'],
         ]);
+
+        $shared = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
 
         $bill = Bill::create([
             ...$data,
+            'is_shared'     => $shared,
             'created_by'    => $request->user()->id,
             'currency_code' => $request->user()->currency_code,
-            'family_id'     => ($data['is_shared'] ?? false) ? $request->user()->family_id : null,
+            'family_id'     => $shared ? $request->user()->family_id : null,
             'next_due_date' => $data['start_date'],
         ]);
 
@@ -90,9 +93,9 @@ class BillController extends Controller
 
         $data = $request->validate([
             'name'               => ['sometimes', 'string', 'max:120'],
-            'description'        => ['nullable', 'string'],
+            'description'        => ['nullable', 'string', 'max:2000'],
             'category_id'        => ['sometimes', 'exists:categories,id'],
-            'assigned_to'        => ['nullable', 'exists:users,id'],
+            'assigned_to'        => ['nullable', 'string', $this->householdMember($request)],
             'amount'             => ['sometimes', 'numeric', 'min:0.01'],
             'frequency'          => ['sometimes', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1'],
@@ -103,11 +106,12 @@ class BillController extends Controller
             'is_shared'          => ['sometimes', 'boolean'],
             'notify_enabled'     => ['sometimes', 'boolean'],
             'notify_days_before' => ['sometimes', 'integer', 'min:1', 'max:30'],
-            'url'                => ['nullable', 'url'],
-            'notes'              => ['nullable', 'string'],
+            'url'                => ['nullable', 'url:http,https', 'max:2048'],
+            'notes'              => ['nullable', 'string', 'max:5000'],
         ]);
 
         if (isset($data['is_shared'])) {
+            $data['is_shared'] = $data['is_shared'] && $request->user()->family_id;
             $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
         }
 
@@ -139,25 +143,33 @@ class BillController extends Controller
         $this->authorizeView($request, $bill);
 
         $data = $request->validate([
-            'amount'        => ['nullable', 'numeric', 'min:0.01'],
-            'currency_code' => ['nullable', 'string', 'size:3'],
-            'paid_at'       => ['nullable', 'date'],
-            'notes'         => ['nullable', 'string'],
+            'amount'        => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],
+            'currency_code' => ['nullable', 'string', 'regex:/^[A-Z]{3}$/'],
+            'paid_at'       => ['nullable', 'date', 'before_or_equal:today'],
+            'notes'         => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $payment = DB::transaction(function () use ($bill, $request, $data) {
+        $paidAt = isset($data['paid_at']) ? \Carbon\Carbon::parse($data['paid_at'])->setTimeFrom(now()) : now();
+
+        $payment = DB::transaction(function () use ($bill, $request, $data, $paidAt) {
+            // Locked so a retried request cannot settle the same cycle twice.
+            $bill = Bill::whereKey($bill->getKey())->lockForUpdate()->firstOrFail();
+
             $payment = Payment::create([
                 'bill_id'       => $bill->id,
                 'paid_by'       => $request->user()->id,
-                'amount'        => $data['amount'] ?? $bill->amount,
+                'amount'        => $data['amount'] ?? $bill->getEffectiveRemainingBalance(),
                 'currency_code' => $data['currency_code'] ?? $bill->currency_code,
-                'paid_at'       => $data['paid_at'] ?? now(),
+                'paid_at'       => $paidAt,
                 'notes'         => $data['notes'] ?? null,
             ]);
 
+            // A one-off bill has no next cycle: its due date stays put.
             $bill->update([
-                'last_paid_date' => now()->toDateString(),
-                'next_due_date'  => $bill->calculateNextDueDate()->toDateString(),
+                'remaining_balance' => null,
+                'current_amount'    => null,
+                'last_paid_date'    => $paidAt->toDateString(),
+                'next_due_date'     => $bill->calculateNextDueDate()?->toDateString() ?? $bill->next_due_date,
             ]);
 
             return $payment;
@@ -271,12 +283,23 @@ class BillController extends Controller
         ]);
     }
 
+    /** The user themself or someone in their family. */
+    private function householdMember(Request $request): \Closure
+    {
+        return function (string $attribute, $value, \Closure $fail) use ($request) {
+            $user = $request->user();
+            $ok = $value === $user->id
+                || ($user->family_id && \App\Models\User::whereKey($value)->where('family_id', $user->family_id)->exists());
+
+            if (! $ok) {
+                $fail(__('messages.invalid_selection'));
+            }
+        };
+    }
+
     private function authorizeView(Request $request, Bill $bill): void
     {
-        $user    = $request->user();
-        $canView = $bill->created_by === $user->id
-            || ($bill->is_shared && $bill->family_id === $user->family_id);
-        abort_unless($canView, 403, 'Access denied.');
+        abort_unless($bill->isVisibleTo($request->user()), 403, 'Access denied.');
     }
 
     /** Editing is open to whoever can see it — see the web controller. */

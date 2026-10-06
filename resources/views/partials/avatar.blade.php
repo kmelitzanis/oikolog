@@ -17,7 +17,7 @@
         <img src="{{ $avatar }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
     @else
         <span class="font-bold text-amber-700 dark:text-amber-400 text-sm leading-none select-none">
-            {{ strtoupper(substr($user->name, 0, 1)) }}
+            {{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}
         </span>
     @endif
 </div>

@@ -11,6 +11,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
 
 class VehicleController extends Controller
 {
@@ -302,30 +305,55 @@ class VehicleController extends Controller
             'notes'            => ['nullable', 'string', 'max:2000'],
             'is_active'        => ['nullable', 'boolean'],
             'is_shared'        => ['nullable', 'boolean'],
-            'photo'            => ['nullable', 'image', 'max:8192'],
+            'photo'            => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:8192'],
         ]);
 
         unset($data['photo']);
 
         $data['odometer_km'] = $data['odometer_km'] ?? 0;
         $data['is_active']   = (bool) ($data['is_active'] ?? true);
-        $data['is_shared']   = (bool) ($data['is_shared'] ?? false);
+        // Sharing needs someone to share with.
+        $data['is_shared']   = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
 
         return $data;
     }
 
+    /**
+     * Store the photo re-encoded as a JPEG. Decoding and writing fresh bytes
+     * guarantees an image and drops EXIF, which on a phone photo includes
+     * where it was taken — often the driveway at home.
+     */
     private function storePhoto(Request $request): ?string
     {
-        return $request->hasFile('photo')
-            ? $request->file('photo')->store('vehicles', 'public')
-            : null;
+        if (! $request->hasFile('photo')) {
+            return null;
+        }
+
+        $file = $request->file('photo');
+        $size = @getimagesize($file->getRealPath());
+
+        try {
+            if ($size === false || $size[0] * $size[1] > 50_000_000) {
+                throw new \RuntimeException('Not a usable image.');
+            }
+
+            $encoded = (string) (new ImageManager(new GdDriver()))
+                ->read($file->getRealPath())
+                ->scaleDown(1600, 1600)
+                ->toJpeg(82);
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages(['photo' => __('messages.image_invalid')]);
+        }
+
+        $path = 'vehicles/' . bin2hex(random_bytes(16)) . '.jpg';
+        Storage::disk('public')->put($path, $encoded);
+
+        return $path;
     }
 
     /** Sharing is the same rule as bills: mine, or my family's shared ones. */
     private function authorizeVehicle(Request $request, Vehicle $vehicle): void
     {
-        $visible = Vehicle::forUser($request->user())->whereKey($vehicle->id)->exists();
-
-        abort_unless($visible, 403);
+        abort_unless($vehicle->isVisibleTo($request->user()), 403);
     }
 }

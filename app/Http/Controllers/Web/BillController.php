@@ -9,11 +9,15 @@ use App\Models\Category;
 use App\Models\Account;
 use App\Models\Payment;
 use App\Models\Provider;
+use App\Models\User;
 use App\Services\Ledger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class BillController extends Controller
 {
@@ -21,7 +25,7 @@ class BillController extends Controller
     {
         $user  = $request->user();
         $query = Bill::with(['category', 'provider', 'payments' => function ($q) {
-            $q->latest('paid_at')->with('paidBy');
+            $q->latest('paid_at')->with(['paidBy', 'account']);
         }])
             ->forUser($user)
             ->orderBy('next_due_date');
@@ -42,7 +46,9 @@ class BillController extends Controller
 
         match ($status) {
             'active'     => $query->where('is_active', true),
-            'overdue'    => $query->where('is_active', true)->whereDate('next_due_date', '<', now()),
+            // Decided by status(), like the sidebar badge: a paid one-off keeps
+            // its past due date and must not read as overdue.
+            'overdue'    => $query->whereIn('id', $overdueIds = Bill::overdueIdsFor($user)),
             // Due this month (paid or not), overdue from before, or paid
             // this month. Decided per bill — see Bill::belongsToMonth().
             'this_month' => $query->whereIn('id', $thisMonthIds = Bill::thisMonthIdsFor($user)),
@@ -71,7 +77,7 @@ class BillController extends Controller
         $all = Bill::forUser($user)->get(['is_active', 'is_shared', 'next_due_date']);
         $billCounts = [
             'all'        => $all->count(),
-            'overdue'    => $all->filter(fn($b) => $b->is_active && $b->next_due_date && $b->next_due_date->isPast())->count(),
+            'overdue'    => count($overdueIds ?? Bill::overdueIdsFor($user)),
             'this_month' => count($thisMonthIds ?? Bill::thisMonthIdsFor($user)),
             'shared'     => $all->where('is_shared', true)->count(),
         ];
@@ -96,25 +102,8 @@ class BillController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name'               => ['required', 'string', 'max:120'],
-            'description'        => ['nullable', 'string'],
-            'category_id'        => ['required', 'exists:categories,id'],
-            'provider_id' => ['nullable', 'exists:providers,id'],
-            'default_account_id' => ['nullable', 'exists:accounts,id'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'cost_varies' => ['nullable', 'boolean'],
-            // Optional: the total still owed on a loan or a card.
-            'debt_remaining' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
-            'start_date'         => ['required', 'date'],
-            'end_date'           => ['nullable', 'date', 'after:start_date'],
-            'is_shared'          => ['nullable'],
-            'notify_enabled'     => ['nullable'],
-            'notify_days_before' => ['nullable', 'integer', 'min:1', 'max:30'],
-            'url'                => ['nullable', 'url'],
-            'notes'              => ['nullable', 'string'],
-        ]);
+        // Files are handled on their own below, not mass-assigned.
+        $data = Arr::except($request->validate($this->billRules($request)), ['receipts']);
 
         $bill = Bill::create([
             ...$data,
@@ -123,25 +112,17 @@ class BillController extends Controller
             'debt_remaining' => $data['debt_remaining'] ?? null,
             // Recorded once so the bill can show how far along it is.
             'debt_initial'   => $data['debt_remaining'] ?? null,
-            'is_shared'      => (bool) ($data['is_shared'] ?? false),
+            // Sharing needs someone to share with.
+            'is_shared'      => $shared = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id,
             'notify_enabled' => (bool) ($data['notify_enabled'] ?? false),
             'created_by'     => $request->user()->id,
-            'family_id'      => ($data['is_shared'] ?? false) ? $request->user()->family_id : null,
+            'family_id'      => $shared ? $request->user()->family_id : null,
             'next_due_date'  => $data['start_date'],
         ]);
 
-        // Handle uploaded receipt images (optional, via Spatie medialibrary)
-        if ($request->hasFile('receipts') && class_exists(\Spatie\MediaLibrary\MediaCollections\Models\Media::class) && method_exists($bill, 'addMedia')) {
-            foreach ($request->file('receipts') as $file) {
-                try {
-                    $bill->addMedia($file->getRealPath())->usingFileName(uniqid() . '.' . $file->getClientOriginalExtension())->toMediaCollection('receipts');
-                } catch (\Exception $e) {
-                    // ignore individual failures
-                }
-            }
-        }
+        $this->storeReceipts($request, $bill);
 
-        return redirect()->route('bills.show', $bill)->with('success', 'Bill created.');
+        return redirect()->route('bills.show', $bill)->with('success', __('messages.bill_created'));
     }
 
     public function show(Bill $bill)
@@ -159,55 +140,54 @@ class BillController extends Controller
         return view('calendar.index');
     }
 
-    // Events for FullCalendar — returns bills + incomes
+    // Events for the calendar — returns bills + incomes
     public function events(Request $request)
     {
         $user = $request->user();
-
-        // Parse dates - handle both RFC 3339 with timezone and ISO 8601 formats
-        $startStr = $request->get('start');
-        $endStr = $request->get('end');
-
-        // Remove space before timezone offset if present (URL encoding issue)
-        if ($startStr && strpos($startStr, ' ') !== false) {
-            $startStr = str_replace(' ', '+', $startStr);
-        }
-        if ($endStr && strpos($endStr, ' ') !== false) {
-            $endStr = str_replace(' ', '+', $endStr);
-        }
-
-        $start = $startStr ? \Carbon\Carbon::parse($startStr) : now()->startOfMonth();
-        $end = $endStr ? \Carbon\Carbon::parse($endStr) : now()->endOfMonth();
+        [$start, $end] = $this->eventWindow($request);
+        $today = Carbon::today();
 
         // ── Bills ─────────────────────────────────────────────────────────────
         $bills = Bill::forUser($user)->whereNotNull('next_due_date')
             ->with(['category', 'provider', 'payments' => function ($q) use ($start, $end) {
-                $q->whereBetween('paid_at', [$start->startOfDay(), $end->endOfDay()]);
+                $q->whereBetween('paid_at', [$start, $end]);
             }])->get();
 
         $billEvents = collect();
 
         foreach ($bills as $b) {
-            // Get all occurrences between start and end
-            $occurrences = $b->occurrencesBetween($start, $end);
+            $nextDue = $b->next_due_date?->copy()->startOfDay();
 
-            foreach ($occurrences as $date) {
-                // Check if this occurrence was paid
-                $isPaid = $b->payments->some(fn($p) => $p->paid_at->toDateString() === $date->toDateString());
+            foreach ($b->occurrencesBetween($start, $end) as $date) {
+                // A cycle is settled once the schedule has moved past it (a full
+                // payment advances next_due_date), a one-off once it is paid,
+                // or when a payment landed on the day itself. Matching only the
+                // payment day, as before, missed every bill paid a day early.
+                $isPaid = ($b->last_paid_date && $nextDue && $date->lt($nextDue))
+                    || ($b->isOneOff() && $b->isCurrentCyclePaid())
+                    || $b->payments->contains(fn ($p) => $p->paid_at?->isSameDay($date));
 
-                $isOverdue = $date->isPast() && !$isPaid && $b->is_active;
-                $isSoon = !$isOverdue && !$isPaid && $date->diffInDays(now(), false) <= 7 && $date->isFuture() && $b->is_active;
-
-                // Determine color
-                if ($isPaid) {
-                    $color = '#10b981'; // Green for paid
-                } elseif ($isOverdue) {
-                    $color = '#ef4444'; // Red for overdue
-                } elseif ($isSoon) {
-                    $color = '#f97316'; // Orange for upcoming soon
-                } else {
-                    $color = $b->category?->color_hex ?? '#6366f1';
+                // A retired bill (a paid-off loan) has no future to show.
+                if (! $b->is_active && ! $isPaid) {
+                    continue;
                 }
+
+                // Due today is not overdue yet — `isPast()` said it was from
+                // one second past midnight.
+                $isOverdue = ! $isPaid && $date->lt($today);
+                // diffInDays() against now() was negative for every future
+                // date, so the whole future read as "due soon".
+                $isSoon = ! $isPaid && ! $isOverdue && $date->lte($today->copy()->addDays(7));
+
+                $color = match (true) {
+                    $isPaid    => '#10b981',
+                    $isOverdue => '#ef4444',
+                    $isSoon    => '#f97316',
+                    // The same blue as the list's "upcoming" group and the
+                    // legend; a category colour here read as a status (a red
+                    // "Rent" dot looked overdue).
+                    default    => '#60a5fa',
+                };
 
                 $billEvents->push([
                     'id' => 'bill-' . $b->id . '-' . $date->timestamp,
@@ -218,7 +198,7 @@ class BillController extends Controller
                     'color' => $color,
                     'extendedProps' => [
                         'type' => 'bill',
-                        'amount' => $b->currency_code . ' ' . number_format($b->amount, 2),
+                        'amount' => $b->currency_code . ' ' . number_format($b->periodAmount(), 2),
                         'overdue' => $isOverdue,
                         'paid' => $isPaid,
                         'soon' => $isSoon,
@@ -229,7 +209,10 @@ class BillController extends Controller
         }
 
         // ── Incomes ───────────────────────────────────────────────────────────
-        $incomes = \App\Models\Income::forUser($user)->active()->whereNotNull('next_date')->get();
+        $incomes = \App\Models\Income::forUser($user)->active()
+            ->whereNotNull('next_date')
+            ->whereBetween('next_date', [$start->toDateString(), $end->toDateString()])
+            ->get();
 
         $incomeEvents = $incomes->map(function ($i) {
             return [
@@ -247,6 +230,40 @@ class BillController extends Controller
         });
 
         return response()->json($billEvents->concat($incomeEvents)->values());
+    }
+
+    /**
+     * The date range a calendar request asks for, parsed defensively.
+     *
+     * Bad input falls back to this month instead of a 500, and the window is
+     * capped: a calendar page never shows more than six weeks, and an
+     * unbounded range made the server enumerate every occurrence in it.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function eventWindow(Request $request): array
+    {
+        $parse = function ($value, Carbon $fallback): Carbon {
+            if (! is_string($value) || $value === '') {
+                return $fallback;
+            }
+
+            try {
+                // A "+" in a timezone offset arrives as a space when unencoded.
+                return Carbon::parse(str_replace(' ', '+', $value));
+            } catch (\Throwable $e) {
+                return $fallback;
+            }
+        };
+
+        $start = $parse($request->query('start'), now()->startOfMonth())->startOfDay();
+        $end = $parse($request->query('end'), $start->copy()->endOfMonth())->endOfDay();
+
+        if ($end->lt($start) || $start->diffInDays($end) > 62) {
+            $end = $start->copy()->addDays(62)->endOfDay();
+        }
+
+        return [$start, $end];
     }
 
     public function edit(Bill $bill)
@@ -269,28 +286,11 @@ class BillController extends Controller
     {
         $this->authorizeEdit($bill);
 
-        $data = $request->validate([
-            'name'               => ['required', 'string', 'max:120'],
-            'description'        => ['nullable', 'string'],
-            'category_id'        => ['required', 'exists:categories,id'],
-            'provider_id' => ['nullable', 'exists:providers,id'],
-            'default_account_id' => ['nullable', 'exists:accounts,id'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'cost_varies' => ['nullable', 'boolean'],
-            // Optional: the total still owed on a loan or a card.
-            'debt_remaining' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
-            'start_date'         => ['required', 'date'],
-            'end_date'           => ['nullable', 'date'],
-            'is_shared'          => ['nullable'],
-            'notify_enabled'     => ['nullable'],
-            'notify_days_before' => ['nullable', 'integer', 'min:1', 'max:30'],
-            'url'                => ['nullable', 'url'],
-            'notes'              => ['nullable', 'string'],
-        ]);
+        // Files are handled on their own below, not mass-assigned.
+        $data = Arr::except($request->validate($this->billRules($request)), ['receipts']);
 
         $data['cost_varies'] = (bool)($data['cost_varies'] ?? false);
-        $data['is_shared']      = (bool) ($data['is_shared'] ?? false);
+        $data['is_shared']      = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
         $data['notify_enabled'] = (bool) ($data['notify_enabled'] ?? false);
 
         // Raising the outstanding total (a new drawdown, a bigger card balance)
@@ -301,9 +301,7 @@ class BillController extends Controller
             ? null
             : max((float) $data['debt_remaining'], (float) ($bill->debt_initial ?? 0));
 
-        if (isset($data['is_shared'])) {
-            $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
-        }
+        $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
 
         // Detect whether the recurrence schedule itself changed so we can snap
         // next_due_date back onto the new cadence (otherwise it keeps drifting
@@ -318,26 +316,19 @@ class BillController extends Controller
             $bill->save();
         }
 
-        // Handle uploaded receipt images on update
-        if ($request->hasFile('receipts') && class_exists(\Spatie\MediaLibrary\MediaCollections\Models\Media::class) && method_exists($bill, 'addMedia')) {
-            foreach ($request->file('receipts') as $file) {
-                try {
-                    $bill->addMedia($file->getRealPath())->usingFileName(uniqid() . '.' . $file->getClientOriginalExtension())->toMediaCollection('receipts');
-                } catch (\Exception $e) {
-                    // ignore
-                }
-            }
-        }
+        $this->storeReceipts($request, $bill);
 
-        return redirect()->route('bills.show', $bill)->with('success', 'Bill updated.');
+        return redirect()->route('bills.show', $bill)->with('success', __('messages.bill_updated'));
     }
 
     public function destroy(Bill $bill)
     {
         $this->authorizeEdit($bill);
-        $bill->delete();
 
-        return redirect()->route('bills.index')->with('success', 'Bill deleted.');
+        // Account movements survive — see Bill::booted().
+        DB::transaction(fn () => $bill->delete());
+
+        return redirect()->route('bills.index')->with('success', __('messages.bill_deleted'));
     }
 
     /**
@@ -381,89 +372,105 @@ class BillController extends Controller
     {
         $this->authorizeView($bill);
 
-        $paidByUserId = $request->input('paid_by_user_id', $request->user()->id);
+        $user = $request->user();
 
         // The money has to come out of somewhere. Once the user keeps accounts,
         // picking one is required — otherwise balances quietly stop matching
         // reality. Users with no accounts yet can still record payments.
-        $hasAccounts = Account::forUser($request->user())->active()->exists();
-        $request->validate([
-            'account_id' => [$hasAccounts ? 'required' : 'nullable', 'exists:accounts,id'],
-        ]);
-        $account = $request->filled('account_id')
-            ? Account::forUser($request->user())->find($request->input('account_id'))
-            : null;
-        $paymentMode = $request->input('payment_mode', 'full'); // 'partial' or 'full'
-        $isPartial = $paymentMode === 'partial';
+        $hasAccounts = Account::forUser($user)->active()->exists();
 
         // Payments are often recorded days after the fact. The date defaults to
         // today but can be backdated, which matters because `paid_at` decides
         // when the account balance actually moved. Future dates are
         // rejected — a bill isn't paid before it's paid.
-        $request->validate([
-            'paid_at' => ['nullable', 'date', 'before_or_equal:today'],
+        $data = $request->validate([
+            'account_id'      => [$hasAccounts ? 'required' : 'nullable', 'string', 'max:26'],
+            'paid_by_user_id' => ['nullable', 'string', 'max:26'],
+            'payment_mode'    => ['nullable', 'in:full,partial'],
+            'partial_amount'  => ['nullable', 'required_if:payment_mode,partial', 'numeric', 'min:0.01', 'max:99999999'],
+            'custom_amount'   => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],
+            'paid_at'         => ['nullable', 'date', 'before_or_equal:today'],
+            'notes'           => ['nullable', 'string', 'max:1000'],
         ]);
-        $paidAt = $request->filled('paid_at')
-            ? Carbon::parse($request->input('paid_at'))->setTimeFrom(now())
+
+        // Only an account this user can reach, and only someone in their
+        // household as the payer — both arrive from the browser.
+        $account = null;
+        if (! empty($data['account_id'])) {
+            $account = Account::forUser($user)->find($data['account_id']);
+            if (! $account) {
+                throw ValidationException::withMessages(['account_id' => __('messages.invalid_selection')]);
+            }
+        }
+
+        $paidByUserId = $data['paid_by_user_id'] ?? $user->id;
+        if ($paidByUserId !== $user->id
+            && ! ($user->family_id && User::whereKey($paidByUserId)->where('family_id', $user->family_id)->exists())) {
+            throw ValidationException::withMessages(['paid_by_user_id' => __('messages.invalid_selection')]);
+        }
+
+        $isPartial = ($data['payment_mode'] ?? 'full') === 'partial';
+        $paidAt = ! empty($data['paid_at'])
+            ? Carbon::parse($data['paid_at'])->setTimeFrom(now())
             : now();
 
-        // Determine the total amount for this billing cycle
-        if ($bill->cost_varies && $request->filled('custom_amount')) {
-            $periodAmount = (float)$request->input('custom_amount');
-        } else {
-            // periodAmount() prefers this cycle's recorded figure over the
-            // template amount, which for a varying bill is only an estimate.
-            $periodAmount = $bill->periodAmount();
-        }
+        [$payment, $isPartial] = DB::transaction(function () use ($bill, $data, $paidByUserId, $account, $isPartial, $paidAt, $ledger) {
+            // Re-read the bill under a row lock: a double tap, or two people
+            // paying at once, must see each other's payment rather than both
+            // settling the same cycle from the same stale balance.
+            $bill = Bill::whereKey($bill->getKey())->lockForUpdate()->firstOrFail();
 
-        // Calculate how much is being paid now and what the new remaining balance will be
-        if ($isPartial) {
-            $partialAmount = (float)$request->input('partial_amount', 0);
+            // Determine the total amount for this billing cycle. periodAmount()
+            // prefers this cycle's recorded figure over the template amount,
+            // which for a varying bill is only an estimate.
+            $periodAmount = $bill->cost_varies && ! empty($data['custom_amount'])
+                ? (float) $data['custom_amount']
+                : $bill->periodAmount();
+
             $currentRemaining = $bill->remaining_balance !== null
-                ? (float)$bill->remaining_balance
+                ? (float) $bill->remaining_balance
                 : $periodAmount;
 
-            $newRemaining = round($currentRemaining - $partialAmount, 2);
+            if ($isPartial) {
+                $partialAmount = (float) $data['partial_amount'];
+                $newRemaining = round($currentRemaining - $partialAmount, 2);
 
-            // If partial payment covers the full remaining amount, treat as full
-            if ($newRemaining <= 0) {
-                $isPartial = false;
+                // A "partial" payment that covers what is left settles the cycle.
+                if ($newRemaining <= 0) {
+                    $isPartial = false;
+                    $payAmount = $currentRemaining;
+                    $newRemaining = null;
+                } else {
+                    $payAmount = $partialAmount;
+                }
+            } else {
+                // Full payment: pay whatever is still remaining
                 $payAmount = $currentRemaining;
                 $newRemaining = null;
-            } else {
-                $payAmount = $partialAmount;
             }
-        } else {
-            // Full payment: pay whatever is still remaining
-            $payAmount = $bill->remaining_balance !== null
-                ? (float)$bill->remaining_balance
-                : $periodAmount;
-            $newRemaining = null;
-        }
 
-        // The last instalment of a loan is whatever is left of it. Taking the
-        // usual amount against a smaller balance would overpay the debt and
-        // push it negative, so the payment is capped at the outstanding total.
-        if ($bill->tracksDebt()) {
-            $payAmount = min($payAmount, max(0.0, (float) $bill->debt_remaining));
+            // The last instalment of a loan is whatever is left of it. Taking the
+            // usual amount against a smaller balance would overpay the debt and
+            // push it negative, so the payment is capped at the outstanding total.
+            if ($bill->tracksDebt()) {
+                $payAmount = min($payAmount, max(0.0, (float) $bill->debt_remaining));
 
-            // Nothing left to settle the cycle against either.
-            if ($payAmount <= 0) {
-                $newRemaining = null;
-                $isPartial = false;
+                // Nothing left to settle the cycle against either.
+                if ($payAmount <= 0) {
+                    $newRemaining = null;
+                    $isPartial = false;
+                }
             }
-        }
 
-        $payment = DB::transaction(function () use ($bill, $request, $paidByUserId, $account, $payAmount, $isPartial, $newRemaining, $paidAt, $ledger) {
             $payment = Payment::create([
                 'bill_id'       => $bill->id,
-                'paid_by' => $paidByUserId,
-                'account_id' => $account?->id,
-                'amount' => $payAmount,
-                'is_partial' => $isPartial,
+                'paid_by'       => $paidByUserId,
+                'account_id'    => $account?->id,
+                'amount'        => $payAmount,
+                'is_partial'    => $isPartial,
                 'currency_code' => $bill->currency_code,
                 'paid_at'       => $paidAt,
-                'notes' => $request->input('notes'),
+                'notes'         => $data['notes'] ?? null,
             ]);
 
             if ($account) {
@@ -497,7 +504,7 @@ class BillController extends Controller
 
             $this->drawDownDebt($bill, $payAmount);
 
-            return $payment;
+            return [$payment, $isPartial];
         });
 
         // Tell the rest of the household. After the response so the person who
@@ -511,7 +518,7 @@ class BillController extends Controller
                 'remaining_balance' => $bill->remaining_balance,
                 'last_paid_date' => $bill->last_paid_date?->toDateString(),
                 'next_due_date' => $bill->next_due_date?->toDateString(),
-                'message' => $isPartial ? 'Μερική πληρωμή καταγράφηκε.' : 'Πληρωμή καταγράφηκε.',
+                'message' => __($isPartial ? 'messages.partial_payment_recorded' : 'messages.payment_recorded'),
             ]);
         }
 
@@ -537,7 +544,7 @@ class BillController extends Controller
             if (request()->wantsJson() || request()->ajax()) {
                 return response()->json(['status' => 'none', 'message' => 'No payment to undo.'], 422);
             }
-            return back()->with('error', 'No payment found to undo.');
+            return back()->with('error', __('messages.no_payment_to_undo'));
         }
 
         $this->removePayment($bill, $lastPayment);
@@ -680,13 +687,92 @@ class BillController extends Controller
         });
     }
 
+    /** Open a receipt — only for someone who can see the bill. */
+    public function showReceipt(Bill $bill, int $receipt)
+    {
+        $this->authorizeView($bill);
+        $media = $this->findReceipt($bill, $receipt);
+
+        $headers = [
+            'Content-Type'           => $media->mime_type,
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control'          => 'private, max-age=3600',
+        ];
+
+        return response()->file($media->getPath(), $headers);
+    }
+
+    public function destroyReceipt(Bill $bill, int $receipt)
+    {
+        $this->authorizeEdit($bill);
+        $this->findReceipt($bill, $receipt)->delete();
+
+        return back()->with('success', __('messages.receipt_deleted'));
+    }
+
+    /** The receipt with this id, if it really belongs to this bill. */
+    private function findReceipt(Bill $bill, int $id): \Spatie\MediaLibrary\MediaCollections\Models\Media
+    {
+        $media = $bill->getMedia('receipts')->firstWhere('id', $id);
+        abort_unless($media, 404);
+
+        return $media;
+    }
+
+    /**
+     * Attach uploaded receipts. They used to be thrown away without a word:
+     * the bill had never been set up to hold media.
+     *
+     * The stored name is random and the extension comes from the file's
+     * content, never from what the browser called it.
+     */
+    private function storeReceipts(Request $request, Bill $bill): void
+    {
+        foreach ((array) $request->file('receipts', []) as $file) {
+            $original = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+            $bill->addMedia($file)
+                ->usingName(Str::limit($original !== '' ? $original : __('messages.receipts'), 100, ''))
+                ->usingFileName(Str::random(40) . '.' . ($file->guessExtension() ?: 'bin'))
+                ->toMediaCollection('receipts');
+        }
+    }
+
+    /** Validation shared by create and edit. */
+    private function billRules(Request $request): array
+    {
+        return [
+            'name'               => ['required', 'string', 'max:120'],
+            'description'        => ['nullable', 'string', 'max:2000'],
+            'category_id'        => ['required', 'exists:categories,id'],
+            'provider_id'        => ['nullable', 'exists:providers,id'],
+            // Only an account this user can see — the id comes from the form.
+            'default_account_id' => ['nullable', 'string', function (string $attribute, $value, \Closure $fail) use ($request) {
+                if (! Account::forUser($request->user())->whereKey($value)->exists()) {
+                    $fail(__('messages.invalid_selection'));
+                }
+            }],
+            'amount'             => ['required', 'numeric', 'min:0', 'max:99999999'],
+            'cost_varies'        => ['nullable', 'boolean'],
+            // Optional: the total still owed on a loan or a card.
+            'debt_remaining'     => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
+            'start_date'         => ['required', 'date'],
+            'end_date'           => ['nullable', 'date', 'after:start_date'],
+            'is_shared'          => ['nullable'],
+            'notify_enabled'     => ['nullable'],
+            'notify_days_before' => ['nullable', 'integer', 'min:1', 'max:30'],
+            // Rendered as a link, so nothing but the web.
+            'url'                => ['nullable', 'url:http,https', 'max:2048'],
+            'notes'              => ['nullable', 'string', 'max:5000'],
+            'receipts'           => ['nullable', 'array', 'max:10'],
+            'receipts.*'         => ['file', 'mimes:jpg,jpeg,png,webp,gif,pdf', 'max:10240'],
+        ];
+    }
+
     private function authorizeView(Bill $bill): void
     {
-        $user = request()->user();
-        $ok   = $user instanceof \App\Models\User
-             && ($bill->created_by === $user->id
-             || ($bill->is_shared && $bill->family_id === $user->family_id));
-        abort_unless($ok, 403, 'Access denied.');
+        abort_unless($bill->isVisibleTo(request()->user()), 403, 'Access denied.');
     }
 
     /**

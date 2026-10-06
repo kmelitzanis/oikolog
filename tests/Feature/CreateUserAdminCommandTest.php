@@ -14,7 +14,8 @@ class CreateUserAdminCommandTest extends TestCase
     {
         $email = 'cliadmin@example.com';
 
-        $this->artisan('make:user:admin', [
+        $this->artisan('make:user', [
+            '--admin' => true,
             '--email' => $email,
             '--password' => 'supersecret123',
             '--name' => 'CLI Admin',

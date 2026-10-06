@@ -74,9 +74,11 @@
                         </div>
                     </div>
                     <div class="text-xs text-gray-400 dark:text-slate-500 mt-1">
-                        {{ number_format($vehicle->kmPerYear(), 0, ',', '.') }} {{ __('messages.vehicle_km_per_year') }}
+                        @if(($kmPerYear = $vehicle->kmPerYear()) !== null)
+                            {{ number_format($kmPerYear, 0, ',', '.') }} {{ __('messages.vehicle_km_per_year') }}
+                        @endif
                         @if($vehicle->odometer_read_at)
-                            · {{ $vehicle->odometer_read_at->translatedFormat('j M Y') }}
+                            {{ $kmPerYear !== null ? '·' : '' }} {{ $vehicle->odometer_read_at->translatedFormat('j M Y') }}
                         @endif
                     </div>
 

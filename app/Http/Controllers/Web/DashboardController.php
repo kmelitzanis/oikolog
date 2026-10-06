@@ -7,10 +7,16 @@ use App\Models\Bill;
 use App\Models\Income;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManagerStatic as Image;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
 
 class DashboardController extends Controller
 {
@@ -104,7 +110,7 @@ class DashboardController extends Controller
             // which dropped a month from the series and repeated another.
             $month = now()->startOfMonth()->subMonths($i);
             $ym = $month->format('Y-m');
-            $chartMonths[] = $month->format('M y');
+            $chartMonths[] = $month->translatedFormat('M y');
             $chartSpending[] = (float)($payments12[$ym] ?? 0);
             $chartIncome[] = $monthlyIncomeAmt;
         }
@@ -176,7 +182,7 @@ class DashboardController extends Controller
         $user = User::where('email', $credentials['email'])->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            return back()->withErrors(['email' => 'Invalid credentials.'])->withInput();
+            return back()->withErrors(['email' => __('messages.invalid_credentials')])->onlyInput('email');
         }
 
         // Two-factor users are held at the door: the password is checked
@@ -188,9 +194,13 @@ class DashboardController extends Controller
         // the user's *other* devices — the phone got signed out each time the
         // laptop signed in.
         if ($user->two_factor_enabled) {
+            // A fresh session id for the half-signed-in state, so a session
+            // fixed by someone else before the password was typed is useless.
+            $request->session()->regenerate();
             $request->session()->put([
-                '2fa_user_id'  => $user->id,
-                '2fa_remember' => $remember,
+                '2fa_user_id'    => $user->id,
+                '2fa_remember'   => $remember,
+                '2fa_expires_at' => now()->addSeconds(TwoFactorController::PENDING_TTL_SECONDS)->getTimestamp(),
             ]);
 
             return redirect()->route('2fa.challenge');
@@ -200,6 +210,18 @@ class DashboardController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended('/');
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        // Drop everything the session carried and issue a new CSRF token, so
+        // nothing from the signed-in session can be reused afterwards.
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
     }
 
     // Show settings form
@@ -230,20 +252,29 @@ class DashboardController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'gender' => ['nullable', 'in:male,female'],
-            'email' => ['required', 'email', 'unique:users,email,' . $user->id],
-            'currency_code' => ['nullable', 'string', 'size:3'],
-            'default_account_id' => ['nullable', 'exists:accounts,id'],
-            'password' => ['nullable', 'confirmed', 'min:8'],
-            'avatar' => ['nullable', 'image', 'max:2048'],
-            'avatar_url' => ['nullable', 'url'],
-            'locale' => ['nullable', 'string'],
+            'email' => ['required', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user->getKey())],
+            // Printed into pages and scripts, so strictly three letters.
+            'currency_code' => ['nullable', 'string', 'regex:/^[A-Z]{3}$/'],
+            // Only one of the user's own accounts can be the default.
+            'default_account_id' => ['nullable', 'string', function (string $attribute, $value, \Closure $fail) use ($user) {
+                if (! \App\Models\Account::forUser($user)->whereKey($value)->exists()) {
+                    $fail(__('messages.invalid_selection'));
+                }
+            }],
+            'password' => ['nullable', 'confirmed', Password::min(8)],
+            // Changing the password needs the current one, so an unlocked
+            // laptop or a stolen session cannot lock the owner out.
+            'current_password' => ['nullable', 'required_with:password', 'current_password:web'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+            'avatar_url' => ['nullable', 'url:http,https', 'max:500'],
+            'locale' => ['nullable', 'string', Rule::in($this->availableLocales())],
         ]);
 
         $update = [
             'name' => $data['name'],
             'gender' => $data['gender'] ?? $user->gender,
             'email' => $data['email'],
-            'currency_code' => $data['currency_code'] ?? $user->currency_code,
+            'currency_code' => $data['currency_code'] ?? $user->currency_code ?? 'EUR',
             // Absent (an API caller) leaves it alone; blank means "no
             // preference" and the modal falls back as before.
             'default_account_id' => array_key_exists('default_account_id', $data)
@@ -257,46 +288,70 @@ class DashboardController extends Controller
             $update['password'] = $data['password'];
         }
 
-        // Handle uploaded avatar image
+        // An uploaded picture replaces whatever was there. (It used to be
+        // dropped whenever an avatar already existed, so it could be set once
+        // and never changed.)
         if ($request->hasFile('avatar')) {
-            $file = $request->file('avatar');
-            // If Spatie medialibrary is installed and model uses it, attach via medialibrary
-            if (method_exists($user, 'addMedia')) {
-                // attach single avatar (clear previous if singleFile not used)
-                try {
-                    $user->clearMediaCollection('avatars');
-                } catch (\Throwable $e) {
-                    // ignore if not supported
-                }
-                try {
-                    $user->addMedia($file->getRealPath())->usingFileName(uniqid() . '.' . $file->getClientOriginalExtension())->toMediaCollection('avatars');
-                    $update['avatar_url'] = $user->getFirstMediaUrl('avatars', 'thumb') ?: $update['avatar_url'];
-                } catch (\Throwable $e) {
-                    // fallthrough to fallback storage
-                }
-            }
-
-            // If avatar_url still not set, fallback to Intervention resize + store
-            if (empty($update['avatar_url'])) {
-                if (class_exists(\Intervention\Image\ImageManagerStatic::class)) {
-                    $img = Image::make($file->getRealPath())->fit(256, 256, function ($constraint) {
-                        $constraint->upsize();
-                    })->encode('jpg', 85);
-                    $filename = 'avatars/' . uniqid() . '.jpg';
-                    Storage::disk('public')->put($filename, (string)$img);
-                    $update['avatar_url'] = Storage::disk('public')->url($filename);
-                } else {
-                    // Fallback: store original file if imagemagick/gd not available
-                    $path = $file->store('avatars', 'public');
-                    $update['avatar_url'] = Storage::disk('public')->url($path);
-                }
-            }
+            $update['avatar_url'] = $this->storeAvatar($request->file('avatar'), $user->avatar_url);
         }
 
         $user->update($update);
         $user->refresh();
 
-        return back()->with('success', 'Settings updated.');
+        // The session's locale outranks the saved one (see SetLocale), so a
+        // language picked here would otherwise be ignored until sign-out.
+        session(['locale' => $user->locale]);
+
+        if (! empty($data['password'])) {
+            // A new password should end "remember me" everywhere else:
+            // cycling the token voids every other device's recaller cookie.
+            // This browser is signed straight back in with the new one.
+            $remembered = $request->cookies->has(Auth::guard('web')->getRecallerName());
+            $user->setRememberToken(Str::random(60));
+            $user->save();
+            Auth::guard('web')->login($user, $remembered);
+            $request->session()->regenerate();
+        }
+
+        return back()->with('success', __('messages.settings_updated'));
+    }
+
+    /**
+     * Store an avatar as a 256px JPEG and return its public URL.
+     *
+     * Re-encoding is the point: it guarantees the file really is an image
+     * and drops the EXIF block, which on a phone photo carries the GPS
+     * position it was taken at.
+     */
+    private function storeAvatar(UploadedFile $file, ?string $previousUrl): string
+    {
+        $size = @getimagesize($file->getRealPath());
+        if ($size === false || $size[0] * $size[1] > 50_000_000) {
+            throw ValidationException::withMessages(['avatar' => __('messages.image_invalid')]);
+        }
+
+        try {
+            $encoded = (string) (new ImageManager(new GdDriver()))
+                ->read($file->getRealPath())
+                ->cover(256, 256)
+                ->toJpeg(85);
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages(['avatar' => __('messages.image_invalid')]);
+        }
+
+        $path = 'avatars/' . bin2hex(random_bytes(16)) . '.jpg';
+        Storage::disk('public')->put($path, $encoded);
+
+        // One picture per person: the replaced file goes, if it was ours.
+        $prefix = Storage::disk('public')->url('avatars/');
+        if ($previousUrl && str_starts_with($previousUrl, $prefix)) {
+            $old = substr($previousUrl, strlen($prefix));
+            if (preg_match('/^[A-Za-z0-9_.-]+$/', $old)) {
+                Storage::disk('public')->delete('avatars/' . $old);
+            }
+        }
+
+        return Storage::disk('public')->url($path);
     }
 
     // Set locale via quick route (session + user if authenticated)
@@ -309,9 +364,14 @@ class DashboardController extends Controller
         if ($user = Auth::user()) {
             $user->update(['locale' => $lang]);
         }
-        // Redirect back explicitly so a fresh request picks up the session locale
-        $back = url()->previous() ?: route('dashboard');
-        return redirect()->to($back)->with('success', __('Settings updated.'));
+        // Redirect back explicitly so a fresh request picks up the session
+        // locale — but only within this site: the previous URL comes from
+        // the Referer header, which another site controls.
+        $back = url()->previous();
+        if (! $back || parse_url($back, PHP_URL_HOST) !== request()->getHost()) {
+            $back = Auth::check() ? route('dashboard') : route('login');
+        }
+        return redirect()->to($back)->with('success', __('messages.settings_updated'));
     }
 
     private function availableLocales(): array

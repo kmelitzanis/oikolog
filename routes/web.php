@@ -7,18 +7,7 @@ use App\Http\Controllers\Web\IncomeController;
 use App\Http\Controllers\Web\ProductController;
 use App\Http\Controllers\Web\ShoppingListController;
 use App\Http\Controllers\Web\TwoFactorController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
-// Temporary auth-check route (local only) - remove after debugging
-if (app()->environment('local')) {
-    Route::get('/_debug/auth', function () {
-        return response()->json([
-            'authenticated' => auth()->check(),
-            'user' => auth()->user() ? auth()->user()->only('id', 'email', 'name') : null,
-        ]);
-    });
-}
 
 // Admin routes (user/category/provider management)
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -28,20 +17,23 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 });
 
 Route::get('/login',  fn() => view('auth.login'))->name('login')->middleware('guest');
-Route::post('/login', [DashboardController::class, 'login'])->name('login.post');
-Route::post('/logout', function () {
-    Auth::logout();
-    return redirect('/login');
-})->name('logout');
+Route::post('/login', [DashboardController::class, 'login'])
+    ->middleware('throttle:login')
+    ->name('login.post');
+Route::post('/logout', [DashboardController::class, 'logout'])->name('logout');
+
+// Language switch — open to guests too, so the sign-in page can offer it.
+Route::get('/locale/{lang}', [DashboardController::class, 'setLocale'])->name('locale.set');
 
 // 2FA challenge (between password success and full auth)
 Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('2fa.challenge')->middleware('guest');
-Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallenge'])->name('2fa.verify');
+Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallenge'])
+    ->middleware('throttle:two-factor')
+    ->name('2fa.verify');
 
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/month', [DashboardController::class, 'month'])->name('dashboard.month');
-    Route::get('/locale/{lang}', [\App\Http\Controllers\Web\DashboardController::class, 'setLocale'])->name('locale.set');
 
     // Calendar events API (used by the inline calendar on the bills page)
     // Must be defined BEFORE the bills resource routes to avoid /{bill} pattern matching
@@ -69,6 +61,9 @@ Route::middleware('auth')->group(function () {
             // bill's payment history.
             Route::delete('/{bill}/unpay', 'undoLastPayment')->name('unpay');
             Route::delete('/{bill}/payments/{payment}', 'destroyPayment')->name('payments.destroy');
+            // Receipts are private files, streamed only past the bill's own check.
+            Route::get('/{bill}/receipts/{receipt}', 'showReceipt')->whereNumber('receipt')->name('receipts.show');
+            Route::delete('/{bill}/receipts/{receipt}', 'destroyReceipt')->whereNumber('receipt')->name('receipts.destroy');
         });
 
     // Amounts parsed out of provider invoice mail, pending review. Accepting is
@@ -148,7 +143,7 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('/', 'index')->name('index');
             Route::post('/', 'create')->name('create');
-            Route::post('/join', 'join')->name('join');
+            Route::post('/join', 'join')->middleware('throttle:family-join')->name('join');
             Route::delete('/leave', 'leave')->name('leave');
             Route::post('/regenerate-code', 'regenerateCode')->name('regenerate');
             Route::delete('/members/{member}', 'removeMember')->name('remove');
@@ -173,8 +168,10 @@ Route::middleware('auth')->group(function () {
 
     // 2FA setup
     Route::get('/two-factor-setup', [TwoFactorController::class, 'setup'])->name('2fa.setup');
-    Route::post('/two-factor-enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
-    Route::post('/two-factor-disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
+    Route::post('/two-factor-enable', [TwoFactorController::class, 'enable'])
+        ->middleware('throttle:two-factor')->name('2fa.enable');
+    Route::post('/two-factor-disable', [TwoFactorController::class, 'disable'])
+        ->middleware('throttle:two-factor')->name('2fa.disable');
 
     // Read-only IMAP account the invoice crawler uses.
     Route::controller(\App\Http\Controllers\Web\MailboxController::class)

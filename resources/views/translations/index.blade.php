@@ -1,40 +1,39 @@
 @extends('layouts.app')
-@section('title','Translations')
+@section('title', __('messages.translations'))
 
 @section('content')
-    <div style="max-width:1000px;">
-        <div class="page-header">
-            <h1 class="page-title">Translations</h1>
-            <a href="{{ route('translations.create') }}" class="btn btn-primary">Add</a>
-        </div>
+    <div class="max-w-5xl">
+        <x-page-header :title="__('messages.translations')" :subtitle="__('messages.translations_hint')">
+            <x-slot:actions>
+                <x-btn :href="route('translations.create')" icon="add">{{ __('messages.add') }}</x-btn>
+            </x-slot:actions>
+        </x-page-header>
 
-        <div class="card" style="padding:16px;">
-            <div style="display:flex;gap:12px;font-weight:700;padding:8px 0;border-bottom:1px solid #f8fafc;">
-                <div style="width:80px">Locale</div>
-                <div style="width:120px">Group</div>
-                <div style="flex:1">Key</div>
-                <div style="width:300px">Value</div>
-                <div style="width:120px;text-align:right">Actions</div>
-            </div>
-            @foreach($translations as $t)
-                <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f8fafc;">
-                    <div style="width:80px">{{ $t->locale }}</div>
-                    <div style="width:120px">{{ $t->group }}</div>
-                    <div style="flex:1">{{ $t->key }}</div>
-                    <div style="width:300px;color:#475569">{{ $t->value }}</div>
-                    <div style="width:120px;text-align:right;display:flex;justify-content:flex-end;gap:8px;">
-                        <a href="{{ route('translations.edit', $t) }}" class="btn btn-secondary">Edit</a>
+        <x-card flush class="overflow-hidden">
+            @forelse($translations as $t)
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 sm:px-5 py-3.5 {{ ! $loop->first ? 'border-t border-gray-100 dark:border-slate-700' : '' }}">
+                    <div class="flex items-center gap-2 shrink-0 sm:w-44">
+                        <span class="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[0.68rem] font-bold uppercase">{{ $t->locale }}</span>
+                        <span class="text-xs text-gray-400 dark:text-slate-500 truncate">{{ $t->group }}</span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="font-mono text-xs text-gray-500 dark:text-slate-400 break-all">{{ $t->key }}</div>
+                        <div class="text-sm text-gray-900 dark:text-white mt-0.5 break-words">{{ \Illuminate\Support\Str::limit($t->value, 160) }}</div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <x-btn variant="ghost" size="sm" icon="edit" :href="route('translations.edit', $t)">{{ __('messages.edit') }}</x-btn>
                         <form method="POST" action="{{ route('translations.destroy', $t) }}"
-                              onsubmit="return confirm('Delete?')">
+                              onsubmit="return confirm({{ \Illuminate\Support\Js::from(__('messages.confirm_delete')) }})">
                             @csrf @method('DELETE')
-                            <button class="btn btn-danger">Delete</button>
+                            <x-btn variant="danger" size="sm" icon="delete">{{ __('messages.delete') }}</x-btn>
                         </form>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <x-empty-state quiet icon="translate" :text="__('messages.no_translations')" />
+            @endforelse
+        </x-card>
 
-            <div style="margin-top:12px;">{{ $translations->links() }}</div>
-        </div>
+        <div class="mt-4">{{ $translations->links() }}</div>
     </div>
 @endsection
-

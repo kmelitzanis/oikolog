@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SharedWithFamily;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class Vehicle extends Model
 {
-    use HasUlids;
+    use HasUlids, SharedWithFamily;
 
     public const TYPES = ['car', 'motorcycle', 'other'];
 
@@ -61,22 +62,6 @@ class Vehicle extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(VehicleExpense::class)->orderByDesc('spent_at');
-    }
-
-    /** Same sharing rule as bills and accounts: mine, or my family's shared ones. */
-    public function scopeForUser($query, $user)
-    {
-        if (! $user) {
-            return $query->whereRaw('1=0');
-        }
-
-        return $query->where(function ($q) use ($user) {
-            $q->where('created_by', $user->id)
-                ->orWhere(function ($q2) use ($user) {
-                    $q2->where('is_shared', true)
-                        ->where('family_id', $user->family_id);
-                });
-        });
     }
 
     public function scopeActive($query)
@@ -123,10 +108,27 @@ class Vehicle extends Model
         return max(0, (int) $this->odometer_km - (int) ($this->purchase_km ?? 0));
     }
 
+    /**
+     * When the distance in kmCovered() started accumulating: the purchase, or
+     * failing that the start of the model year. Null when neither is known.
+     *
+     * It used to fall back to the day the record was created, which divided a
+     * lifetime odometer by a few days of "ownership" — a 2019 car added today
+     * read as a million kilometres a year.
+     */
+    private function distanceSince(): ?Carbon
+    {
+        if ($this->purchase_date) {
+            return Carbon::parse($this->purchase_date);
+        }
+
+        return $this->year ? Carbon::create((int) $this->year, 1, 1) : null;
+    }
+
     /** Years of ownership, floored at a month so a new car doesn't divide by zero. */
     public function yearsOwned(): float
     {
-        $from = $this->purchase_date ?? $this->created_at;
+        $from = $this->distanceSince() ?? $this->created_at;
 
         if (! $from) {
             return 1.0;
@@ -135,9 +137,16 @@ class Vehicle extends Model
         return max(1 / 12, Carbon::parse($from)->floatDiffInYears(Carbon::today()));
     }
 
-    /** Average kilometres a year — the figure the card quotes under the odometer. */
-    public function kmPerYear(): int
+    /**
+     * Average kilometres a year — the figure the card quotes under the
+     * odometer. Null when there is nothing honest to divide by.
+     */
+    public function kmPerYear(): ?int
     {
+        if (! $this->distanceSince()) {
+            return null;
+        }
+
         return (int) round($this->kmCovered() / $this->yearsOwned());
     }
 

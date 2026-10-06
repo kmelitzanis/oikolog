@@ -70,20 +70,27 @@ class ProductController extends Controller
         return redirect()->route('products.show', $product)->with('success', __('messages.product_created'));
     }
 
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
-        $product->loadCount('purchases');
+        // The product is shared; who bought it, when, and on which list is
+        // not. History is the viewer's household's own, and the "on a list"
+        // links only ever point at the viewer's lists.
+        $user = $request->user();
+        $household = $user->householdIds();
 
-        $purchases = $product->purchases()->with('buyer:id,name', 'shoppingList:id,name')
+        $product->purchases_count = $product->purchasesBy($household)->count();
+
+        $purchases = $product->purchasesBy($household)->with('buyer:id,name', 'shoppingList:id,name')
             ->orderByDesc('purchased_at')->limit(30)->get();
 
         // "On a list right now" — the unticked lines pointing here.
         $openItems = $product->listItems()->with('shoppingList:id,name')
+            ->whereHas('shoppingList', fn($q) => $q->where('user_id', $user->id))
             ->where('checked', false)->get();
 
         $rhythm = [
-            'every' => $product->averageDaysBetweenPurchases(),
-            'next' => $product->expectedNextPurchase(),
+            'every' => $product->averageDaysBetweenPurchases($household),
+            'next' => $product->expectedNextPurchase($household),
         ];
 
         return view('products.show', compact('product', 'purchases', 'openItems', 'rhythm'));
@@ -149,17 +156,17 @@ class ProductController extends Controller
             'barcode' => ['nullable', 'string', 'max:50', 'unique:products,barcode' . ($product ? ',' . $product->id : '')],
             'category' => ['nullable', 'string', 'max:100'],
             'unit' => ['nullable', 'string', 'max:50'],
-            'default_quantity' => ['nullable', 'numeric', 'min:0'],
+            'default_quantity' => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'net_quantity' => ['nullable', 'string', 'max:60'],
             'serving_size' => ['nullable', 'string', 'max:60'],
-            'image_url' => ['nullable', 'url', 'max:500'],
-            'description' => ['nullable', 'string'],
-            'ingredients_text' => ['nullable', 'string'],
+            'image_url' => ['nullable', 'url:http,https', 'max:500'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'ingredients_text' => ['nullable', 'string', 'max:5000'],
             'nutri_score' => ['nullable', 'in:a,b,c,d,e'],
             'eco_score' => ['nullable', 'in:a,b,c,d,e'],
             'nova_group' => ['nullable', 'integer', 'min:1', 'max:4'],
-            'nutrition' => ['nullable', 'array'],
-            'nutrition.*' => ['nullable', 'numeric', 'min:0'],
+            'nutrition' => ['nullable', 'array', 'max:20'],
+            'nutrition.*' => ['nullable', 'numeric', 'min:0', 'max:99999'],
         ]);
 
         // Fields the request omitted are simply absent from the validated set.

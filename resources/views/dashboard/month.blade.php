@@ -99,7 +99,7 @@
                     </div>
                 </a>
                 <div class="text-[1.05rem] font-extrabold text-gray-900 dark:text-white shrink-0">
-                    {{ $currency }} {{ number_format($bill->amount, 2) }}
+                    {{ $currency }} {{ number_format($bill->amountDueNow(), 2) }}
                 </div>
             </div>
         @empty
@@ -129,7 +129,7 @@
                     </span>
                     <span class="flex-1 min-w-0 text-[0.86rem] font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</span>
                     <span class="text-[0.86rem] font-bold text-gray-600 dark:text-slate-300 shrink-0">
-                        {{ $currency }} {{ number_format($bill->amount, 2) }}
+                        {{ $currency }} {{ number_format($bill->amountDueNow(), 2) }}
                     </span>
                 </a>
             @empty

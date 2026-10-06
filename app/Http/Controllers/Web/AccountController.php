@@ -9,6 +9,8 @@ use App\Services\Ledger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AccountController extends Controller
 {
@@ -114,7 +116,7 @@ class AccountController extends Controller
 
         $data = $request->validate([
             'to_account_id' => ['required', 'exists:accounts,id'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
             'occurred_at' => ['nullable', 'date', 'before_or_equal:today'],
             'description' => ['nullable', 'string', 'max:160'],
         ]);
@@ -147,32 +149,45 @@ class AccountController extends Controller
     {
         $this->authorizeAccess($account);
 
-        $leftover = $account->pendingLeftover();
-        abort_unless($leftover, 422, __('messages.no_leftover_to_settle'));
-
         if ($request->input('action') === 'keep') {
+            $leftover = $account->pendingLeftover();
+            abort_unless($leftover, 422, __('messages.no_leftover_to_settle'));
             $account->update(['cycle_settled_until' => $leftover['end']]);
 
             return back()->with('success', __('messages.leftover_left'));
         }
 
         $data = $request->validate([
-            'to_account_id' => ['required', 'exists:accounts,id'],
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:' . $leftover['left']],
+            'to_account_id' => ['required', 'string'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
         ]);
 
         $target = Account::forUser($request->user())->findOrFail($data['to_account_id']);
         abort_if($target->id === $account->id, 422, 'Cannot transfer to the same account.');
 
-        $this->ledger->transfer(
-            $account,
-            $target,
-            (float) $data['amount'],
-            $leftover['end'],
-            $request->user()->id,
-            __('messages.leftover_transfer_note', ['period' => $leftover['start']->translatedFormat('j M') . ' – ' . $leftover['end']->translatedFormat('j M')]),
-        );
-        $account->update(['cycle_settled_until' => $leftover['end']]);
+        DB::transaction(function () use ($account, $target, $data, $request) {
+            // Locked and re-checked, so a double submit settles the leftover
+            // once instead of moving it twice.
+            $account = Account::whereKey($account->getKey())->lockForUpdate()->firstOrFail();
+            $leftover = $account->pendingLeftover();
+            abort_unless($leftover, 422, __('messages.no_leftover_to_settle'));
+
+            if ((float) $data['amount'] > $leftover['left']) {
+                throw ValidationException::withMessages([
+                    'amount' => __('validation.max.numeric', ['attribute' => 'amount', 'max' => $leftover['left']]),
+                ]);
+            }
+
+            $this->ledger->transfer(
+                $account,
+                $target,
+                (float) $data['amount'],
+                $leftover['end'],
+                $request->user()->id,
+                __('messages.leftover_transfer_note', ['period' => $leftover['start']->translatedFormat('j M') . ' – ' . $leftover['end']->translatedFormat('j M')]),
+            );
+            $account->update(['cycle_settled_until' => $leftover['end']]);
+        });
 
         return back()->with('success', __('messages.transfer_recorded'));
     }
@@ -184,7 +199,7 @@ class AccountController extends Controller
 
         $data = $request->validate([
             'direction' => ['required', 'in:in,out'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
             'occurred_at' => ['nullable', 'date', 'before_or_equal:today'],
             'description' => ['nullable', 'string', 'max:160'],
         ]);
@@ -224,19 +239,21 @@ class AccountController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string'],
-            'icon' => ['nullable', 'string', 'max:40'],
-            'color_hex' => ['nullable', 'string', 'max:7'],
-            'opening_balance' => ['nullable', 'numeric'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'icon' => ['nullable', 'string', 'max:40', 'regex:/^[a-z0-9_]+$/'],
+            // Lands in a style attribute, so a colour and nothing else.
+            'color_hex' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'opening_balance' => ['nullable', 'numeric', 'min:-99999999', 'max:99999999'],
             'kind' => ['nullable', 'in:standard,budget'],
             'cycle_amount' => ['nullable', 'required_if:kind,budget', 'numeric', 'min:0', 'max:99999999'],
             'cycle_day' => ['nullable', 'required_if:kind,budget', 'integer', 'min:1', 'max:31'],
             'is_shared' => ['nullable'],
             'is_active' => ['nullable'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $data['is_shared'] = (bool) ($data['is_shared'] ?? false);
+        // Sharing needs someone to share with.
+        $data['is_shared'] = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
         $data['opening_balance'] = (float) ($data['opening_balance'] ?? 0);
         $data['kind'] = $data['kind'] ?? 'standard';
         if ($data['kind'] !== 'budget') {
@@ -251,10 +268,6 @@ class AccountController extends Controller
 
     private function authorizeAccess(Account $account): void
     {
-        $user = Auth::user();
-        $ok = $account->created_by === $user->id
-            || ($account->is_shared && $account->family_id === $user->family_id);
-
-        abort_unless($ok, 403, 'Access denied.');
+        abort_unless($account->isVisibleTo(Auth::user()), 403, 'Access denied.');
     }
 }

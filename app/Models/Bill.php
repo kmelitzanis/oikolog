@@ -2,16 +2,22 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SharedWithFamily;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Bill extends Model
+class Bill extends Model implements HasMedia
 {
-    use HasUlids, HasFactory;
+    use HasUlids, HasFactory, SharedWithFamily, InteractsWithMedia;
+
+    /** What a receipt may be: a photo of it or the PDF the provider sent. */
+    public const RECEIPT_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
 
     protected $fillable = [
         'name', 'description', 'category_id', 'provider_id', 'assigned_to', 'amount', 'current_amount', 'cost_varies',
@@ -39,6 +45,18 @@ class Bill extends Model
             'notify_enabled'     => 'boolean',
             'notify_days_before' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // The money a payment took out of an account really left it. Deleting
+        // a bill cascades its payments, and through them their ledger rows,
+        // which silently put that money back into the balance — so the
+        // movements are detached from the payments and kept.
+        static::deleting(function (self $bill) {
+            AccountTransaction::whereIn('payment_id', $bill->payments()->select('id'))
+                ->update(['payment_id' => null]);
+        });
     }
 
     // Relations
@@ -78,34 +96,21 @@ class Bill extends Model
         return $this->hasMany(BillAmountSuggestion::class);
     }
 
-    // Provide guarded media collection registration (no-op when medialibrary not installed)
+    /**
+     * Receipts live on the private disk: they are financial documents, and
+     * the public disk would hand them to anyone holding the URL. They are
+     * served through BillController::showReceipt(), behind the bill's own
+     * access check.
+     */
     public function registerMediaCollections(): void
     {
-        if (!method_exists($this, 'addMediaCollection')) return;
-        $this->addMediaCollection('receipts')->useDisk(config('medialibrary.disk_name', config('filesystems.default', 'public')));
-    }
-
-    public function registerMediaConversions($media = null): void
-    {
-        if (!method_exists($this, 'addMediaConversion')) return;
-        $this->addMediaConversion('thumb')
-            ->fit('crop', 600, 400)
-            ->performOnCollections('receipts');
+        $this->addMediaCollection('receipts')
+            ->useDisk('local')
+            ->acceptsMimeTypes(self::RECEIPT_MIME_TYPES);
     }
 
     // Scopes
-    public function scopeForUser($query, ?User $user)
-    {
-        if (! $user) return $query->whereRaw('1=0');
-
-        return $query->where(function ($q) use ($user) {
-            $q->where('created_by', $user->id)
-              ->orWhere(function ($q2) use ($user) {
-                  $q2->where('is_shared', true)
-                     ->where('family_id', $user->family_id);
-              });
-        });
-    }
+    // forUser() comes from SharedWithFamily.
 
     public function scopeActive($query)
     {
@@ -131,15 +136,22 @@ class Bill extends Model
      */
     public static function overdueCountFor(?User $user): int
     {
+        return count(static::overdueIdsFor($user));
+    }
+
+    /** @return array<int, string> */
+    public static function overdueIdsFor(?User $user): array
+    {
         if (! $user) {
-            return 0;
+            return [];
         }
 
         return static::forUser($user)->active()->overdue()
             ->whereNotNull('next_due_date')
             ->get(['id', 'is_active', 'frequency', 'next_due_date', 'last_paid_date', 'remaining_balance'])
             ->filter(fn (self $bill) => $bill->status() === 'overdue')
-            ->count();
+            ->pluck('id')
+            ->all();
     }
 
     public function scopeDueWithin($query, int $days)
@@ -181,20 +193,7 @@ class Bill extends Model
     {
         if (! $this->next_due_date) return null;
 
-        $date = Carbon::parse($this->next_due_date);
-        $freq = $this->frequency ?? 'monthly';
-        $interval = (int) ($this->frequency_interval ?? 1);
-
-        return match ($freq) {
-            'once' => null,
-            'daily' => $date->addDays(1 * $interval),
-            'weekly' => $date->addWeeks(1 * $interval),
-            'biweekly' => $date->addWeeks(2 * $interval),
-            'monthly' => $date->addMonths(1 * $interval),
-            'quarterly' => $date->addMonths(3 * $interval),
-            'yearly' => $date->addYears(1 * $interval),
-            default => $date->addMonths(1 * $interval),
-        };
+        return $this->advanceDate(Carbon::parse($this->next_due_date));
     }
 
     /**
@@ -209,47 +208,57 @@ class Bill extends Model
      */
     public function occurrencesBetween(Carbon $from, Carbon $to): array
     {
-        if (!$this->start_date) return [];
+        return self::scheduleBetween(
+            $this->start_date ? Carbon::parse($this->start_date) : null,
+            $this->end_date ? Carbon::parse($this->end_date) : null,
+            $from,
+            $to,
+            fn (Carbon $date) => $this->advanceDate($date),
+        );
+    }
 
-        $start = Carbon::parse($this->start_date)->startOfDay();
-        $end = $this->end_date ? Carbon::parse($this->end_date)->endOfDay() : null;
+    /**
+     * Walk a schedule from its start and collect the dates inside [$from, $to].
+     *
+     * A plain loop with a hard cap: this used to recurse once per occurrence,
+     * so a daily schedule over a long window could exhaust the stack, and a
+     * window of any size was accepted.
+     *
+     * @param  callable(Carbon): ?Carbon  $advance
+     * @return array<int, Carbon>
+     */
+    public static function scheduleBetween(?Carbon $start, ?Carbon $end, Carbon $from, Carbon $to, callable $advance): array
+    {
+        if (! $start) return [];
 
-        // If the bill ends before our from or starts after to, nothing to return
-        if ($end && $end->lt($from)) return [];
-        if ($start->gt($to)) return [];
+        $current = $start->copy()->startOfDay();
+        $end = $end?->copy()->endOfDay();
 
-        // Determine the first occurrence on/after $from
-        $current = $start->copy();
-
-        // If start before 'from', advance until >= from
-        while ($current->lt($from)) {
-            $next = $this->advanceDate($current);
-            if (!$next) return [];
-            // Avoid infinite loops
-            if ($next->eq($current)) break;
-            $current = $next;
-            // stop if we passed end
-            if ($end && $current->gt($end)) return [];
-        }
+        if (($end && $end->lt($from)) || $current->gt($to)) return [];
 
         $occurrences = [];
 
-        // Recursive closure to collect occurrences
-        $collect = function (Carbon $dt) use (&$collect, $to, $end, &$occurrences) {
-            if ($dt->gt($to)) return;
-            if ($end && $dt->gt($end)) return;
-            $occurrences[] = $dt->copy();
-            $next = $this->advanceDate($dt);
-            if (!$next) return;
-            // Avoid infinite loops
-            if ($next->lte($dt)) return;
-            $collect($next);
-        };
+        for ($steps = 0; $steps < self::MAX_SCHEDULE_STEPS; $steps++) {
+            if ($current->gt($to) || ($end && $current->gt($end))) {
+                break;
+            }
 
-        $collect($current);
+            if ($current->gte($from)) {
+                $occurrences[] = $current->copy();
+            }
+
+            $next = $advance($current);
+            if (! $next || $next->lte($current)) {
+                break;
+            }
+            $current = $next;
+        }
 
         return $occurrences;
     }
+
+    /** Enough for a daily schedule started decades ago; a guard, not a feature. */
+    private const MAX_SCHEDULE_STEPS = 50_000;
 
     /**
      * Snap next_due_date back onto the recurrence schedule that is anchored at
@@ -290,18 +299,39 @@ class Bill extends Model
     private function advanceDate(Carbon $date): ?Carbon
     {
         $freq = $this->frequency ?? 'monthly';
-        $interval = (int)($this->frequency_interval ?? 1);
+        $interval = max(1, (int) ($this->frequency_interval ?? 1));
 
         return match ($freq) {
             'once' => null,
             'daily' => $date->copy()->addDays(1 * $interval),
             'weekly' => $date->copy()->addWeeks(1 * $interval),
             'biweekly' => $date->copy()->addWeeks(2 * $interval),
-            'monthly' => $date->copy()->addMonths(1 * $interval),
-            'quarterly' => $date->copy()->addMonths(3 * $interval),
-            'yearly' => $date->copy()->addYears(1 * $interval),
-            default => $date->copy()->addMonths(1 * $interval),
+            'quarterly' => self::addMonthsOnDay($date, 3 * $interval, $this->anchorDay($date)),
+            'yearly' => self::addMonthsOnDay($date, 12 * $interval, $this->anchorDay($date)),
+            default => self::addMonthsOnDay($date, 1 * $interval, $this->anchorDay($date)),
         };
+    }
+
+    /** The day of the month the schedule was set up on. */
+    private function anchorDay(Carbon $fallback): int
+    {
+        return $this->start_date ? Carbon::parse($this->start_date)->day : $fallback->day;
+    }
+
+    /**
+     * Move $months months on, landing on $day — or the month's last day when
+     * it is shorter.
+     *
+     * Carbon's addMonths() overflows: 31 January plus a month is 3 March, and
+     * from then on the bill fell due on the 3rd for good. Clamping to the
+     * month, and re-reading the day from the schedule's start each time, keeps
+     * a bill set up for the 31st on the last day of every month.
+     */
+    public static function addMonthsOnDay(Carbon $date, int $months, int $day): Carbon
+    {
+        $target = $date->copy()->startOfMonth()->addMonthsNoOverflow($months);
+
+        return $target->day(min($day, $target->daysInMonth));
     }
 
     /** The inverse of advanceDate(): the due date one cycle earlier. */
@@ -582,12 +612,52 @@ class Bill extends Model
             : $this->periodAmount();
     }
 
-    // Helper to get receipt urls (if medialibrary installed)
-    public function receiptUrls(): array
+    /**
+     * What the pay modal needs to open on this bill, as one array that every
+     * page passes through Js::from(). Three views used to assemble it by
+     * hand and had drifted: the dashboard ignored partial balances and this
+     * cycle's figure, and amounts were formatted with a thousands separator,
+     * so "1,250.00" reached the modal's maths as 1.
+     */
+    public function payModalPayload(): array
     {
-        if (method_exists($this, 'getMedia') && $this->hasMedia('receipts')) {
-            return $this->getMedia('receipts')->map(fn($m) => $m->getUrl())->toArray();
-        }
-        return [];
+        $lastPayment = $this->relationLoaded('payments')
+            ? $this->payments->sortByDesc('paid_at')->first()
+            : $this->payments()->latest('paid_at')->first();
+
+        $amount = $this->tracksDebt()
+            ? min($this->periodAmount(), max(0.0, (float) $this->debt_remaining))
+            : $this->periodAmount();
+
+        $known = $this->hasCurrentAmount() ? (float) $this->current_amount : ($lastPayment ? (float) $lastPayment->amount : null);
+
+        return [
+            'billName'         => $this->name,
+            'amount'           => number_format($amount, 2, '.', ''),
+            'currency'         => $this->currency_code,
+            'payRoute'         => route('bills.pay', $this),
+            'costVaries'       => (bool) $this->cost_varies,
+            'defaultAccountId' => $this->default_account_id ?? '',
+            'lastPaidAmount'   => $this->cost_varies && $known !== null ? number_format($known, 2, '.', '') : '',
+            'remainingBalance' => $this->hasPartialPayment()
+                ? number_format($this->getEffectiveRemainingBalance(), 2, '.', '')
+                : null,
+        ];
+    }
+
+    /**
+     * The bill's receipts, ready for a view: where to open each one, what to
+     * call it, and whether it can be shown as a picture.
+     *
+     * @return array<int, array{id: int, url: string, name: string, is_image: bool}>
+     */
+    public function receiptItems(): array
+    {
+        return $this->getMedia('receipts')->map(fn ($media) => [
+            'id'       => $media->id,
+            'url'      => route('bills.receipts.show', [$this, $media->id]),
+            'name'     => $media->name,
+            'is_image' => str_starts_with((string) $media->mime_type, 'image/'),
+        ])->all();
     }
 }

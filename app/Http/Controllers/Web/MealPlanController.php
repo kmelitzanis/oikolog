@@ -225,9 +225,16 @@ class MealPlanController extends Controller
         ]);
     }
 
-    private function weekStart(?string $date): Carbon
+    private function weekStart($date): Carbon
     {
-        $d = $date ? Carbon::parse($date) : Carbon::today();
+        // `?week=` comes straight from the address bar; a typo there used to
+        // be a 500 instead of this week.
+        try {
+            $d = is_string($date) && $date !== '' ? Carbon::parse($date) : Carbon::today();
+        } catch (\Throwable $e) {
+            $d = Carbon::today();
+        }
+
         return $d->startOfWeek(Carbon::MONDAY)->startOfDay();
     }
 

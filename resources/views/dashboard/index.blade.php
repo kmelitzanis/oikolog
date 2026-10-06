@@ -135,17 +135,10 @@
                          above them keeps its full width. --}}
                     <div class="w-full flex items-center justify-between gap-3 sm:w-auto sm:contents">
                     <div class="text-base font-extrabold text-gray-900 dark:text-white shrink-0">
-                        {{ $currency }} {{ number_format($bill->amount, 2) }}
+                        {{ $currency }} {{ number_format($bill->amountDueNow(), 2) }}
                     </div>
                     <button type="button" x-data
-                            @click="$dispatch('open-pay-modal', {
-                                billName:   '{{ addslashes($bill->name) }}',
-                                amount:     '{{ number_format($bill->amount, 2) }}',
-                                currency:   '{{ $currency }}',
-                                payRoute:   '{{ route('bills.pay', $bill) }}',
-                                costVaries: {{ $bill->cost_varies ? 'true' : 'false' }},
-                                defaultAccountId: '{{ $bill->default_account_id }}'
-                            })"
+                            @click="$dispatch('open-pay-modal', {{ \Illuminate\Support\Js::from($bill->payModalPayload()) }})"
                             class="shrink-0 h-[34px] px-3 rounded-xl bg-emerald-500/[0.14] border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[0.76rem] font-bold flex items-center gap-1.5 cursor-pointer transition hover:bg-emerald-500/25">
                         <span class="material-icons-round text-sm">check</span>
                         {{ __('messages.pay') }}
@@ -198,7 +191,7 @@
                         </div>
                     </div>
                     <div class="text-[0.84rem] font-bold text-gray-600 dark:text-slate-300 shrink-0">
-                        {{ $currency }} {{ number_format($bill->amount, 2) }}
+                        {{ $currency }} {{ number_format($bill->amountDueNow(), 2) }}
                     </div>
                 </div>
             @empty

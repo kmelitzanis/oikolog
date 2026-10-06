@@ -30,7 +30,7 @@ class IncomeController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'source' => ['nullable', 'string', 'max:80'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'frequency' => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
@@ -38,15 +38,17 @@ class IncomeController extends Controller
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after:start_date'],
             'is_shared' => ['nullable', 'boolean'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ]);
+
+        $shared = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
 
         $income = Income::create([
             ...$data,
             'currency_code' => $request->user()->currency_code,
-            'is_shared' => $data['is_shared'] ?? false,
+            'is_shared' => $shared,
             'created_by' => $request->user()->id,
-            'family_id' => ($data['is_shared'] ?? false) ? $request->user()->family_id : null,
+            'family_id' => $shared ? $request->user()->family_id : null,
             'next_date' => $data['start_date'],
             'frequency_interval' => $data['frequency_interval'] ?? 1,
         ]);
@@ -66,7 +68,7 @@ class IncomeController extends Controller
 
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:120'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'source' => ['nullable', 'string', 'max:80'],
             'amount' => ['sometimes', 'numeric', 'min:0.01'],
             'frequency' => ['sometimes', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
@@ -75,10 +77,11 @@ class IncomeController extends Controller
             'end_date' => ['nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
             'is_shared' => ['sometimes', 'boolean'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
         if (isset($data['is_shared'])) {
+            $data['is_shared'] = $data['is_shared'] && $request->user()->family_id;
             $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
         }
 
@@ -130,10 +133,7 @@ class IncomeController extends Controller
 
     private function gate(Request $request, Income $income): void
     {
-        $user = $request->user();
-        $ok = $income->created_by === $user->id
-            || ($income->is_shared && $income->family_id === $user->family_id);
-        abort_unless($ok, 403, 'Access denied.');
+        abort_unless($income->isVisibleTo($request->user()), 403, 'Access denied.');
     }
 
     private function resource(Income $i): array

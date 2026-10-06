@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/PHP-%5E8.2-777BB4?logo=php&logoColor=white" alt="PHP ^8.2">
-  <img src="https://img.shields.io/badge/Laravel-11-FF2D20?logo=laravel&logoColor=white" alt="Laravel 11">
+  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white" alt="Laravel 12">
   <img src="https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind 4">
   <img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0">
 </p>
@@ -37,7 +37,7 @@ ingredients straight into a list.
 - Dashboard: net for the month, what needs attention now, six-month trend and spend by category
 - Month overview — the month as a countdown line, showing what is left to pay
 - Calendar with per-day status indicators (overdue / due soon / paid / upcoming)
-- Receipts and attachments on any bill
+- Receipts and attachments on any bill (photos or PDFs), stored privately and shown only to people who can see the bill
 - Optional mailbox scanning (configured under `/settings`) that reads provider invoices over IMAP and proposes an
   amount for you to accept — read-only, and never writes a figure to a bill on its own
 
@@ -63,7 +63,7 @@ ingredients straight into a list.
 
 | Layer    | Choice                                                    |
 |----------|-----------------------------------------------------------|
-| Backend  | Laravel 11, PHP 8.2+                                      |
+| Backend  | Laravel 12, PHP 8.2+                                      |
 | Frontend | Blade, Alpine.js, Tailwind CSS 4, Vite                    |
 | Database | MySQL 8 (Docker default) or SQLite (local dev)            |
 | Auth     | Laravel Sanctum, `pragmarx/google2fa` for TOTP            |
@@ -165,8 +165,8 @@ Useful commands:
 | Command                            | Purpose                                                                         |
 |------------------------------------|---------------------------------------------------------------------------------|
 | `php artisan make:user`            | Create a user (`--admin` for an owner account)                                  |
-| `php artisan admin:reset-password` | Reset the admin password                                                        |
-| `php artisan bills:realign`        | Snap drifted `next_due_date`s back onto their schedule (`--dry-run` to preview) |
+| `php artisan admin:reset-password` | Reset the admin password (prints a generated one unless `--password` is given)  |
+| `php artisan bills:realign`        | Snap drifted `next_due_date`s back onto their schedule (`--dry-run` to preview) — run it once after upgrading if bills due on the 29th–31st had slipped to the start of the next month |
 | `php artisan bills:scan-mail`      | Read configured mailboxes and queue amount suggestions                          |
 | `php artisan push:vapid`           | Generate the VAPID keypair for web push                                         |
 | `php artisan products:prune`       | Drop catalogue entries nothing references (`--dry-run` to preview)              |

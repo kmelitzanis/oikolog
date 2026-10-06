@@ -54,6 +54,7 @@
         paidAt: '{{ now()->toDateString() }}',
         paymentMode: 'full',
         remainingBalance: null,
+        submitting: false,
 
         currencySymbols: {'EUR':'€','USD':'$','GBP':'£','CHF':'Fr','CAD':'CA$','AUD':'A$','JPY':'¥'},
         get currencySymbol() { return this.currencySymbols[this.currency] ?? this.currency; },
@@ -73,17 +74,21 @@
             this.customAmount    = data.lastPaidAmount   ?? '';
             this.remainingBalance = data.remainingBalance ?? null;
             this.partialAmount   = '';
-            this.paidByUserId    = '{{ auth()->id() }}';
+            this.paidByUserId    = @js(auth()->id());
             // Precedence: the bill's own account, then the user's default,
             // then whichever happens to sort first.
-            this.accountId       = data.defaultAccountId || '{{ $fallbackAccountId }}';
+            this.accountId       = data.defaultAccountId || @js($fallbackAccountId ?? '');
             this.paidAt          = '{{ now()->toDateString() }}';
             this.paymentMode     = 'full';
+            this.submitting      = false;
             this.open            = true;
+            this.$nextTick(() => this.$refs.panel?.focus());
         },
 
         submit() {
-            if (!this.payRoute) return;
+            // One tap, one payment: a second tap while the first is on its
+            // way recorded the bill as paid twice.
+            if (!this.payRoute || this.submitting) return;
 
             if (this.costVaries && !this.remainingBalance && (!this.customAmount || parseFloat(this.customAmount) <= 0)) {
                 alert(@js(__('messages.enter_total_amount')));
@@ -103,11 +108,13 @@
                 }
             }
 
+            this.submitting = true;
             this.$refs.payForm.action = this.payRoute;
             this.$refs.payForm.submit();
         }
     }"
     @open-pay-modal.window="openModal($event.detail)"
+    @keydown.escape.window="if (open && !submitting) open = false"
 >
     {{-- Backdrop --}}
     <div
@@ -133,7 +140,8 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            class="w-full max-w-[460px] max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-[24px] p-6 border border-gray-100 dark:border-slate-700 shadow-[0_30px_70px_rgba(2,6,23,0.6)]"
+            x-ref="panel" tabindex="-1" role="dialog" aria-modal="true" :aria-label="billName"
+            class="w-full max-w-[460px] max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-[24px] p-6 border border-gray-100 dark:border-slate-700 shadow-[0_30px_70px_rgba(2,6,23,0.6)] outline-none"
         >
             {{-- Header --}}
             <div class="flex items-center gap-[13px] mb-5">
@@ -144,7 +152,7 @@
                     <div class="text-[1.05rem] font-bold text-gray-900 dark:text-white truncate" x-text="billName"></div>
                     <div class="text-[0.76rem] text-gray-400 dark:text-slate-500 mt-px">{{ __('messages.mark_paid') }}</div>
                 </div>
-                <button type="button" @click="open = false"
+                <button type="button" @click="open = false" aria-label="{{ __('messages.cancel') }}"
                         class="w-8 h-8 rounded-xl shrink-0 bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition">
                     <span class="material-icons-round text-base">close</span>
                 </button>
@@ -156,8 +164,8 @@
             <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 mb-3">
                 <div class="text-[0.62rem] font-bold uppercase tracking-[0.09em] text-gray-400 dark:text-slate-500"
                      x-text="paymentMode === 'partial'
-                        ? '{{ __('messages.partial_amount_label') }}'
-                        : '{{ __('messages.payment_amount_label') }}'"></div>
+                        ? @js(__('messages.partial_amount_label'))
+                        : @js(__('messages.payment_amount_label'))"></div>
                 <div class="flex items-center gap-2 mt-1.5">
                     <template x-if="paymentMode === 'partial'">
                         <input type="number" step="0.01" min="0.01" x-model="partialAmount" placeholder="0.00"
@@ -260,9 +268,10 @@
                         class="shrink-0 h-12 px-[18px] rounded-2xl border border-gray-200 dark:border-slate-700 bg-transparent text-gray-500 dark:text-slate-400 text-[0.88rem] font-semibold transition hover:bg-gray-50 dark:hover:bg-slate-700">
                     {{ __('messages.cancel') }}
                 </button>
-                <button type="button" @click="submit()"
-                        class="flex-1 h-12 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-[0.92rem] font-bold flex items-center justify-center gap-2.5 transition shadow-[0_8px_22px_rgba(245,158,11,0.4)]">
-                    <span class="material-icons-round text-lg">check</span>
+                <button type="button" @click="submit()" :disabled="submitting"
+                        class="flex-1 h-12 rounded-2xl bg-amber-500 hover:bg-amber-400 disabled:opacity-60 disabled:cursor-wait text-slate-900 text-[0.92rem] font-bold flex items-center justify-center gap-2.5 transition shadow-[0_8px_22px_rgba(245,158,11,0.4)]">
+                    <span class="material-icons-round text-lg" :class="submitting ? 'animate-spin' : ''"
+                          x-text="submitting ? 'autorenew' : 'check'" aria-hidden="true">check</span>
                     {{ __('messages.record_payment') }}
                 </button>
             </div>

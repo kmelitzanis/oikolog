@@ -10,6 +10,7 @@ use App\Services\Ledger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class IncomeController extends Controller
 {
@@ -73,15 +74,15 @@ class IncomeController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'source' => ['nullable', 'string', 'max:80'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'account_id' => ['nullable', 'exists:accounts,id'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'account_id' => ['nullable', 'string', $this->ownAccount($request)],
             'frequency' => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after:start_date'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
         // Income sharing follows the account it is paid into.
@@ -211,16 +212,16 @@ class IncomeController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'source' => ['nullable', 'string', 'max:80'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'account_id' => ['nullable', 'exists:accounts,id'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'account_id' => ['nullable', 'string', $this->ownAccount($request)],
             'frequency' => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after:start_date'],
             'is_active' => ['nullable'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $data['is_active'] = (bool)($data['is_active'] ?? true);
@@ -235,7 +236,7 @@ class IncomeController extends Controller
         // the moment the source was created and the balance silently drifted.
         $this->syncOneOffDeposit($income->fresh(), $request->user(), $ledger);
 
-        return redirect()->route('income.show', $income)->with('success', 'Income updated.');
+        return redirect()->route('income.show', $income)->with('success', __('messages.income_updated'));
     }
 
     public function destroy(Income $income)
@@ -243,7 +244,7 @@ class IncomeController extends Controller
         $this->authorizeAccess($income);
         $income->delete();
 
-        return redirect()->route('income.index')->with('success', 'Income deleted.');
+        return redirect()->route('income.index')->with('success', __('messages.income_deleted'));
     }
 
     /**
@@ -257,9 +258,9 @@ class IncomeController extends Controller
         $this->authorizeAccess($income);
 
         $data = $request->validate([
-            'amount' => ['nullable', 'numeric', 'min:0.01'],
+            'amount' => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],
             'received_at' => ['nullable', 'date', 'before_or_equal:today'],
-            'account_id' => ['nullable', 'exists:accounts,id'],
+            'account_id' => ['nullable', 'string', $this->ownAccount($request)],
         ]);
 
         $receivedAt = isset($data['received_at'])
@@ -274,27 +275,43 @@ class IncomeController extends Controller
             $account = Account::forUser($request->user())->find($income->account_id);
         }
 
-        // One receipt per cycle: until the expected date is close (or past),
-        // there is nothing to receive — and a second tap would deposit the
-        // same money twice and skip a month.
-        abort_unless($income->canReceiveNow(), 422, __('messages.income_not_due_yet'));
+        DB::transaction(function () use ($income, $receivedAt, $account, $amount, $ledger, $request) {
+            // Re-read under a lock so two taps (or two people) cannot both
+            // pass the check below against the same, not yet advanced, date.
+            $income = Income::whereKey($income->getKey())->lockForUpdate()->firstOrFail();
 
-        $nextDate = $income->calculateNextDate();
-        $income->update([
-            'last_received_date' => $receivedAt->toDateString(),
-            // The date this receipt settles — how late or early it came is
-            // measured against it.
-            'last_expected_date' => $income->next_date?->toDateString(),
-            'next_date' => $nextDate ? $nextDate->toDateString() : $income->next_date,
-        ]);
+            // One receipt per cycle: until the expected date is close (or past),
+            // there is nothing to receive — and a second tap would deposit the
+            // same money twice and skip a month.
+            abort_unless($income->canReceiveNow(), 422, __('messages.income_not_due_yet'));
 
-        if ($account) {
-            $ledger->deposit($account, $amount, $receivedAt, $request->user()->id, $income->name, $income);
-        }
+            $nextDate = $income->calculateNextDate();
+            $income->update([
+                'last_received_date' => $receivedAt->toDateString(),
+                // The date this receipt settles — how late or early it came is
+                // measured against it.
+                'last_expected_date' => $income->next_date?->toDateString(),
+                'next_date' => $nextDate ? $nextDate->toDateString() : $income->next_date,
+            ]);
+
+            if ($account) {
+                $ledger->deposit($account, $amount, $receivedAt, $request->user()->id, $income->name, $income);
+            }
+        });
 
         return back()->with('success', $account
             ? __('messages.income_deposited', ['account' => $account->name])
             : __('messages.income_received_no_account'));
+    }
+
+    /** An account id from the form must name one of the user's accounts. */
+    private function ownAccount(Request $request): \Closure
+    {
+        return function (string $attribute, $value, \Closure $fail) use ($request) {
+            if (! Account::forUser($request->user())->whereKey($value)->exists()) {
+                $fail(__('messages.invalid_selection'));
+            }
+        };
     }
 
     /** Income visibility mirrors the account it is paid into. */
@@ -309,10 +326,7 @@ class IncomeController extends Controller
 
     private function authorizeAccess(Income $income): void
     {
-        $user = Auth::user();
-        $ok = $income->created_by === $user->id
-            || ($income->is_shared && $income->family_id === $user->family_id);
-        abort_unless($ok, 403, 'Access denied.');
+        abort_unless($income->isVisibleTo(Auth::user()), 403, 'Access denied.');
     }
 }
 

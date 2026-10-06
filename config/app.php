@@ -18,6 +18,10 @@ return [
     // Release version, baked into the Docker image by CI from the git tag.
     'version' => env('APP_VERSION', 'dev'),
 
+    // The deployment's own admin account. Read through config() — env() is
+    // empty at runtime once `config:cache` has run, as it does in Docker.
+    'admin_email' => env('ADMIN_EMAIL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

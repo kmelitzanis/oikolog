@@ -35,8 +35,8 @@
             </div>
 
             <div class="min-w-0 flex-1">
-                <div class="text-[0.88rem] font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
-                    {{ $a->name }}
+                <div class="text-[0.88rem] font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
+                    <span class="truncate">{{ $a->name }}</span>
                     @if($a->is_shared)
                         <span class="material-icons-round text-gray-300 dark:text-slate-500 shrink-0" style="font-size:14px;"
                               title="{{ __('messages.shared_with_family') }}">group</span>

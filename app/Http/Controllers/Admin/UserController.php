@@ -26,8 +26,8 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'currency_code' => ['nullable', 'string', 'max:5'],
-            'locale' => ['nullable', 'string', 'max:10'],
+            'currency_code' => ['nullable', 'string', 'regex:/^[A-Z]{3}$/'],
+            'locale' => ['nullable', 'string', 'in:en,el'],
             'is_admin' => ['nullable', 'boolean'],
         ]);
 
@@ -48,8 +48,8 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'unique:users,email,' . $user->id],
-            'currency_code' => ['nullable', 'string', 'max:5'],
-            'locale' => ['nullable', 'string', 'max:10'],
+            'currency_code' => ['nullable', 'string', 'regex:/^[A-Z]{3}$/'],
+            'locale' => ['nullable', 'string', 'in:en,el'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -63,9 +63,11 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User updated.');
     }
 
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
-        abort_if($user->email === env('ADMIN_EMAIL'), 403, 'Cannot delete the admin user.');
+        // Deleting yourself from here would lock the admin area for good.
+        abort_if($user->is($request->user()), 403, 'You cannot delete your own account.');
+        abort_if($user->email === config('app.admin_email'), 403, 'Cannot delete the admin user.');
         $user->delete();
         return redirect()->route('admin.users.index')->with('success', 'User deleted.');
     }

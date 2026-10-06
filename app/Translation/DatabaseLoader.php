@@ -19,8 +19,20 @@ class DatabaseLoader implements LoaderContract
         // First get file translations
         $files = $this->fileLoader->load($locale, $group, $namespace);
 
-        // Then get DB translations for locale/group and merge (DB overrides file)
-        $rows = Translation::where('locale', $locale)->where('group', $group)->get();
+        // Overrides are for the app's own groups; vendor namespaces keep theirs.
+        if ($namespace !== null && $namespace !== '*') {
+            return $files;
+        }
+
+        // Then DB translations for locale/group, which win over the files. A
+        // database that is not reachable or not migrated yet (first boot, a
+        // migration run) must leave the file translations working.
+        try {
+            $rows = Translation::where('locale', $locale)->where('group', $group)->get(['key', 'value']);
+        } catch (\Throwable $e) {
+            return $files;
+        }
+
         $db = [];
         foreach ($rows as $r) {
             data_set($db, $r->key, $r->value);

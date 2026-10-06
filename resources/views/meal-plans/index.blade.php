@@ -121,6 +121,17 @@
             HTML;
         @endphp
 
+        {{-- Empty week nudge — the grid alone gives no hint that a week is
+             blank. Above the grid: below it, a phone only reached it after
+             scrolling past seven empty days. --}}
+        <template x-if="plannedCount === 0">
+            <div class="mb-4">
+                <x-empty-state quiet icon="restaurant_menu"
+                               :title="__('messages.meal_empty_week')"
+                               :text="__('messages.meal_empty_week_hint')" />
+            </div>
+        </template>
+
         {{-- ── Mobile / tablet: stacked day cards ──────────────────────── --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden">
             @foreach($days as $day)
@@ -226,15 +237,6 @@
                 @endforeach
             </div>
         </x-card>
-
-        {{-- Empty week nudge — the grid alone gives no hint that a week is blank. --}}
-        <template x-if="plannedCount === 0">
-            <div class="mt-4">
-                <x-empty-state quiet icon="restaurant_menu"
-                               :title="__('messages.meal_empty_week')"
-                               :text="__('messages.meal_empty_week_hint')" />
-            </div>
-        </template>
 
         {{-- ── Meal modal ─────────────────────────────────────────────── --}}
         <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" x-transition.opacity>

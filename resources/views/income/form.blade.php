@@ -47,7 +47,7 @@
               action="{{ $editing ? route('income.update', $income) : route('income.store') }}"
               class="space-y-4"
               x-data="{
-                  freq: '{{ old('frequency', $editing ? $income->frequency : 'monthly') }}',
+                  freq: @js(old('frequency', $editing ? $income->frequency : 'monthly')),
                   get isRecurring() { return this.freq !== 'once'; },
               }">
             @csrf

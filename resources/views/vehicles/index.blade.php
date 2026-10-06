@@ -17,7 +17,7 @@
     @endphp
 
     <x-page-header :title="__('messages.vehicles')"
-                   :subtitle="$vehicles->count() . ' ' . mb_strtolower(__('messages.vehicles'))">
+                   :subtitle="trans_choice('messages.vehicles_count', $vehicles->count(), ['count' => $vehicles->count()])">
         <x-btn :href="route('vehicles.create')" icon="add">{{ __('messages.add_vehicle') }}</x-btn>
     </x-page-header>
 
@@ -83,9 +83,11 @@
                                     {{ number_format($vehicle->odometer_km, 0, ',', '.') }}
                                     <span class="text-xs font-semibold text-gray-400">{{ __('messages.vehicle_odometer_short') }}</span>
                                 </div>
-                                <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 mt-0.5">
-                                    {{ number_format($vehicle->kmPerYear(), 0, ',', '.') }} {{ __('messages.vehicle_km_per_year') }}
-                                </div>
+                                @if(($kmPerYear = $vehicle->kmPerYear()) !== null)
+                                    <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 mt-0.5">
+                                        {{ number_format($kmPerYear, 0, ',', '.') }} {{ __('messages.vehicle_km_per_year') }}
+                                    </div>
+                                @endif
                             </div>
                             <div class="text-right">
                                 <div class="text-sm font-bold text-gray-700 dark:text-slate-200">
