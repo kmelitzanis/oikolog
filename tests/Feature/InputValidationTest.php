@@ -181,4 +181,13 @@ class InputValidationTest extends TestCase
             'name' => $user->name, 'email' => $user->email, 'currency_code' => 'EUR', 'locale' => 'el',
         ])->assertSessionHas('locale', 'el');
     }
+
+    public function test_validation_messages_follow_the_greek_interface(): void
+    {
+        $user = $this->user(['locale' => 'el']);
+
+        $this->actingAs($user)->withSession(['locale' => 'el'])
+            ->post(route('bills.store'), [])
+            ->assertSessionHasErrors(['name' => 'Το πεδίο όνομα είναι υποχρεωτικό.']);
+    }
 }
