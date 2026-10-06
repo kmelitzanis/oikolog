@@ -73,15 +73,15 @@ class IncomeController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'source' => ['nullable', 'string', 'max:80'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'account_id' => ['nullable', 'exists:accounts,id'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'account_id' => ['nullable', 'string', $this->ownAccount($request)],
             'frequency' => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after:start_date'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
         // Income sharing follows the account it is paid into.
@@ -211,16 +211,16 @@ class IncomeController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'source' => ['nullable', 'string', 'max:80'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'account_id' => ['nullable', 'exists:accounts,id'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'account_id' => ['nullable', 'string', $this->ownAccount($request)],
             'frequency' => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
             'frequency_interval' => ['nullable', 'integer', 'min:1', 'max:99'],
             'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after:start_date'],
             'is_active' => ['nullable'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $data['is_active'] = (bool)($data['is_active'] ?? true);
@@ -257,9 +257,9 @@ class IncomeController extends Controller
         $this->authorizeAccess($income);
 
         $data = $request->validate([
-            'amount' => ['nullable', 'numeric', 'min:0.01'],
+            'amount' => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],
             'received_at' => ['nullable', 'date', 'before_or_equal:today'],
-            'account_id' => ['nullable', 'exists:accounts,id'],
+            'account_id' => ['nullable', 'string', $this->ownAccount($request)],
         ]);
 
         $receivedAt = isset($data['received_at'])
@@ -295,6 +295,16 @@ class IncomeController extends Controller
         return back()->with('success', $account
             ? __('messages.income_deposited', ['account' => $account->name])
             : __('messages.income_received_no_account'));
+    }
+
+    /** An account id from the form must name one of the user's accounts. */
+    private function ownAccount(Request $request): \Closure
+    {
+        return function (string $attribute, $value, \Closure $fail) use ($request) {
+            if (! Account::forUser($request->user())->whereKey($value)->exists()) {
+                $fail(__('messages.invalid_selection'));
+            }
+        };
     }
 
     /** Income visibility mirrors the account it is paid into. */

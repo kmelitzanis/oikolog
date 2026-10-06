@@ -211,7 +211,7 @@ class RecipeController extends Controller
     public function import(Request $request, RecipeImporter $importer)
     {
         $data = $request->validate([
-            'url' => ['required', 'url', 'max:2048'],
+            'url' => ['required', 'url:http,https', 'max:2048'],
         ]);
 
         try {
@@ -256,11 +256,11 @@ class RecipeController extends Controller
                     $fail(__('messages.image_invalid'));
                 }
             }],
-            'source_url'               => ['nullable', 'url', 'max:2048'],
-            'ingredients'              => ['required', 'array', 'min:1'],
+            'source_url'               => ['nullable', 'url:http,https', 'max:2048'],
+            'ingredients'              => ['required', 'array', 'min:1', 'max:200'],
             'ingredients.*.section'    => ['nullable', 'string', 'max:120'],
             'ingredients.*.name'       => ['required', 'string', 'max:255'],
-            'ingredients.*.quantity'   => ['nullable', 'numeric', 'min:0'],
+            'ingredients.*.quantity'   => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'ingredients.*.unit'       => ['nullable', 'string', 'max:50'],
             'ingredients.*.product_id' => ['nullable', 'exists:products,id'],
         ]);

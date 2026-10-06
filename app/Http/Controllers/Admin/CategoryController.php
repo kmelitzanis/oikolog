@@ -24,7 +24,7 @@ class CategoryController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:60'],
             'icon' => ['nullable', 'string', 'max:60'],
-            'color_hex' => ['nullable', 'string', 'max:9'],
+            'color_hex' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/'],
         ]);
         $data['is_system'] = $request->boolean('is_system');
         Category::create($data);
@@ -41,7 +41,7 @@ class CategoryController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:60'],
             'icon' => ['nullable', 'string', 'max:60'],
-            'color_hex' => ['nullable', 'string', 'max:9'],
+            'color_hex' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/'],
         ]);
         $data['is_system'] = $request->boolean('is_system');
         $category->update($data);

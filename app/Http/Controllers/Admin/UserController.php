@@ -26,8 +26,8 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'currency_code' => ['nullable', 'string', 'max:5'],
-            'locale' => ['nullable', 'string', 'max:10'],
+            'currency_code' => ['nullable', 'string', 'regex:/^[A-Z]{3}$/'],
+            'locale' => ['nullable', 'string', 'in:en,el'],
             'is_admin' => ['nullable', 'boolean'],
         ]);
 
@@ -48,8 +48,8 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'unique:users,email,' . $user->id],
-            'currency_code' => ['nullable', 'string', 'max:5'],
-            'locale' => ['nullable', 'string', 'max:10'],
+            'currency_code' => ['nullable', 'string', 'regex:/^[A-Z]{3}$/'],
+            'locale' => ['nullable', 'string', 'in:en,el'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 

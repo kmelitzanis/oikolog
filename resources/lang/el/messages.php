@@ -777,4 +777,5 @@ return [
     'two_factor_confirm_code' => 'Επιβεβαίωση με κωδικό επαλήθευσης',
     'two_factor_enable' => 'Ενεργοποίηση 2FA',
     'back_to_settings' => 'Πίσω στις ρυθμίσεις',
+    'invalid_selection' => 'Η επιλογή δεν είναι έγκυρη.',
 ];

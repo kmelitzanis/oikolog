@@ -9,11 +9,14 @@ use App\Models\Category;
 use App\Models\Account;
 use App\Models\Payment;
 use App\Models\Provider;
+use App\Models\User;
 use App\Services\Ledger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class BillController extends Controller
 {
@@ -96,25 +99,8 @@ class BillController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name'               => ['required', 'string', 'max:120'],
-            'description'        => ['nullable', 'string'],
-            'category_id'        => ['required', 'exists:categories,id'],
-            'provider_id' => ['nullable', 'exists:providers,id'],
-            'default_account_id' => ['nullable', 'exists:accounts,id'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'cost_varies' => ['nullable', 'boolean'],
-            // Optional: the total still owed on a loan or a card.
-            'debt_remaining' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
-            'start_date'         => ['required', 'date'],
-            'end_date'           => ['nullable', 'date', 'after:start_date'],
-            'is_shared'          => ['nullable'],
-            'notify_enabled'     => ['nullable'],
-            'notify_days_before' => ['nullable', 'integer', 'min:1', 'max:30'],
-            'url'                => ['nullable', 'url'],
-            'notes'              => ['nullable', 'string'],
-        ]);
+        // Files are handled on their own below, not mass-assigned.
+        $data = Arr::except($request->validate($this->billRules($request)), ['receipts']);
 
         $bill = Bill::create([
             ...$data,
@@ -270,25 +256,8 @@ class BillController extends Controller
     {
         $this->authorizeEdit($bill);
 
-        $data = $request->validate([
-            'name'               => ['required', 'string', 'max:120'],
-            'description'        => ['nullable', 'string'],
-            'category_id'        => ['required', 'exists:categories,id'],
-            'provider_id' => ['nullable', 'exists:providers,id'],
-            'default_account_id' => ['nullable', 'exists:accounts,id'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'cost_varies' => ['nullable', 'boolean'],
-            // Optional: the total still owed on a loan or a card.
-            'debt_remaining' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
-            'start_date'         => ['required', 'date'],
-            'end_date'           => ['nullable', 'date'],
-            'is_shared'          => ['nullable'],
-            'notify_enabled'     => ['nullable'],
-            'notify_days_before' => ['nullable', 'integer', 'min:1', 'max:30'],
-            'url'                => ['nullable', 'url'],
-            'notes'              => ['nullable', 'string'],
-        ]);
+        // Files are handled on their own below, not mass-assigned.
+        $data = Arr::except($request->validate($this->billRules($request)), ['receipts']);
 
         $data['cost_varies'] = (bool)($data['cost_varies'] ?? false);
         $data['is_shared']      = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
@@ -380,89 +349,105 @@ class BillController extends Controller
     {
         $this->authorizeView($bill);
 
-        $paidByUserId = $request->input('paid_by_user_id', $request->user()->id);
+        $user = $request->user();
 
         // The money has to come out of somewhere. Once the user keeps accounts,
         // picking one is required — otherwise balances quietly stop matching
         // reality. Users with no accounts yet can still record payments.
-        $hasAccounts = Account::forUser($request->user())->active()->exists();
-        $request->validate([
-            'account_id' => [$hasAccounts ? 'required' : 'nullable', 'exists:accounts,id'],
-        ]);
-        $account = $request->filled('account_id')
-            ? Account::forUser($request->user())->find($request->input('account_id'))
-            : null;
-        $paymentMode = $request->input('payment_mode', 'full'); // 'partial' or 'full'
-        $isPartial = $paymentMode === 'partial';
+        $hasAccounts = Account::forUser($user)->active()->exists();
 
         // Payments are often recorded days after the fact. The date defaults to
         // today but can be backdated, which matters because `paid_at` decides
         // when the account balance actually moved. Future dates are
         // rejected — a bill isn't paid before it's paid.
-        $request->validate([
-            'paid_at' => ['nullable', 'date', 'before_or_equal:today'],
+        $data = $request->validate([
+            'account_id'      => [$hasAccounts ? 'required' : 'nullable', 'string', 'max:26'],
+            'paid_by_user_id' => ['nullable', 'string', 'max:26'],
+            'payment_mode'    => ['nullable', 'in:full,partial'],
+            'partial_amount'  => ['nullable', 'required_if:payment_mode,partial', 'numeric', 'min:0.01', 'max:99999999'],
+            'custom_amount'   => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],
+            'paid_at'         => ['nullable', 'date', 'before_or_equal:today'],
+            'notes'           => ['nullable', 'string', 'max:1000'],
         ]);
-        $paidAt = $request->filled('paid_at')
-            ? Carbon::parse($request->input('paid_at'))->setTimeFrom(now())
+
+        // Only an account this user can reach, and only someone in their
+        // household as the payer — both arrive from the browser.
+        $account = null;
+        if (! empty($data['account_id'])) {
+            $account = Account::forUser($user)->find($data['account_id']);
+            if (! $account) {
+                throw ValidationException::withMessages(['account_id' => __('messages.invalid_selection')]);
+            }
+        }
+
+        $paidByUserId = $data['paid_by_user_id'] ?? $user->id;
+        if ($paidByUserId !== $user->id
+            && ! ($user->family_id && User::whereKey($paidByUserId)->where('family_id', $user->family_id)->exists())) {
+            throw ValidationException::withMessages(['paid_by_user_id' => __('messages.invalid_selection')]);
+        }
+
+        $isPartial = ($data['payment_mode'] ?? 'full') === 'partial';
+        $paidAt = ! empty($data['paid_at'])
+            ? Carbon::parse($data['paid_at'])->setTimeFrom(now())
             : now();
 
-        // Determine the total amount for this billing cycle
-        if ($bill->cost_varies && $request->filled('custom_amount')) {
-            $periodAmount = (float)$request->input('custom_amount');
-        } else {
-            // periodAmount() prefers this cycle's recorded figure over the
-            // template amount, which for a varying bill is only an estimate.
-            $periodAmount = $bill->periodAmount();
-        }
+        [$payment, $isPartial] = DB::transaction(function () use ($bill, $data, $paidByUserId, $account, $isPartial, $paidAt, $ledger) {
+            // Re-read the bill under a row lock: a double tap, or two people
+            // paying at once, must see each other's payment rather than both
+            // settling the same cycle from the same stale balance.
+            $bill = Bill::whereKey($bill->getKey())->lockForUpdate()->firstOrFail();
 
-        // Calculate how much is being paid now and what the new remaining balance will be
-        if ($isPartial) {
-            $partialAmount = (float)$request->input('partial_amount', 0);
+            // Determine the total amount for this billing cycle. periodAmount()
+            // prefers this cycle's recorded figure over the template amount,
+            // which for a varying bill is only an estimate.
+            $periodAmount = $bill->cost_varies && ! empty($data['custom_amount'])
+                ? (float) $data['custom_amount']
+                : $bill->periodAmount();
+
             $currentRemaining = $bill->remaining_balance !== null
-                ? (float)$bill->remaining_balance
+                ? (float) $bill->remaining_balance
                 : $periodAmount;
 
-            $newRemaining = round($currentRemaining - $partialAmount, 2);
+            if ($isPartial) {
+                $partialAmount = (float) $data['partial_amount'];
+                $newRemaining = round($currentRemaining - $partialAmount, 2);
 
-            // If partial payment covers the full remaining amount, treat as full
-            if ($newRemaining <= 0) {
-                $isPartial = false;
+                // A "partial" payment that covers what is left settles the cycle.
+                if ($newRemaining <= 0) {
+                    $isPartial = false;
+                    $payAmount = $currentRemaining;
+                    $newRemaining = null;
+                } else {
+                    $payAmount = $partialAmount;
+                }
+            } else {
+                // Full payment: pay whatever is still remaining
                 $payAmount = $currentRemaining;
                 $newRemaining = null;
-            } else {
-                $payAmount = $partialAmount;
             }
-        } else {
-            // Full payment: pay whatever is still remaining
-            $payAmount = $bill->remaining_balance !== null
-                ? (float)$bill->remaining_balance
-                : $periodAmount;
-            $newRemaining = null;
-        }
 
-        // The last instalment of a loan is whatever is left of it. Taking the
-        // usual amount against a smaller balance would overpay the debt and
-        // push it negative, so the payment is capped at the outstanding total.
-        if ($bill->tracksDebt()) {
-            $payAmount = min($payAmount, max(0.0, (float) $bill->debt_remaining));
+            // The last instalment of a loan is whatever is left of it. Taking the
+            // usual amount against a smaller balance would overpay the debt and
+            // push it negative, so the payment is capped at the outstanding total.
+            if ($bill->tracksDebt()) {
+                $payAmount = min($payAmount, max(0.0, (float) $bill->debt_remaining));
 
-            // Nothing left to settle the cycle against either.
-            if ($payAmount <= 0) {
-                $newRemaining = null;
-                $isPartial = false;
+                // Nothing left to settle the cycle against either.
+                if ($payAmount <= 0) {
+                    $newRemaining = null;
+                    $isPartial = false;
+                }
             }
-        }
 
-        $payment = DB::transaction(function () use ($bill, $request, $paidByUserId, $account, $payAmount, $isPartial, $newRemaining, $paidAt, $ledger) {
             $payment = Payment::create([
                 'bill_id'       => $bill->id,
-                'paid_by' => $paidByUserId,
-                'account_id' => $account?->id,
-                'amount' => $payAmount,
-                'is_partial' => $isPartial,
+                'paid_by'       => $paidByUserId,
+                'account_id'    => $account?->id,
+                'amount'        => $payAmount,
+                'is_partial'    => $isPartial,
                 'currency_code' => $bill->currency_code,
                 'paid_at'       => $paidAt,
-                'notes' => $request->input('notes'),
+                'notes'         => $data['notes'] ?? null,
             ]);
 
             if ($account) {
@@ -496,7 +481,7 @@ class BillController extends Controller
 
             $this->drawDownDebt($bill, $payAmount);
 
-            return $payment;
+            return [$payment, $isPartial];
         });
 
         // Tell the rest of the household. After the response so the person who
@@ -510,7 +495,7 @@ class BillController extends Controller
                 'remaining_balance' => $bill->remaining_balance,
                 'last_paid_date' => $bill->last_paid_date?->toDateString(),
                 'next_due_date' => $bill->next_due_date?->toDateString(),
-                'message' => $isPartial ? 'Μερική πληρωμή καταγράφηκε.' : 'Πληρωμή καταγράφηκε.',
+                'message' => __($isPartial ? 'messages.partial_payment_recorded' : 'messages.payment_recorded'),
             ]);
         }
 
@@ -677,6 +662,38 @@ class BillController extends Controller
                 'next_due_date'     => $paidAt?->toDateString(),
             ]);
         });
+    }
+
+    /** Validation shared by create and edit. */
+    private function billRules(Request $request): array
+    {
+        return [
+            'name'               => ['required', 'string', 'max:120'],
+            'description'        => ['nullable', 'string', 'max:2000'],
+            'category_id'        => ['required', 'exists:categories,id'],
+            'provider_id'        => ['nullable', 'exists:providers,id'],
+            // Only an account this user can see — the id comes from the form.
+            'default_account_id' => ['nullable', 'string', function (string $attribute, $value, \Closure $fail) use ($request) {
+                if (! Account::forUser($request->user())->whereKey($value)->exists()) {
+                    $fail(__('messages.invalid_selection'));
+                }
+            }],
+            'amount'             => ['required', 'numeric', 'min:0', 'max:99999999'],
+            'cost_varies'        => ['nullable', 'boolean'],
+            // Optional: the total still owed on a loan or a card.
+            'debt_remaining'     => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
+            'start_date'         => ['required', 'date'],
+            'end_date'           => ['nullable', 'date', 'after:start_date'],
+            'is_shared'          => ['nullable'],
+            'notify_enabled'     => ['nullable'],
+            'notify_days_before' => ['nullable', 'integer', 'min:1', 'max:30'],
+            // Rendered as a link, so nothing but the web.
+            'url'                => ['nullable', 'url:http,https', 'max:2048'],
+            'notes'              => ['nullable', 'string', 'max:5000'],
+            'receipts'           => ['nullable', 'array', 'max:10'],
+            'receipts.*'         => ['file', 'mimes:jpg,jpeg,png,webp,gif,pdf', 'max:10240'],
+        ];
     }
 
     private function authorizeView(Bill $bill): void

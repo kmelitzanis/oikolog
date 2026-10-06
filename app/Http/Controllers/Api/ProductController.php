@@ -18,7 +18,7 @@ class ProductController extends Controller
         if ($category = $request->input('category')) {
             $query->where('category', $category);
         }
-        return response()->json($query->paginate($request->integer('per_page', 50)));
+        return response()->json($query->paginate(min(100, max(1, $request->integer('per_page', 50)))));
     }
 
     /**
@@ -74,14 +74,15 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:5000',
             'brand' => 'nullable|string|max:100',
             'barcode' => 'nullable|string|max:50',
             'category' => 'nullable|string|max:100',
             'unit' => 'nullable|string|max:50',
             'default_quantity' => 'nullable|numeric|min:0.01',
-            'image_url' => 'nullable|url|max:500',
-            'nutrition' => 'nullable|array',
+            'image_url' => 'nullable|url:http,https|max:500',
+            'nutrition' => 'nullable|array|max:20',
+            'nutrition.*' => 'nullable|numeric|min:0|max:99999',
         ]);
         $validated['user_id'] = $request->user()->id;
         $validated['unit'] ??= 'piece';
@@ -100,14 +101,15 @@ class ProductController extends Controller
         abort_unless($product->user_id === $request->user()->id, 403);
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:5000',
             'brand' => 'nullable|string|max:100',
             'barcode' => 'nullable|string|max:50',
             'category' => 'nullable|string|max:100',
             'unit' => 'nullable|string|max:50',
             'default_quantity' => 'nullable|numeric|min:0.01',
-            'image_url' => 'nullable|url|max:500',
-            'nutrition' => 'nullable|array',
+            'image_url' => 'nullable|url:http,https|max:500',
+            'nutrition' => 'nullable|array|max:20',
+            'nutrition.*' => 'nullable|numeric|min:0|max:99999',
         ]);
         $product->update($validated);
         return response()->json($product);

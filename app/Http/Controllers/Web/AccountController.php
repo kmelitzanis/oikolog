@@ -114,7 +114,7 @@ class AccountController extends Controller
 
         $data = $request->validate([
             'to_account_id' => ['required', 'exists:accounts,id'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
             'occurred_at' => ['nullable', 'date', 'before_or_equal:today'],
             'description' => ['nullable', 'string', 'max:160'],
         ]);
@@ -184,7 +184,7 @@ class AccountController extends Controller
 
         $data = $request->validate([
             'direction' => ['required', 'in:in,out'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
             'occurred_at' => ['nullable', 'date', 'before_or_equal:today'],
             'description' => ['nullable', 'string', 'max:160'],
         ]);
@@ -224,16 +224,17 @@ class AccountController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string'],
-            'icon' => ['nullable', 'string', 'max:40'],
-            'color_hex' => ['nullable', 'string', 'max:7'],
-            'opening_balance' => ['nullable', 'numeric'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'icon' => ['nullable', 'string', 'max:40', 'regex:/^[a-z0-9_]+$/'],
+            // Lands in a style attribute, so a colour and nothing else.
+            'color_hex' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'opening_balance' => ['nullable', 'numeric', 'min:-99999999', 'max:99999999'],
             'kind' => ['nullable', 'in:standard,budget'],
             'cycle_amount' => ['nullable', 'required_if:kind,budget', 'numeric', 'min:0', 'max:99999999'],
             'cycle_day' => ['nullable', 'required_if:kind,budget', 'integer', 'min:1', 'max:31'],
             'is_shared' => ['nullable'],
             'is_active' => ['nullable'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
         // Sharing needs someone to share with.

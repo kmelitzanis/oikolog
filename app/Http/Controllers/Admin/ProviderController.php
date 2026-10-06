@@ -38,10 +38,10 @@ class ProviderController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'category_ids' => ['required', 'array', 'min:1'],
             'category_ids.*' => ['exists:categories,id'],
-            'website' => ['nullable', 'url', 'max:255'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'notes' => ['nullable', 'string'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
             // Invoice-mail crawling. Validated as regexes so a typo is caught
             // here rather than silently never matching.
             'email_from_pattern'    => ['nullable', 'string', 'max:190', 'regex:/^[^\x00]*$/'],
@@ -93,10 +93,10 @@ class ProviderController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'category_ids' => ['required', 'array', 'min:1'],
             'category_ids.*' => ['exists:categories,id'],
-            'website' => ['nullable', 'url', 'max:255'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'notes' => ['nullable', 'string'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
             // Invoice-mail crawling. Validated as regexes so a typo is caught
             // here rather than silently never matching.
             'email_from_pattern'    => ['nullable', 'string', 'max:190', 'regex:/^[^\x00]*$/'],

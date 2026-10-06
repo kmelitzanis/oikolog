@@ -777,4 +777,5 @@ return [
     'two_factor_confirm_code' => 'Confirm with an authentication code',
     'two_factor_enable' => 'Enable 2FA',
     'back_to_settings' => 'Back to settings',
+    'invalid_selection' => 'The selected value is not valid.',
 ];

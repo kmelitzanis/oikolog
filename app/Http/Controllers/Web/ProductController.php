@@ -149,17 +149,17 @@ class ProductController extends Controller
             'barcode' => ['nullable', 'string', 'max:50', 'unique:products,barcode' . ($product ? ',' . $product->id : '')],
             'category' => ['nullable', 'string', 'max:100'],
             'unit' => ['nullable', 'string', 'max:50'],
-            'default_quantity' => ['nullable', 'numeric', 'min:0'],
+            'default_quantity' => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'net_quantity' => ['nullable', 'string', 'max:60'],
             'serving_size' => ['nullable', 'string', 'max:60'],
-            'image_url' => ['nullable', 'url', 'max:500'],
-            'description' => ['nullable', 'string'],
-            'ingredients_text' => ['nullable', 'string'],
+            'image_url' => ['nullable', 'url:http,https', 'max:500'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'ingredients_text' => ['nullable', 'string', 'max:5000'],
             'nutri_score' => ['nullable', 'in:a,b,c,d,e'],
             'eco_score' => ['nullable', 'in:a,b,c,d,e'],
             'nova_group' => ['nullable', 'integer', 'min:1', 'max:4'],
-            'nutrition' => ['nullable', 'array'],
-            'nutrition.*' => ['nullable', 'numeric', 'min:0'],
+            'nutrition' => ['nullable', 'array', 'max:20'],
+            'nutrition.*' => ['nullable', 'numeric', 'min:0', 'max:99999'],
         ]);
 
         // Fields the request omitted are simply absent from the validated set.
