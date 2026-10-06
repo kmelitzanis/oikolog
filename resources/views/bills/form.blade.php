@@ -249,12 +249,16 @@
                                class="hidden" multiple>
                         <div id="receipts-preview" class="flex flex-wrap gap-2 mt-2"></div>
                     </div>
-                    @if($editing && method_exists($bill, 'receiptUrls') && !empty($bill->receiptUrls()))
+                    @if($editing && !empty($receiptItems = $bill->receiptItems()))
                         <div class="mt-3 flex gap-2 flex-wrap">
-                            @foreach($bill->receiptUrls() as $url)
-                                <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
-                                   class="w-20 h-20 overflow-hidden rounded-lg border border-gray-100 dark:border-slate-600">
-                                    <img src="{{ $url }}" class="w-full h-full object-cover" alt="{{ __('messages.receipts') }}">
+                            @foreach($receiptItems as $receipt)
+                                <a href="{{ $receipt['url'] }}" target="_blank" rel="noopener noreferrer" title="{{ $receipt['name'] }}"
+                                   class="w-20 h-20 overflow-hidden rounded-lg border border-gray-100 dark:border-slate-600 flex items-center justify-center bg-gray-50 dark:bg-slate-700">
+                                    @if($receipt['is_image'])
+                                        <img src="{{ $receipt['url'] }}" class="w-full h-full object-cover" alt="{{ $receipt['name'] }}" loading="lazy">
+                                    @else
+                                        <span class="material-icons-round text-2xl text-red-500" aria-hidden="true">picture_as_pdf</span>
+                                    @endif
                                 </a>
                             @endforeach
                         </div>

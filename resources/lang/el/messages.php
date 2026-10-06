@@ -779,4 +779,7 @@ return [
     'back_to_settings' => 'Πίσω στις ρυθμίσεις',
     'invalid_selection' => 'Η επιλογή δεν είναι έγκυρη.',
     'push_endpoint_invalid' => 'Ο browser έδωσε διεύθυνση ειδοποιήσεων που ο διακομιστής δεν δέχεται.',
+    'receipt_deleted' => 'Η απόδειξη διαγράφηκε.',
+    'delete_receipt' => 'Διαγραφή απόδειξης',
+    'delete_receipt_confirm' => 'Να διαγραφεί αυτή η απόδειξη;',
 ];

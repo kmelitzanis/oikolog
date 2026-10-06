@@ -329,16 +329,33 @@
         </x-card>
 
         {{-- ── Attachments ─────────────────────────────────────────────── --}}
-        @php $receipts = method_exists($bill, 'receiptUrls') ? $bill->receiptUrls() : []; @endphp
+        @php $receipts = $bill->receiptItems(); @endphp
         @if(!empty($receipts))
             <x-card class="mt-4">
                 <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">{{ __('messages.attachments') }}</h2>
                 <div class="flex gap-3 flex-wrap">
-                    @foreach($receipts as $url)
-                        <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
-                           class="w-28 h-28 overflow-hidden rounded-xl border border-gray-100 dark:border-slate-600 hover:opacity-80 transition">
-                            <img src="{{ $url }}" class="w-full h-full object-cover" alt="{{ __('messages.attachments') }}">
-                        </a>
+                    @foreach($receipts as $receipt)
+                        <div class="relative group">
+                            <a href="{{ $receipt['url'] }}" target="_blank" rel="noopener noreferrer"
+                               title="{{ $receipt['name'] }}"
+                               class="w-28 h-28 overflow-hidden rounded-xl border border-gray-100 dark:border-slate-600 hover:opacity-80 transition flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-700">
+                                @if($receipt['is_image'])
+                                    <img src="{{ $receipt['url'] }}" class="w-full h-full object-cover" alt="{{ $receipt['name'] }}" loading="lazy">
+                                @else
+                                    <span class="material-icons-round text-3xl text-red-500" aria-hidden="true">picture_as_pdf</span>
+                                    <span class="mt-1 px-2 text-[0.68rem] text-gray-500 dark:text-slate-400 truncate max-w-full">{{ $receipt['name'] }}</span>
+                                @endif
+                            </a>
+                            <form method="POST" action="{{ route('bills.receipts.destroy', [$bill, $receipt['id']]) }}"
+                                  onsubmit="return confirm({{ \Illuminate\Support\Js::from(__('messages.delete_receipt_confirm')) }})"
+                                  class="absolute top-1.5 right-1.5">
+                                @csrf @method('DELETE')
+                                <button type="submit" aria-label="{{ __('messages.delete_receipt') }}" title="{{ __('messages.delete_receipt') }}"
+                                        class="w-7 h-7 rounded-lg bg-white/90 dark:bg-slate-800/90 text-red-500 shadow flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition">
+                                    <span class="material-icons-round text-base" aria-hidden="true">delete</span>
+                                </button>
+                            </form>
+                        </div>
                     @endforeach
                 </div>
             </x-card>

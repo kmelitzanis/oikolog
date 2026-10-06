@@ -15,15 +15,14 @@ class TranslationLoaderTest extends TestCase
         // Ensure file has a value
         $fileVal = __('messages.dashboard');
         $this->assertIsString($fileVal);
+        $this->assertNotSame('DB Dashboard', $fileVal);
 
         // Insert DB override for 'dashboard'
         Translation::create(['locale' => 'en', 'group' => 'messages', 'key' => 'dashboard', 'value' => 'DB Dashboard']);
 
-        // Clear translator cache and fetch
-        app('translator')->load('en', 'messages');
+        // Forget what the translator already loaded, then ask again.
+        app('translator')->setLoaded([]);
 
-        $val = __('messages.dashboard');
-        $this->assertEquals('DB Dashboard', $val);
+        $this->assertEquals('DB Dashboard', __('messages.dashboard'));
     }
 }
-

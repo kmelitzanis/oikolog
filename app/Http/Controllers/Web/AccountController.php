@@ -9,6 +9,8 @@ use App\Services\Ledger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AccountController extends Controller
 {
@@ -147,32 +149,45 @@ class AccountController extends Controller
     {
         $this->authorizeAccess($account);
 
-        $leftover = $account->pendingLeftover();
-        abort_unless($leftover, 422, __('messages.no_leftover_to_settle'));
-
         if ($request->input('action') === 'keep') {
+            $leftover = $account->pendingLeftover();
+            abort_unless($leftover, 422, __('messages.no_leftover_to_settle'));
             $account->update(['cycle_settled_until' => $leftover['end']]);
 
             return back()->with('success', __('messages.leftover_left'));
         }
 
         $data = $request->validate([
-            'to_account_id' => ['required', 'exists:accounts,id'],
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:' . $leftover['left']],
+            'to_account_id' => ['required', 'string'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
         ]);
 
         $target = Account::forUser($request->user())->findOrFail($data['to_account_id']);
         abort_if($target->id === $account->id, 422, 'Cannot transfer to the same account.');
 
-        $this->ledger->transfer(
-            $account,
-            $target,
-            (float) $data['amount'],
-            $leftover['end'],
-            $request->user()->id,
-            __('messages.leftover_transfer_note', ['period' => $leftover['start']->translatedFormat('j M') . ' – ' . $leftover['end']->translatedFormat('j M')]),
-        );
-        $account->update(['cycle_settled_until' => $leftover['end']]);
+        DB::transaction(function () use ($account, $target, $data, $request) {
+            // Locked and re-checked, so a double submit settles the leftover
+            // once instead of moving it twice.
+            $account = Account::whereKey($account->getKey())->lockForUpdate()->firstOrFail();
+            $leftover = $account->pendingLeftover();
+            abort_unless($leftover, 422, __('messages.no_leftover_to_settle'));
+
+            if ((float) $data['amount'] > $leftover['left']) {
+                throw ValidationException::withMessages([
+                    'amount' => __('validation.max.numeric', ['attribute' => 'amount', 'max' => $leftover['left']]),
+                ]);
+            }
+
+            $this->ledger->transfer(
+                $account,
+                $target,
+                (float) $data['amount'],
+                $leftover['end'],
+                $request->user()->id,
+                __('messages.leftover_transfer_note', ['period' => $leftover['start']->translatedFormat('j M') . ' – ' . $leftover['end']->translatedFormat('j M')]),
+            );
+            $account->update(['cycle_settled_until' => $leftover['end']]);
+        });
 
         return back()->with('success', __('messages.transfer_recorded'));
     }

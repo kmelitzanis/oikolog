@@ -10,6 +10,7 @@ use App\Services\Ledger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class IncomeController extends Controller
 {
@@ -274,23 +275,29 @@ class IncomeController extends Controller
             $account = Account::forUser($request->user())->find($income->account_id);
         }
 
-        // One receipt per cycle: until the expected date is close (or past),
-        // there is nothing to receive — and a second tap would deposit the
-        // same money twice and skip a month.
-        abort_unless($income->canReceiveNow(), 422, __('messages.income_not_due_yet'));
+        DB::transaction(function () use ($income, $receivedAt, $account, $amount, $ledger, $request) {
+            // Re-read under a lock so two taps (or two people) cannot both
+            // pass the check below against the same, not yet advanced, date.
+            $income = Income::whereKey($income->getKey())->lockForUpdate()->firstOrFail();
 
-        $nextDate = $income->calculateNextDate();
-        $income->update([
-            'last_received_date' => $receivedAt->toDateString(),
-            // The date this receipt settles — how late or early it came is
-            // measured against it.
-            'last_expected_date' => $income->next_date?->toDateString(),
-            'next_date' => $nextDate ? $nextDate->toDateString() : $income->next_date,
-        ]);
+            // One receipt per cycle: until the expected date is close (or past),
+            // there is nothing to receive — and a second tap would deposit the
+            // same money twice and skip a month.
+            abort_unless($income->canReceiveNow(), 422, __('messages.income_not_due_yet'));
 
-        if ($account) {
-            $ledger->deposit($account, $amount, $receivedAt, $request->user()->id, $income->name, $income);
-        }
+            $nextDate = $income->calculateNextDate();
+            $income->update([
+                'last_received_date' => $receivedAt->toDateString(),
+                // The date this receipt settles — how late or early it came is
+                // measured against it.
+                'last_expected_date' => $income->next_date?->toDateString(),
+                'next_date' => $nextDate ? $nextDate->toDateString() : $income->next_date,
+            ]);
+
+            if ($account) {
+                $ledger->deposit($account, $amount, $receivedAt, $request->user()->id, $income->name, $income);
+            }
+        });
 
         return back()->with('success', $account
             ? __('messages.income_deposited', ['account' => $account->name])

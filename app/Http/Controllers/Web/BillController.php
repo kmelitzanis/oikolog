@@ -14,6 +14,7 @@ use App\Services\Ledger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -45,7 +46,9 @@ class BillController extends Controller
 
         match ($status) {
             'active'     => $query->where('is_active', true),
-            'overdue'    => $query->where('is_active', true)->whereDate('next_due_date', '<', now()),
+            // Decided by status(), like the sidebar badge: a paid one-off keeps
+            // its past due date and must not read as overdue.
+            'overdue'    => $query->whereIn('id', $overdueIds = Bill::overdueIdsFor($user)),
             // Due this month (paid or not), overdue from before, or paid
             // this month. Decided per bill — see Bill::belongsToMonth().
             'this_month' => $query->whereIn('id', $thisMonthIds = Bill::thisMonthIdsFor($user)),
@@ -74,7 +77,7 @@ class BillController extends Controller
         $all = Bill::forUser($user)->get(['is_active', 'is_shared', 'next_due_date']);
         $billCounts = [
             'all'        => $all->count(),
-            'overdue'    => $all->filter(fn($b) => $b->is_active && $b->next_due_date && $b->next_due_date->isPast())->count(),
+            'overdue'    => count($overdueIds ?? Bill::overdueIdsFor($user)),
             'this_month' => count($thisMonthIds ?? Bill::thisMonthIdsFor($user)),
             'shared'     => $all->where('is_shared', true)->count(),
         ];
@@ -117,18 +120,9 @@ class BillController extends Controller
             'next_due_date'  => $data['start_date'],
         ]);
 
-        // Handle uploaded receipt images (optional, via Spatie medialibrary)
-        if ($request->hasFile('receipts') && class_exists(\Spatie\MediaLibrary\MediaCollections\Models\Media::class) && method_exists($bill, 'addMedia')) {
-            foreach ($request->file('receipts') as $file) {
-                try {
-                    $bill->addMedia($file->getRealPath())->usingFileName(uniqid() . '.' . $file->getClientOriginalExtension())->toMediaCollection('receipts');
-                } catch (\Exception $e) {
-                    // ignore individual failures
-                }
-            }
-        }
+        $this->storeReceipts($request, $bill);
 
-        return redirect()->route('bills.show', $bill)->with('success', 'Bill created.');
+        return redirect()->route('bills.show', $bill)->with('success', __('messages.bill_created'));
     }
 
     public function show(Bill $bill)
@@ -146,55 +140,51 @@ class BillController extends Controller
         return view('calendar.index');
     }
 
-    // Events for FullCalendar — returns bills + incomes
+    // Events for the calendar — returns bills + incomes
     public function events(Request $request)
     {
         $user = $request->user();
-
-        // Parse dates - handle both RFC 3339 with timezone and ISO 8601 formats
-        $startStr = $request->get('start');
-        $endStr = $request->get('end');
-
-        // Remove space before timezone offset if present (URL encoding issue)
-        if ($startStr && strpos($startStr, ' ') !== false) {
-            $startStr = str_replace(' ', '+', $startStr);
-        }
-        if ($endStr && strpos($endStr, ' ') !== false) {
-            $endStr = str_replace(' ', '+', $endStr);
-        }
-
-        $start = $startStr ? \Carbon\Carbon::parse($startStr) : now()->startOfMonth();
-        $end = $endStr ? \Carbon\Carbon::parse($endStr) : now()->endOfMonth();
+        [$start, $end] = $this->eventWindow($request);
+        $today = Carbon::today();
 
         // ── Bills ─────────────────────────────────────────────────────────────
         $bills = Bill::forUser($user)->whereNotNull('next_due_date')
             ->with(['category', 'provider', 'payments' => function ($q) use ($start, $end) {
-                $q->whereBetween('paid_at', [$start->startOfDay(), $end->endOfDay()]);
+                $q->whereBetween('paid_at', [$start, $end]);
             }])->get();
 
         $billEvents = collect();
 
         foreach ($bills as $b) {
-            // Get all occurrences between start and end
-            $occurrences = $b->occurrencesBetween($start, $end);
+            $nextDue = $b->next_due_date?->copy()->startOfDay();
 
-            foreach ($occurrences as $date) {
-                // Check if this occurrence was paid
-                $isPaid = $b->payments->some(fn($p) => $p->paid_at->toDateString() === $date->toDateString());
+            foreach ($b->occurrencesBetween($start, $end) as $date) {
+                // A cycle is settled once the schedule has moved past it (a full
+                // payment advances next_due_date), a one-off once it is paid,
+                // or when a payment landed on the day itself. Matching only the
+                // payment day, as before, missed every bill paid a day early.
+                $isPaid = ($b->last_paid_date && $nextDue && $date->lt($nextDue))
+                    || ($b->isOneOff() && $b->isCurrentCyclePaid())
+                    || $b->payments->contains(fn ($p) => $p->paid_at?->isSameDay($date));
 
-                $isOverdue = $date->isPast() && !$isPaid && $b->is_active;
-                $isSoon = !$isOverdue && !$isPaid && $date->diffInDays(now(), false) <= 7 && $date->isFuture() && $b->is_active;
-
-                // Determine color
-                if ($isPaid) {
-                    $color = '#10b981'; // Green for paid
-                } elseif ($isOverdue) {
-                    $color = '#ef4444'; // Red for overdue
-                } elseif ($isSoon) {
-                    $color = '#f97316'; // Orange for upcoming soon
-                } else {
-                    $color = $b->category?->color_hex ?? '#6366f1';
+                // A retired bill (a paid-off loan) has no future to show.
+                if (! $b->is_active && ! $isPaid) {
+                    continue;
                 }
+
+                // Due today is not overdue yet — `isPast()` said it was from
+                // one second past midnight.
+                $isOverdue = ! $isPaid && $date->lt($today);
+                // diffInDays() against now() was negative for every future
+                // date, so the whole future read as "due soon".
+                $isSoon = ! $isPaid && ! $isOverdue && $date->lte($today->copy()->addDays(7));
+
+                $color = match (true) {
+                    $isPaid    => '#10b981',
+                    $isOverdue => '#ef4444',
+                    $isSoon    => '#f97316',
+                    default    => $b->category?->color_hex ?? '#6366f1',
+                };
 
                 $billEvents->push([
                     'id' => 'bill-' . $b->id . '-' . $date->timestamp,
@@ -205,7 +195,7 @@ class BillController extends Controller
                     'color' => $color,
                     'extendedProps' => [
                         'type' => 'bill',
-                        'amount' => $b->currency_code . ' ' . number_format($b->amount, 2),
+                        'amount' => $b->currency_code . ' ' . number_format($b->periodAmount(), 2),
                         'overdue' => $isOverdue,
                         'paid' => $isPaid,
                         'soon' => $isSoon,
@@ -216,7 +206,10 @@ class BillController extends Controller
         }
 
         // ── Incomes ───────────────────────────────────────────────────────────
-        $incomes = \App\Models\Income::forUser($user)->active()->whereNotNull('next_date')->get();
+        $incomes = \App\Models\Income::forUser($user)->active()
+            ->whereNotNull('next_date')
+            ->whereBetween('next_date', [$start->toDateString(), $end->toDateString()])
+            ->get();
 
         $incomeEvents = $incomes->map(function ($i) {
             return [
@@ -234,6 +227,40 @@ class BillController extends Controller
         });
 
         return response()->json($billEvents->concat($incomeEvents)->values());
+    }
+
+    /**
+     * The date range a calendar request asks for, parsed defensively.
+     *
+     * Bad input falls back to this month instead of a 500, and the window is
+     * capped: a calendar page never shows more than six weeks, and an
+     * unbounded range made the server enumerate every occurrence in it.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function eventWindow(Request $request): array
+    {
+        $parse = function ($value, Carbon $fallback): Carbon {
+            if (! is_string($value) || $value === '') {
+                return $fallback;
+            }
+
+            try {
+                // A "+" in a timezone offset arrives as a space when unencoded.
+                return Carbon::parse(str_replace(' ', '+', $value));
+            } catch (\Throwable $e) {
+                return $fallback;
+            }
+        };
+
+        $start = $parse($request->query('start'), now()->startOfMonth())->startOfDay();
+        $end = $parse($request->query('end'), $start->copy()->endOfMonth())->endOfDay();
+
+        if ($end->lt($start) || $start->diffInDays($end) > 62) {
+            $end = $start->copy()->addDays(62)->endOfDay();
+        }
+
+        return [$start, $end];
     }
 
     public function edit(Bill $bill)
@@ -286,26 +313,19 @@ class BillController extends Controller
             $bill->save();
         }
 
-        // Handle uploaded receipt images on update
-        if ($request->hasFile('receipts') && class_exists(\Spatie\MediaLibrary\MediaCollections\Models\Media::class) && method_exists($bill, 'addMedia')) {
-            foreach ($request->file('receipts') as $file) {
-                try {
-                    $bill->addMedia($file->getRealPath())->usingFileName(uniqid() . '.' . $file->getClientOriginalExtension())->toMediaCollection('receipts');
-                } catch (\Exception $e) {
-                    // ignore
-                }
-            }
-        }
+        $this->storeReceipts($request, $bill);
 
-        return redirect()->route('bills.show', $bill)->with('success', 'Bill updated.');
+        return redirect()->route('bills.show', $bill)->with('success', __('messages.bill_updated'));
     }
 
     public function destroy(Bill $bill)
     {
         $this->authorizeEdit($bill);
-        $bill->delete();
 
-        return redirect()->route('bills.index')->with('success', 'Bill deleted.');
+        // Account movements survive — see Bill::booted().
+        DB::transaction(fn () => $bill->delete());
+
+        return redirect()->route('bills.index')->with('success', __('messages.bill_deleted'));
     }
 
     /**
@@ -662,6 +682,57 @@ class BillController extends Controller
                 'next_due_date'     => $paidAt?->toDateString(),
             ]);
         });
+    }
+
+    /** Open a receipt — only for someone who can see the bill. */
+    public function showReceipt(Bill $bill, int $receipt)
+    {
+        $this->authorizeView($bill);
+        $media = $this->findReceipt($bill, $receipt);
+
+        $headers = [
+            'Content-Type'           => $media->mime_type,
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control'          => 'private, max-age=3600',
+        ];
+
+        return response()->file($media->getPath(), $headers);
+    }
+
+    public function destroyReceipt(Bill $bill, int $receipt)
+    {
+        $this->authorizeEdit($bill);
+        $this->findReceipt($bill, $receipt)->delete();
+
+        return back()->with('success', __('messages.receipt_deleted'));
+    }
+
+    /** The receipt with this id, if it really belongs to this bill. */
+    private function findReceipt(Bill $bill, int $id): \Spatie\MediaLibrary\MediaCollections\Models\Media
+    {
+        $media = $bill->getMedia('receipts')->firstWhere('id', $id);
+        abort_unless($media, 404);
+
+        return $media;
+    }
+
+    /**
+     * Attach uploaded receipts. They used to be thrown away without a word:
+     * the bill had never been set up to hold media.
+     *
+     * The stored name is random and the extension comes from the file's
+     * content, never from what the browser called it.
+     */
+    private function storeReceipts(Request $request, Bill $bill): void
+    {
+        foreach ((array) $request->file('receipts', []) as $file) {
+            $original = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+            $bill->addMedia($file)
+                ->usingName(Str::limit($original !== '' ? $original : __('messages.receipts'), 100, ''))
+                ->usingFileName(Str::random(40) . '.' . ($file->guessExtension() ?: 'bin'))
+                ->toMediaCollection('receipts');
+        }
     }
 
     /** Validation shared by create and edit. */

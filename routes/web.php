@@ -59,6 +59,9 @@ Route::middleware('auth')->group(function () {
             // bill's payment history.
             Route::delete('/{bill}/unpay', 'undoLastPayment')->name('unpay');
             Route::delete('/{bill}/payments/{payment}', 'destroyPayment')->name('payments.destroy');
+            // Receipts are private files, streamed only past the bill's own check.
+            Route::get('/{bill}/receipts/{receipt}', 'showReceipt')->whereNumber('receipt')->name('receipts.show');
+            Route::delete('/{bill}/receipts/{receipt}', 'destroyReceipt')->whereNumber('receipt')->name('receipts.destroy');
         });
 
     // Amounts parsed out of provider invoice mail, pending review. Accepting is

@@ -63,9 +63,11 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User updated.');
     }
 
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
-        abort_if($user->email === env('ADMIN_EMAIL'), 403, 'Cannot delete the admin user.');
+        // Deleting yourself from here would lock the admin area for good.
+        abort_if($user->is($request->user()), 403, 'You cannot delete your own account.');
+        abort_if($user->email === config('app.admin_email'), 403, 'Cannot delete the admin user.');
         $user->delete();
         return redirect()->route('admin.users.index')->with('success', 'User deleted.');
     }

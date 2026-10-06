@@ -10,8 +10,17 @@ class TranslationController extends Controller
 {
     protected function authorizeAdmin()
     {
-        $admin = env('ADMIN_EMAIL');
-        abort_unless(auth()->check() && auth()->user()->email === $admin, 403, 'Admins only');
+        // env() returned null under a cached config, which locked everyone
+        // out. Admins are recognised the same way as in the admin area, with
+        // the configured admin address still honoured.
+        $user = auth()->user();
+        $adminEmail = config('app.admin_email');
+
+        abort_unless(
+            $user && ($user->isAdmin() || ($adminEmail && $user->email === $adminEmail)),
+            403,
+            'Admins only'
+        );
     }
 
     public function index()
@@ -31,10 +40,10 @@ class TranslationController extends Controller
     {
         $this->authorizeAdmin();
         $data = $request->validate([
-            'locale' => ['required', 'string', 'max:10'],
-            'group' => ['required', 'string', 'max:60'],
+            'locale' => ['required', 'string', 'in:en,el'],
+            'group' => ['required', 'string', 'max:60', 'regex:/^[A-Za-z0-9_.\-*]+$/'],
             'key' => ['required', 'string', 'max:255'],
-            'value' => ['required', 'string'],
+            'value' => ['required', 'string', 'max:5000'],
         ]);
         Translation::create($data);
         return redirect()->route('translations.index')->with('success', 'Translation created.');
@@ -50,10 +59,10 @@ class TranslationController extends Controller
     {
         $this->authorizeAdmin();
         $data = $request->validate([
-            'locale' => ['required', 'string', 'max:10'],
-            'group' => ['required', 'string', 'max:60'],
+            'locale' => ['required', 'string', 'in:en,el'],
+            'group' => ['required', 'string', 'max:60', 'regex:/^[A-Za-z0-9_.\-*]+$/'],
             'key' => ['required', 'string', 'max:255'],
-            'value' => ['required', 'string'],
+            'value' => ['required', 'string', 'max:5000'],
         ]);
         $translation->update($data);
         return redirect()->route('translations.index')->with('success', 'Translation updated.');

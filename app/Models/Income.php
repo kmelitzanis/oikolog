@@ -88,66 +88,37 @@ class Income extends Model
     public function calculateNextDate(): ?Carbon
     {
         if (!$this->next_date) return null;
-        $date = Carbon::parse($this->next_date);
-        $freq = $this->frequency ?? 'monthly';
-        $interval = (int)($this->frequency_interval ?? 1);
-        return match ($freq) {
-            'once' => null,
-            'daily' => $date->addDays(1 * $interval),
-            'weekly' => $date->addWeeks(1 * $interval),
-            'biweekly' => $date->addWeeks(2 * $interval),
-            'monthly' => $date->addMonths(1 * $interval),
-            'quarterly' => $date->addMonths(3 * $interval),
-            'yearly' => $date->addYears(1 * $interval),
-            default => $date->addMonths(1 * $interval),
-        };
+
+        return $this->advanceDate(Carbon::parse($this->next_date));
     }
 
-    /**
-     * Collect all occurrence dates between $from and $to using recursion.
-     *
-     * @return Carbon[]
-     */
+    /** @return Carbon[] */
     public function occurrencesBetween(Carbon $from, Carbon $to): array
     {
-        if (!$this->start_date) return [];
-        $start = Carbon::parse($this->start_date)->startOfDay();
-        $end = $this->end_date ? Carbon::parse($this->end_date)->endOfDay() : null;
-        if ($end && $end->lt($from)) return [];
-        if ($start->gt($to)) return [];
-        $current = $start->copy();
-        while ($current->lt($from)) {
-            $next = $this->advanceDate($current);
-            if (!$next || $next->lte($current)) return [];
-            $current = $next;
-            if ($end && $current->gt($end)) return [];
-        }
-        $occurrences = [];
-        $collect = function (Carbon $dt) use (&$collect, $to, $end, &$occurrences) {
-            if ($dt->gt($to)) return;
-            if ($end && $dt->gt($end)) return;
-            $occurrences[] = $dt->copy();
-            $next = $this->advanceDate($dt);
-            if (!$next || $next->lte($dt)) return;
-            $collect($next);
-        };
-        $collect($current);
-        return $occurrences;
+        return Bill::scheduleBetween(
+            $this->start_date ? Carbon::parse($this->start_date) : null,
+            $this->end_date ? Carbon::parse($this->end_date) : null,
+            $from,
+            $to,
+            fn (Carbon $date) => $this->advanceDate($date),
+        );
     }
 
+    /** Same calendar arithmetic as bills — see Bill::addMonthsOnDay(). */
     private function advanceDate(Carbon $date): ?Carbon
     {
         $freq = $this->frequency ?? 'monthly';
-        $interval = (int)($this->frequency_interval ?? 1);
+        $interval = max(1, (int) ($this->frequency_interval ?? 1));
+        $day = $this->start_date ? Carbon::parse($this->start_date)->day : $date->day;
+
         return match ($freq) {
             'once' => null,
             'daily' => $date->copy()->addDays(1 * $interval),
             'weekly' => $date->copy()->addWeeks(1 * $interval),
             'biweekly' => $date->copy()->addWeeks(2 * $interval),
-            'monthly' => $date->copy()->addMonths(1 * $interval),
-            'quarterly' => $date->copy()->addMonths(3 * $interval),
-            'yearly' => $date->copy()->addYears(1 * $interval),
-            default => $date->copy()->addMonths(1 * $interval),
+            'quarterly' => Bill::addMonthsOnDay($date, 3 * $interval, $day),
+            'yearly' => Bill::addMonthsOnDay($date, 12 * $interval, $day),
+            default => Bill::addMonthsOnDay($date, 1 * $interval, $day),
         };
     }
 

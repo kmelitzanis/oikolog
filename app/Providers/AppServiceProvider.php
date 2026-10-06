@@ -16,7 +16,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Database-backed translation overrides, layered over the files.
+        // Registered as an extension so it applies whenever the loader is
+        // first built; swapping the instance in boot() was too late once
+        // anything had already resolved the translator.
+        $this->app->extend('translation.loader', fn ($loader) => new \App\Translation\DatabaseLoader($loader));
     }
 
     /**
@@ -43,17 +47,6 @@ class AppServiceProvider extends ServiceProvider
             View::share('availableLocales', $locales);
         } catch (\Throwable $e) {
             View::share('availableLocales', ['en']);
-        }
-
-        // Database-backed translation loader (falls back to file loader)
-        try {
-            if (\Illuminate\Support\Facades\Schema::hasTable('translations')) {
-                $fileLoader = $this->app['translation.loader'];
-                $dbLoader = new \App\Translation\DatabaseLoader($fileLoader);
-                $this->app->instance('translation.loader', $dbLoader);
-            }
-        } catch (\Throwable $e) {
-            // Skip if DB isn't ready (e.g. during migrations)
         }
 
         $this->configureRateLimiting();

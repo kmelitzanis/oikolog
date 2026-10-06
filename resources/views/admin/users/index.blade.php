@@ -54,9 +54,9 @@
                                class="inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:text-amber-800 transition">
                                 <span class="material-icons-round text-base">edit</span> Edit
                             </a>
-                            @if($user->email !== config('app.admin_email', env('ADMIN_EMAIL')))
+                            @if($user->email !== config('app.admin_email') && ! $user->is(auth()->user()))
                                 <form action="{{ route('admin.users.destroy', $user) }}" method="POST"
-                                      onsubmit="return confirm('Delete user \'{{ addslashes($user->name) }}\'?')">
+                                      onsubmit="return confirm({{ \Illuminate\Support\Js::from('Delete user ' . $user->name . '?') }})">
                                     @csrf @method('DELETE')
                                     <button type="submit"
                                             class="inline-flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700 transition">

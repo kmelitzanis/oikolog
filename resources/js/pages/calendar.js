@@ -1,4 +1,8 @@
 // Calendar Alpine component
+
+// Month and day names follow the page language rather than the browser's.
+const pageLocale = () => document.documentElement.lang || undefined;
+
 window.calendarApp = function () {
     return {
         today: new Date(),
@@ -14,7 +18,7 @@ window.calendarApp = function () {
             return this.current.getMonth();
         },
         get monthName() {
-            return this.current.toLocaleString('default', {month: 'long'});
+            return this.current.toLocaleString(pageLocale(), {month: 'long'});
         },
 
         init() {
@@ -39,10 +43,19 @@ window.calendarApp = function () {
             this.loading = true;
             const start = new Date(this.year, this.month, 1);
             const end = new Date(this.year, this.month + 1, 0);
-            const fmt = d => d.toISOString().split('T')[0];
+            // Local dates, not toISOString(): that converts to UTC, which east
+            // of Greenwich turns local midnight into the previous day — the
+            // request then stopped a day short and the month's last day
+            // never showed its bills.
+            const requested = `${this.year}-${this.month}`;
             try {
-                const r = await fetch(`/bills/events?start=${fmt(start)}&end=${fmt(end)}`);
-                this.events = await r.json();
+                const r = await fetch(`/bills/events?start=${this.dateStr(start)}&end=${this.dateStr(end)}`, {
+                    headers: {Accept: 'application/json'},
+                });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const events = await r.json();
+                // Ignore a slow answer for a month the user has already left.
+                if (requested === `${this.year}-${this.month}`) this.events = events;
             } catch (e) {
                 this.events = [];
             }
@@ -116,7 +129,7 @@ window.calendarApp = function () {
         formatShortDate(str) {
             const [y, m, d] = str.split('-').map(Number);
             const date = new Date(y, m - 1, d);
-            return date.toLocaleString('default', {month: 'short', day: 'numeric'});
+            return date.toLocaleString(pageLocale(), {month: 'short', day: 'numeric'});
         },
     };
 };
