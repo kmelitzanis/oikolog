@@ -613,6 +613,39 @@ class Bill extends Model implements HasMedia
     }
 
     /**
+     * What the pay modal needs to open on this bill, as one array that every
+     * page passes through Js::from(). Three views used to assemble it by
+     * hand and had drifted: the dashboard ignored partial balances and this
+     * cycle's figure, and amounts were formatted with a thousands separator,
+     * so "1,250.00" reached the modal's maths as 1.
+     */
+    public function payModalPayload(): array
+    {
+        $lastPayment = $this->relationLoaded('payments')
+            ? $this->payments->sortByDesc('paid_at')->first()
+            : $this->payments()->latest('paid_at')->first();
+
+        $amount = $this->tracksDebt()
+            ? min($this->periodAmount(), max(0.0, (float) $this->debt_remaining))
+            : $this->periodAmount();
+
+        $known = $this->hasCurrentAmount() ? (float) $this->current_amount : ($lastPayment ? (float) $lastPayment->amount : null);
+
+        return [
+            'billName'         => $this->name,
+            'amount'           => number_format($amount, 2, '.', ''),
+            'currency'         => $this->currency_code,
+            'payRoute'         => route('bills.pay', $this),
+            'costVaries'       => (bool) $this->cost_varies,
+            'defaultAccountId' => $this->default_account_id ?? '',
+            'lastPaidAmount'   => $this->cost_varies && $known !== null ? number_format($known, 2, '.', '') : '',
+            'remainingBalance' => $this->hasPartialPayment()
+                ? number_format($this->getEffectiveRemainingBalance(), 2, '.', '')
+                : null,
+        ];
+    }
+
+    /**
      * The bill's receipts, ready for a view: where to open each one, what to
      * call it, and whether it can be shown as a picture.
      *

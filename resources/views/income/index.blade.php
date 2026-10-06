@@ -34,7 +34,7 @@
                     'count' => $stats['received_count'],
                     'total' => $stats['total_sources'],
                 ]) }}
-                · {{ __('messages.accounts_count', ['count' => $accountStats['count']]) }}
+                · {{ trans_choice('messages.accounts_count', $accountStats['count'], ['count' => $accountStats['count']]) }}
             </div>
         </div>
         <div class="flex items-center gap-2.5">
@@ -69,7 +69,7 @@
                 <div class="text-[0.74rem] text-gray-500 dark:text-slate-400">
                     {{ __('messages.received_this_month', ['month' => $monthName]) }}:
                     <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $currency }} {{ number_format($stats['received_this_month'], 2) }}</span>
-                    · {{ $currency }} {{ number_format($stats['monthly_income'], 2) }}/mo
+                    · {{ $currency }} {{ number_format($stats['monthly_income'], 2) }}{{ __('messages.per_month_short') }}
                 </div>
             </div>
 
@@ -129,7 +129,8 @@
                     [$stateLabel, $stateClass] = match (true) {
                         ! $income->is_active => [__('messages.inactive'), 'text-gray-400 dark:text-slate-500'],
                         $received => [__('messages.income_received_badge') . ($delayLabel ? ' · ' . $delayLabel : ''), 'text-emerald-600 dark:text-emerald-400'],
-                        $isLate => [__('messages.income_late'), 'text-red-500'],
+                        // When it was due; the delay itself is the line below.
+                        $isLate => [__('messages.expected_on', ['date' => $income->next_date->translatedFormat('j M')]), 'text-red-500'],
                         $isSoon => [__('messages.income_soon'), 'text-amber-600 dark:text-amber-400'],
                         default => [$income->source ?: __('messages.income'), 'text-gray-400 dark:text-slate-500'],
                     };
@@ -153,8 +154,8 @@
                             <span class="material-icons-round text-lg">{{ $isOnce ? 'attach_money' : 'repeat' }}</span>
                         </div>
                         <div class="min-w-0">
-                            <div class="text-[0.88rem] font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
-                                {{ $income->name }}
+                            <div class="text-[0.88rem] font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
+                                <span class="truncate">{{ $income->name }}</span>
                             </div>
                             <div class="text-[0.68rem] font-semibold {{ $stateClass }} mt-px truncate">
                                 {{ $stateLabel }}
@@ -189,7 +190,7 @@
                             @if($income->account)
                                 → {{ $income->account->name }}
                             @else
-                                {{ number_format($income->monthlyEquivalent(), 2) }}/mo
+                                {{ number_format($income->monthlyEquivalent(), 2) }}{{ __('messages.per_month_short') }}
                             @endif
                         </div>
                     </div>

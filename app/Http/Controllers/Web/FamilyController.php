@@ -31,25 +31,27 @@ class FamilyController extends Controller
             $familyBillIds = \App\Models\Bill::forUser($user)->pluck('id');
 
             $payments = \App\Models\Payment::whereIn('bill_id', $familyBillIds)
-                ->with(['bill:id,name', 'paidBy:id,name'])
+                ->with(['bill:id,name', 'paidBy:id,name,gender,locale'])
                 ->latest('paid_at')
                 ->take(6)
                 ->get()
                 ->map(fn($p) => [
                     'type'  => 'paid',
-                    'actor' => $p->paidBy?->name,
+                    // subjectName() carries the Greek article for the person's
+                    // gender ("Η Μαρία"); the copy used to hard-code "Ο/Η".
+                    'actor' => $p->paidBy?->subjectName(app()->getLocale()),
                     'subject' => $p->bill?->name,
                     'at'    => $p->paid_at,
                 ]);
 
             $addedBills = \App\Models\Bill::forUser($user)
-                ->with('creator:id,name')
+                ->with('creator:id,name,gender,locale')
                 ->latest('created_at')
                 ->take(6)
                 ->get()
                 ->map(fn($b) => [
                     'type'  => 'added',
-                    'actor' => $b->creator?->name,
+                    'actor' => $b->creator?->subjectName(app()->getLocale()),
                     'subject' => $b->name,
                     'at'    => $b->created_at,
                 ]);
@@ -76,7 +78,7 @@ class FamilyController extends Controller
         ]);
         $user->update(['family_id' => $family->id, 'family_role' => 'owner']);
 
-        return redirect()->route('family.index')->with('success', 'Family group created!');
+        return redirect()->route('family.index')->with('success', __('messages.family_created'));
     }
 
     public function join(Request $request)
@@ -84,13 +86,18 @@ class FamilyController extends Controller
         $user = $request->user();
         abort_if($user->family_id, 422, 'You already belong to a family.');
 
-        $data   = $request->validate(['invite_code' => ['required', 'string']]);
-        $family = Family::where('invite_code', strtoupper($data['invite_code']))->first();
-        abort_unless($family, 404, 'Invalid invite code.');
+        $data   = $request->validate(['invite_code' => ['required', 'string', 'max:32']]);
+        $family = Family::where('invite_code', strtoupper(trim($data['invite_code'])))->first();
+
+        // A mistyped code is the commonest way this fails; it belongs beside
+        // the field, not on a bare 404 page.
+        if (! $family) {
+            return back()->withErrors(['invite_code' => __('messages.invalid_invite_code')])->withInput();
+        }
 
         $user->update(['family_id' => $family->id, 'family_role' => 'member']);
 
-        return redirect()->route('family.index')->with('success', 'Joined ' . $family->name . '!');
+        return redirect()->route('family.index')->with('success', __('messages.family_joined', ['family' => $family->name]));
     }
 
     public function leave(Request $request)
@@ -99,14 +106,14 @@ class FamilyController extends Controller
         abort_unless($user->family_id, 422, 'Not in a family.');
 
         if ($user->isFamilyOwner() && $user->family->members()->count() > 1) {
-            return back()->withErrors(['family' => 'Transfer ownership before leaving.']);
+            return back()->withErrors(['family' => __('messages.transfer_ownership_first')]);
         }
         if ($user->isFamilyOwner()) {
             $user->family->delete();
         }
         $user->update(['family_id' => null, 'family_role' => null]);
 
-        return redirect()->route('family.index')->with('success', 'You left the family group.');
+        return redirect()->route('family.index')->with('success', __('messages.family_left'));
     }
 
     public function regenerateCode(Request $request)
@@ -114,7 +121,7 @@ class FamilyController extends Controller
         abort_unless($request->user()->family_id, 422, 'Not in a family.');
         $request->user()->family->regenerateInviteCode();
 
-        return back()->with('success', 'Invite code regenerated.');
+        return back()->with('success', __('messages.invite_regenerated'));
     }
 
     public function removeMember(Request $request, User $member)
@@ -129,7 +136,7 @@ class FamilyController extends Controller
 
         $member->update(['family_id' => null, 'family_role' => null]);
 
-        return back()->with('success', $member->name . ' removed from family.');
+        return back()->with('success', __('messages.member_removed', ['name' => $member->name]));
     }
 
     public function transferOwnership(Request $request, User $member)
@@ -139,13 +146,14 @@ class FamilyController extends Controller
         abort_unless($member->family_id === $user->family_id, 422, 'Not in your family.');
         abort_if($member->id === $user->id, 422, 'Cannot transfer to yourself.');
 
-        // Demote current owner to admin
-        $user->update(['family_role' => 'admin']);
-        // Promote new owner
-        $member->update(['family_role' => 'owner']);
-        // Update family owner_id
-        $user->family->update(['owner_id' => $member->id]);
+        // All three together: a half-finished hand-over would leave a family
+        // with two owners or none.
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $member) {
+            $user->update(['family_role' => 'admin']);
+            $member->update(['family_role' => 'owner']);
+            $user->family->update(['owner_id' => $member->id]);
+        });
 
-        return back()->with('success', 'Ownership transferred to ' . $member->name);
+        return back()->with('success', __('messages.ownership_transferred', ['name' => $member->name]));
     }
 }

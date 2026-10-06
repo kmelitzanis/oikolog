@@ -36,7 +36,7 @@
                             <img id="avatar-preview" src="{{ $avatar ?? '' }}" alt="Avatar preview"
                                  class="{{ $avatar ? '' : 'hidden' }} w-14 h-14 object-cover rounded-2xl border border-gray-100 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 mt-2">
                         </div>
-                        <div class="text-xs text-gray-400 dark:text-slate-500">JPG, PNG, WebP — max 2 MB</div>
+                        <div class="text-xs text-gray-400 dark:text-slate-500">{{ __('messages.avatar_hint') }}</div>
                     </div>
 
                     {{-- Name --}}

@@ -1,33 +1,46 @@
 @extends('layouts.app')
-@section('title', isset($translation) ? 'Edit translation' : 'New translation')
+@section('title', isset($translation) ? __('messages.edit_translation') : __('messages.new_translation'))
 
 @section('content')
-    <div style="max-width:720px;">
-        <div class="page-header">
-            <h1 class="page-title">{{ isset($translation) ? 'Edit translation' : 'New translation' }}</h1>
-        </div>
+    <div class="max-w-2xl">
+        <x-page-header :title="isset($translation) ? __('messages.edit_translation') : __('messages.new_translation')" />
 
         <form method="POST"
               action="{{ isset($translation) ? route('translations.update', $translation) : route('translations.store') }}">
             @csrf
-            @if(isset($translation))
+            @isset($translation)
                 @method('PUT')
-            @endif
-            <div class="card" style="padding:16px;">
-                <label class="label">Locale</label>
-                <input class="input" name="locale" value="{{ old('locale', $translation->locale ?? 'en') }}">
-                <label class="label">Group</label>
-                <input class="input" name="group" value="{{ old('group', $translation->group ?? 'messages') }}">
-                <label class="label">Key</label>
-                <input class="input" name="key" value="{{ old('key', $translation->key ?? '') }}">
-                <label class="label">Value</label>
-                <textarea class="input" name="value" rows="4">{{ old('value', $translation->value ?? '') }}</textarea>
-                <div style="display:flex;gap:8px;margin-top:12px;">
-                    <button class="btn btn-primary" type="submit">Save</button>
-                    <a href="{{ route('translations.index') }}" class="btn btn-secondary">Cancel</a>
+            @endisset
+
+            <x-card class="space-y-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <x-field :label="__('messages.language')" name="locale" required>
+                        <x-input as="select" name="locale" id="locale" :invalid="$errors->has('locale')">
+                            @foreach(['el' => 'Ελληνικά', 'en' => 'English'] as $code => $label)
+                                <option value="{{ $code }}" @selected(old('locale', $translation->locale ?? app()->getLocale()) === $code)>{{ $label }}</option>
+                            @endforeach
+                        </x-input>
+                    </x-field>
+                    <x-field :label="__('messages.translation_group')" name="group" required>
+                        <x-input name="group" id="group" :invalid="$errors->has('group')"
+                                 value="{{ old('group', $translation->group ?? 'messages') }}" />
+                    </x-field>
                 </div>
-            </div>
+
+                <x-field :label="__('messages.translation_key')" name="key" required>
+                    <x-input name="key" id="key" class="font-mono" :invalid="$errors->has('key')"
+                             value="{{ old('key', $translation->key ?? '') }}" placeholder="dashboard" />
+                </x-field>
+
+                <x-field :label="__('messages.translation_value')" name="value" required>
+                    <x-input as="textarea" name="value" id="value" rows="4" :invalid="$errors->has('value')">{{ old('value', $translation->value ?? '') }}</x-input>
+                </x-field>
+
+                <div class="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+                    <x-btn variant="ghost" :href="route('translations.index')">{{ __('messages.cancel') }}</x-btn>
+                    <x-btn icon="save">{{ __('messages.save') }}</x-btn>
+                </div>
+            </x-card>
         </form>
     </div>
 @endsection
-

@@ -12,25 +12,16 @@
     {{-- Prevent dark-mode flash before JS loads --}}
     <script>
         (function () {
-            var t = localStorage.getItem('theme');
+            // Storage can throw (private mode, blocked cookies); the theme
+            // then simply follows the system.
+            var t = null;
+            try { t = localStorage.getItem('theme'); } catch (e) {}
             if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
             }
         })();
     </script>
-    @php
-        $manifestPath = public_path('build/manifest.json');
-        $manifest = file_exists($manifestPath) ? (json_decode(file_get_contents($manifestPath), true) ?: []) : [];
-        $entry = $manifest['resources/js/app.js'] ?? null;
-    @endphp
-    @if($entry)
-        @if(!empty($entry['css'][0]))
-            <link rel="stylesheet" href="{{ asset('build/'.$entry['css'][0]) }}">
-        @endif
-        <script defer src="{{ asset('build/'.$entry['file']) }}"></script>
-    @else
-        @vite(['resources/js/app.js'])
-    @endif
+    @include('partials.assets')
     @stack('head')
 </head>
 <body class="bg-gray-50 dark:bg-slate-900 font-sans antialiased">
@@ -42,9 +33,10 @@
         toggleTheme() {
             this.isDark = !this.isDark;
             document.documentElement.classList.toggle('dark', this.isDark);
-            localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+            try { localStorage.setItem('theme', this.isDark ? 'dark' : 'light'); } catch (e) {}
         }
      }"
+     @keydown.escape.window="sidebarOpen = false; userMenuOpen = false; mobileUserOpen = false"
      class="min-h-screen flex">
     {{-- Mobile backdrop --}}
     <div x-show="sidebarOpen" @click="sidebarOpen=false" x-cloak
@@ -72,6 +64,7 @@
             @endphp
             @foreach($navLinks as $link)
                 <a href="{{ route($link['route']) }}" @click="sidebarOpen=false"
+                   @if(request()->routeIs(...(array) $link['match'])) aria-current="page" @endif
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
                           {{ request()->routeIs(...(array) $link['match'])
                               ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
@@ -97,6 +90,7 @@
                         ['route'=>'admin.categories.index','icon'=>'category',        'label'=>__('messages.categories'),'match'=>'admin.categories.*'],
                         ['route'=>'admin.providers.index', 'icon'=>'business',        'label'=>__('messages.providers'),  'match'=>'admin.providers.*'],
                         ['route'=>'admin.users.index',     'icon'=>'manage_accounts', 'label'=>__('messages.users'),      'match'=>'admin.users.*'],
+                        ['route'=>'translations.index',    'icon'=>'translate',       'label'=>__('messages.translations'), 'match'=>'translations.*'],
                     ] as $al)
                         <a href="{{ route($al['route']) }}" @click="sidebarOpen=false"
                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
@@ -112,15 +106,15 @@
         </nav>
         {{-- User footer --}}
         <div class="px-3 py-4 border-t border-gray-100 dark:border-slate-700">
-            <div
-                class="relative flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition cursor-pointer"
-                @click="userMenuOpen=!userMenuOpen">
+            <button type="button"
+                class="relative w-full text-left flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition cursor-pointer"
+                @click="userMenuOpen=!userMenuOpen" :aria-expanded="userMenuOpen ? 'true' : 'false'" aria-haspopup="menu">
                 <div
                     class="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center text-slate-900 font-bold text-sm shrink-0 overflow-hidden">
                     @if(auth()->user()?->avatar_url)
                         <img src="{{ auth()->user()->avatar_url }}" class="w-full h-full object-cover" alt="">
                     @else
-                        {{ strtoupper(substr(auth()->user()?->name ?? '?', 0, 1)) }}
+                        {{ mb_strtoupper(mb_substr(auth()->user()?->name ?? '?', 0, 1)) }}
                     @endif
                 </div>
                 <div class="flex-1 min-w-0">
@@ -128,8 +122,9 @@
                         class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ auth()->user()?->name }}</div>
                     <div class="text-xs text-gray-400 dark:text-slate-500">{{ auth()->user()?->currency_code }}</div>
                 </div>
-                <span class="material-icons-round text-gray-400 dark:text-slate-500 text-lg">expand_more</span>
-            </div>
+                <span class="material-icons-round text-gray-400 dark:text-slate-500 text-lg transition-transform"
+                      :class="userMenuOpen ? 'rotate-180' : ''" aria-hidden="true">expand_more</span>
+            </button>
             <div class="mt-2 text-center text-[0.65rem] text-gray-300 dark:text-slate-600 select-all">
                 v{{ config('app.version') }}
             </div>
@@ -153,7 +148,7 @@
                         class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition border-t border-gray-100 dark:border-slate-700">
                     <span class="material-icons-round text-gray-400 dark:text-slate-400 text-lg"
                           x-text="isDark ? 'light_mode' : 'dark_mode'"></span>
-                    <span x-text="isDark ? '{{ __('messages.light') }}' : '{{ __('messages.dark') }}'"></span>
+                    <span x-text="isDark ? @js(__('messages.light')) : @js(__('messages.dark'))"></span>
                 </button>
                 {{-- Language switcher --}}
                 <div class="flex border-t border-gray-100 dark:border-slate-700">
@@ -180,10 +175,12 @@
     </aside>
     {{-- ── Mobile topbar ─────────────────────────────────────────── --}}
     <div
-        class="lg:hidden fixed inset-x-0 top-0 z-30 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+        class="lg:hidden fixed inset-x-0 top-0 z-30 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700"
+        style="padding-top: env(safe-area-inset-top);">
         <div class="flex items-center justify-between px-4 h-14">
             <div class="flex items-center gap-3">
-                <button @click="sidebarOpen=true"
+                <button type="button" @click="sidebarOpen=true" aria-label="{{ __('messages.menu') }}"
+                        :aria-expanded="sidebarOpen ? 'true' : 'false'"
                         class="p-2 -ml-2 rounded-xl text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition">
                     <span class="material-icons-round">menu</span>
                 </button>
@@ -201,7 +198,7 @@
                         @if(auth()->user()?->avatar_url)
                             <img src="{{ auth()->user()->avatar_url }}" class="w-full h-full object-cover" alt="">
                         @else
-                            {{ strtoupper(substr(auth()->user()?->name ?? '?', 0, 1)) }}
+                            {{ mb_strtoupper(mb_substr(auth()->user()?->name ?? '?', 0, 1)) }}
                         @endif
                     </button>
 
@@ -226,7 +223,7 @@
                                 class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition border-t border-gray-100 dark:border-slate-700">
                             <span class="material-icons-round text-gray-400 dark:text-slate-400 text-lg"
                                   x-text="isDark ? 'light_mode' : 'dark_mode'"></span>
-                            <span x-text="isDark ? '{{ __('messages.light') }}' : '{{ __('messages.dark') }}'"></span>
+                            <span x-text="isDark ? @js(__('messages.light')) : @js(__('messages.dark'))"></span>
                         </button>
                         <div class="flex border-t border-gray-100 dark:border-slate-700">
                             @foreach($availableLocales ?? ['en'] as $loc)
@@ -251,7 +248,7 @@
     </div>
     {{-- ── Page content ──────────────────────────────────────────── --}}
     <div class="flex-1 lg:pl-64 min-w-0">
-        <main class="min-h-screen px-4 sm:px-6 lg:px-8 pt-20 lg:pt-8 pb-28 lg:pb-12 max-w-7xl mx-auto">
+        <main class="min-h-screen px-4 sm:px-6 lg:px-8 pt-[calc(5rem+env(safe-area-inset-top))] lg:pt-8 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-12 max-w-7xl mx-auto">
             {{-- success / error now surface as the mockup's floating toast,
                  rendered near the end of <body>. Validation errors stay inline:
                  they belong beside the form that produced them. --}}
@@ -286,7 +283,7 @@
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="opacity-0 translate-y-2.5"
              x-transition:enter-end="opacity-100 translate-y-0"
-             class="fixed left-4 right-4 bottom-[118px] z-[42] flex flex-col gap-[9px]">
+             class="fixed left-4 right-4 bottom-[calc(118px+env(safe-area-inset-bottom))] z-[42] flex flex-col gap-[9px]">
             @php
                 $fabActions = [
                     ['route' => route('bills.create'),  'icon' => 'credit_card',    'tint' => 'bg-amber-500/[0.18] text-amber-300',   'title' => __('messages.add_bill'),        'sub' => __('messages.fab_bill_sub')],
@@ -313,7 +310,7 @@
         <button type="button" @click="fabOpen = !fabOpen"
                 :aria-expanded="fabOpen ? 'true' : 'false'"
                 aria-label="{{ __('messages.add') }}"
-                class="fixed left-1/2 -translate-x-1/2 bottom-[26px] z-[43] flex items-center justify-center w-14 h-14 rounded-full border-4 border-white dark:border-slate-800 bg-amber-500 transition-transform"
+                class="fixed left-1/2 -translate-x-1/2 bottom-[calc(26px+env(safe-area-inset-bottom))] z-[43] flex items-center justify-center w-14 h-14 rounded-full border-4 border-white dark:border-slate-800 bg-amber-500 transition-transform"
                 :class="fabOpen ? 'rotate-45' : ''"
                 style="box-shadow: 0 4px 24px rgba(245,158,11,0.45);">
             <span class="material-icons-round text-slate-900 text-2xl">add</span>
@@ -325,10 +322,10 @@
 
         @php
             $bottomNavLinks = [
-                ['route' => 'dashboard',    'icon' => 'dashboard',    'match' => 'dashboard'],
-                ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*', 'count' => $overdueBillCount ?? 0],
-                ['route' => 'recipes.index','icon' => 'restaurant_menu','match' => 'recipes.*'],
-                ['route' => 'income.index', 'icon' => 'trending_up',  'match' => ['income.*', 'accounts.*']],
+                ['route' => 'dashboard',    'icon' => 'dashboard',    'match' => 'dashboard', 'label' => __('messages.dashboard')],
+                ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*', 'count' => $overdueBillCount ?? 0, 'label' => __('messages.bills')],
+                ['route' => 'recipes.index','icon' => 'restaurant_menu','match' => 'recipes.*', 'label' => __('messages.recipes')],
+                ['route' => 'income.index', 'icon' => 'trending_up',  'match' => ['income.*', 'accounts.*'], 'label' => __('messages.income')],
             ];
         @endphp
 
@@ -343,10 +340,11 @@
                  style="box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);">
 
                 @foreach(array_slice($bottomNavLinks, 0, 2) as $link)
-                    <a href="{{ route($link['route']) }}"
+                    <a href="{{ route($link['route']) }}" aria-label="{{ $link['label'] }}" title="{{ $link['label'] }}"
+                       @if(request()->routeIs(...(array) $link['match'])) aria-current="page" @endif
                        class="relative flex flex-col items-center justify-center gap-1 w-12
                                   {{ request()->routeIs(...(array) $link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
-                        <span class="material-icons-round" style="font-size:22px;">{{ $link['icon'] }}</span>
+                        <span class="material-icons-round" style="font-size:22px;" aria-hidden="true">{{ $link['icon'] }}</span>
                         {{-- Same counter, but as a corner dot on the icon: a tab
                              bar has no room for a trailing pill. --}}
                         @if(($link['count'] ?? 0) > 0)
@@ -365,10 +363,11 @@
                 <div class="w-14 shrink-0"></div>
 
                 @foreach(array_slice($bottomNavLinks, 2, 2) as $link)
-                    <a href="{{ route($link['route']) }}"
+                    <a href="{{ route($link['route']) }}" aria-label="{{ $link['label'] }}" title="{{ $link['label'] }}"
+                       @if(request()->routeIs(...(array) $link['match'])) aria-current="page" @endif
                        class="relative flex flex-col items-center justify-center gap-1 w-12
                                   {{ request()->routeIs(...(array) $link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
-                        <span class="material-icons-round" style="font-size:22px;">{{ $link['icon'] }}</span>
+                        <span class="material-icons-round" style="font-size:22px;" aria-hidden="true">{{ $link['icon'] }}</span>
                         {{-- Same counter, but as a corner dot on the icon: a tab
                              bar has no room for a trailing pill. --}}
                         @if(($link['count'] ?? 0) > 0)

@@ -52,11 +52,11 @@
               action="{{ $editing ? route('bills.update', $bill) : route('bills.store') }}"
               class="space-y-4"
               x-data="{
-                  freq: '{{ old('frequency', $editing ? $bill->frequency : 'monthly') }}',
+                  freq: @js(old('frequency', $editing ? $bill->frequency : 'monthly')),
                   notify: {{ old('notify_enabled', $editing ? ($bill->notify_enabled ? 1 : 0) : 1) ? 'true' : 'false' }},
                   notifyDays: {{ (int) old('notify_days_before', $editing ? $bill->notify_days_before : 3) }},
-                  categoryId: '{{ old('category_id', $editing ? $bill->category_id : '') }}',
-                  providerId: '{{ old('provider_id', $editing ? $bill->provider_id : '') }}',
+                  categoryId: @js(old('category_id', $editing ? $bill->category_id : '')),
+                  providerId: @js(old('provider_id', $editing ? $bill->provider_id : '')),
                   costVaries: {{ old('cost_varies', $editing ? ($bill->cost_varies ? '1' : '0') : '0') ? 'true' : 'false' }},
                   allProviders: window.__providers || [],
                   get providers() {

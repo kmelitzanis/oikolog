@@ -24,9 +24,21 @@
 </head>
 <body class="min-h-screen bg-linear-to-br from-amber-50 to-orange-50 dark:from-slate-900 dark:to-slate-950 font-sans antialiased flex items-center justify-center p-4 sm:p-6">
 
-<main class="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl border border-gray-200 dark:border-slate-700 shadow-xl p-7 sm:p-10">
-    @yield('content')
-</main>
+<div class="w-full max-w-md">
+    <main class="bg-white dark:bg-slate-800 rounded-3xl border border-gray-200 dark:border-slate-700 shadow-xl p-7 sm:p-10">
+        @yield('content')
+    </main>
+
+    <nav class="mt-5 flex justify-center gap-1 text-xs font-bold" aria-label="{{ __('messages.language') }}">
+        @foreach(['el' => 'ΕΛ', 'en' => 'EN'] as $loc => $label)
+            <a href="{{ route('locale.set', $loc) }}" hreflang="{{ $loc }}" lang="{{ $loc }}"
+               @if(app()->getLocale() === $loc) aria-current="true" @endif
+               class="px-3 py-1.5 rounded-lg transition {{ app()->getLocale() === $loc ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300' }}">
+                {{ $label }}
+            </a>
+        @endforeach
+    </nav>
+</div>
 
 </body>
 </html>

@@ -50,9 +50,9 @@
               action="{{ $editing ? route('accounts.update', $account) : route('accounts.store') }}"
               class="space-y-4"
               x-data="{
-                  icon: '{{ old('icon', $editing ? $account->icon : 'account_balance') }}',
-                  color: '{{ old('color_hex', $editing ? $account->color_hex : '#10b981') }}',
-                  kind: '{{ old('kind', $editing ? $account->kind : 'standard') }}',
+                  icon: @js(old('icon', $editing ? $account->icon : 'account_balance')),
+                  color: @js(old('color_hex', $editing ? $account->color_hex : '#10b981')),
+                  kind: @js(old('kind', $editing ? $account->kind : 'standard')),
               }">
             @csrf
             @if($editing) @method('PUT') @endif

@@ -25,7 +25,7 @@
             <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Icon (Material Icons
                 name)</label>
             <div class="flex items-center gap-3"
-                 x-data="{ iconVal: '{{ old('icon', $category->icon) }}' }">
+                 x-data="{ iconVal: @js(old('icon', $category->icon)) }">
                 <input type="text" name="icon" x-model="iconVal"
                        class="flex-1 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
                 <span class="material-icons-round text-3xl text-amber-500" x-text="iconVal"></span>
@@ -35,7 +35,7 @@
             @error('icon')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
         </div>
 
-        <div x-data="{ colorVal: '{{ old('color_hex', $category->color_hex) }}' }">
+        <div x-data="{ colorVal: @js(old('color_hex', $category->color_hex)) }">
             <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">Color</label>
             <div class="flex items-center gap-3">
                 <input type="color" x-model="colorVal"

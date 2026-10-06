@@ -46,7 +46,7 @@ class TranslationController extends Controller
             'value' => ['required', 'string', 'max:5000'],
         ]);
         Translation::create($data);
-        return redirect()->route('translations.index')->with('success', 'Translation created.');
+        return redirect()->route('translations.index')->with('success', __('messages.translation_saved'));
     }
 
     public function edit(Translation $translation)
@@ -65,14 +65,14 @@ class TranslationController extends Controller
             'value' => ['required', 'string', 'max:5000'],
         ]);
         $translation->update($data);
-        return redirect()->route('translations.index')->with('success', 'Translation updated.');
+        return redirect()->route('translations.index')->with('success', __('messages.translation_saved'));
     }
 
     public function destroy(Translation $translation)
     {
         $this->authorizeAdmin();
         $translation->delete();
-        return back()->with('success', 'Translation deleted.');
+        return back()->with('success', __('messages.translation_deleted'));
     }
 }
 

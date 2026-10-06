@@ -13,7 +13,7 @@
             <h1 class="text-xl font-extrabold text-gray-900 dark:text-white truncate">{{ $income->name }}</h1>
             @if(!$income->is_active)
                 <span
-                    class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400">Inactive</span>
+                    class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400">{{ __('messages.inactive') }}</span>
             @endif
         </div>
 
@@ -40,7 +40,7 @@
                     <div class="text-sm text-emerald-300 mt-1">{{ $income->frequencyLabel() }}</div>
                     @if($isRecurring)
                         <div class="text-sm text-emerald-200 mt-2">
-                            ≈ {{ $symbol }}{{ number_format($income->monthlyEquivalent(), 2) }}/mo
+                            ≈ {{ $symbol }}{{ number_format($income->monthlyEquivalent(), 2) }}{{ __('messages.per_month_short') }}
                             · {{ $symbol }}{{ number_format($income->monthlyEquivalent() * 12, 2) }}/yr
                         </div>
                     @endif
@@ -134,7 +134,7 @@
 
             @if($income->notes)
                 <div class="px-5 py-3.5">
-                    <div class="text-sm text-gray-400 dark:text-slate-500 mb-1">Notes</div>
+                    <div class="text-sm text-gray-400 dark:text-slate-500 mb-1">{{ __('messages.notes') }}</div>
                     <div
                         class="text-sm text-gray-700 dark:text-slate-300 whitespace-pre-line">{{ $income->notes }}</div>
                 </div>

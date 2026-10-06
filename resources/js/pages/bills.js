@@ -1,4 +1,9 @@
 // Bills page Alpine component
+
+// Month and weekday names follow the page language (<html lang>), not the
+// browser's: a Greek page on an English phone showed "October · Mon Tue".
+const pageLocale = () => document.documentElement.lang || undefined;
+
 window.billsPageCal = function () {
     return {
         calOpen: true,
@@ -14,13 +19,19 @@ window.billsPageCal = function () {
             return this.current.getMonth();
         },
         get monthName() {
-            return this.current.toLocaleString('default', {month: 'long'});
+            // Asked for on its own, Greek gives the genitive ("Οκτωβρίου");
+            // formatted beside a year it is the nominative a heading needs.
+            const parts = new Intl.DateTimeFormat(pageLocale(), {month: 'long', year: 'numeric'})
+                .formatToParts(this.current);
+            const month = parts.find(p => p.type === 'month')?.value
+                ?? this.current.toLocaleString(pageLocale(), {month: 'long'});
+            return month.charAt(0).toLocaleUpperCase(pageLocale()) + month.slice(1);
         },
-        /** Mon…Sun in the browser's locale, matching the Monday-first grid. */
+        /** Mon…Sun in the page's language, matching the Monday-first grid. */
         get weekdayNames() {
             return Array.from({length: 7}, (_, i) =>
                 // 2024-01-01 was a Monday, so this walks Mon → Sun.
-                new Date(2024, 0, 1 + i).toLocaleString('default', {weekday: 'short'}));
+                new Date(2024, 0, 1 + i).toLocaleString(pageLocale(), {weekday: 'short'}));
         },
 
         init() {
@@ -48,13 +59,19 @@ window.billsPageCal = function () {
             const days = this.gridDays();
             const start = days[0];
             const end = days[days.length - 1];
+            const requested = this.dateStr(this.current);
             try {
-                const r = await fetch(`/bills/events?start=${this.dateStr(start)}&end=${this.dateStr(end)}`);
-                this.events = await r.json();
+                const r = await fetch(`/bills/events?start=${this.dateStr(start)}&end=${this.dateStr(end)}`, {
+                    headers: {Accept: 'application/json'},
+                });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const events = await r.json();
+                // Paging quickly can let an older month's answer land last.
+                if (requested === this.dateStr(this.current)) this.events = events;
             } catch (e) {
-                this.events = [];
+                if (requested === this.dateStr(this.current)) this.events = [];
             }
-            this.loading = false;
+            if (requested === this.dateStr(this.current)) this.loading = false;
         },
 
         /** The 35 or 42 Date objects the month grid renders, Monday-first. */
@@ -79,7 +96,7 @@ window.billsPageCal = function () {
                     day: d.getDate(),
                     date: ds,
                     // First cell of a month gets the month name, like macOS ("Aug 1").
-                    monthLabel: d.getDate() === 1 ? d.toLocaleString('default', {month: 'short'}) : '',
+                    monthLabel: d.getDate() === 1 ? d.toLocaleString(pageLocale(), {month: 'short'}) : '',
                     currentMonth: d.getMonth() === this.month,
                     isWeekend: d.getDay() === 0 || d.getDay() === 6,
                     isToday: ds === todayStr,

@@ -22,6 +22,9 @@ Route::post('/login', [DashboardController::class, 'login'])
     ->name('login.post');
 Route::post('/logout', [DashboardController::class, 'logout'])->name('logout');
 
+// Language switch — open to guests too, so the sign-in page can offer it.
+Route::get('/locale/{lang}', [DashboardController::class, 'setLocale'])->name('locale.set');
+
 // 2FA challenge (between password success and full auth)
 Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('2fa.challenge')->middleware('guest');
 Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallenge'])
@@ -31,7 +34,6 @@ Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallen
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/month', [DashboardController::class, 'month'])->name('dashboard.month');
-    Route::get('/locale/{lang}', [\App\Http\Controllers\Web\DashboardController::class, 'setLocale'])->name('locale.set');
 
     // Calendar events API (used by the inline calendar on the bills page)
     // Must be defined BEFORE the bills resource routes to avoid /{bill} pattern matching

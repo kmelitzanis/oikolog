@@ -27,7 +27,7 @@
         </div>
 
         <div class="text-[0.72rem] text-gray-500 dark:text-slate-400 mt-1">
-            {{ __('messages.accounts_count', ['count' => $stats['count'] - $stats['budget_count']]) }}
+            {{ trans_choice('messages.accounts_count', $stats['count'] - $stats['budget_count'], ['count' => $stats['count'] - $stats['budget_count']]) }}
         </div>
 
         {{-- Envelopes are allowances, not savings, so they are kept out of

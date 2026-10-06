@@ -25,7 +25,7 @@ class BillController extends Controller
     {
         $user  = $request->user();
         $query = Bill::with(['category', 'provider', 'payments' => function ($q) {
-            $q->latest('paid_at')->with('paidBy');
+            $q->latest('paid_at')->with(['paidBy', 'account']);
         }])
             ->forUser($user)
             ->orderBy('next_due_date');
@@ -183,7 +183,10 @@ class BillController extends Controller
                     $isPaid    => '#10b981',
                     $isOverdue => '#ef4444',
                     $isSoon    => '#f97316',
-                    default    => $b->category?->color_hex ?? '#6366f1',
+                    // The same blue as the list's "upcoming" group and the
+                    // legend; a category colour here read as a status (a red
+                    // "Rent" dot looked overdue).
+                    default    => '#60a5fa',
                 };
 
                 $billEvents->push([
@@ -541,7 +544,7 @@ class BillController extends Controller
             if (request()->wantsJson() || request()->ajax()) {
                 return response()->json(['status' => 'none', 'message' => 'No payment to undo.'], 422);
             }
-            return back()->with('error', 'No payment found to undo.');
+            return back()->with('error', __('messages.no_payment_to_undo'));
         }
 
         $this->removePayment($bill, $lastPayment);

@@ -115,18 +115,7 @@
             </div>
 
             @if($bill->is_active)
-                @php
-                    $payData = "{
-                        billName:         " . e(Illuminate\Support\Js::from($bill->name)) . ",
-                        amount:           '" . number_format($bill->tracksDebt() ? min($bill->periodAmount(), max(0, (float) $bill->debt_remaining)) : $bill->periodAmount(), 2) . "',
-                        currency:         '" . $bill->currency_code . "',
-                        payRoute:         '" . route('bills.pay', $bill) . "',
-                        costVaries:       " . ($bill->cost_varies ? 'true' : 'false') . ",
-                        defaultAccountId: '" . $bill->default_account_id . "',
-                        lastPaidAmount:   '" . ($bill->cost_varies ? number_format($bill->hasCurrentAmount() ? (float) $bill->current_amount : ($lastPayment ? (float) $lastPayment->amount : 0), 2, '.', '') : '') . "',
-                        remainingBalance: " . ($bill->hasPartialPayment() ? number_format($bill->getEffectiveRemainingBalance(), 2, '.', '') : 'null') . "
-                    }";
-                @endphp
+                @php $payData = \Illuminate\Support\Js::from($bill->payModalPayload()); @endphp
                 <div class="mt-6" x-data>
                     @if($status === 'paid')
                         {{-- This cycle is settled. Another payment is still
@@ -138,7 +127,7 @@
                                 {{ __('messages.paid') }}
                             </x-btn>
                             <x-btn variant="ghost" block type="button" icon="add_card"
-                                   x-on:click="$dispatch('open-pay-modal', {!! $payData !!})">
+                                   x-on:click="$dispatch('open-pay-modal', {{ $payData }})">
                                 {{ __('messages.add_another_payment') }}
                             </x-btn>
                         </div>
@@ -147,7 +136,7 @@
                         </div>
                     @else
                         <x-btn variant="success" block type="button" icon="check_circle"
-                               x-on:click="$dispatch('open-pay-modal', {!! $payData !!})">
+                               x-on:click="$dispatch('open-pay-modal', {{ $payData }})">
                             {{ __('messages.mark_paid') }}
                         </x-btn>
                     @endif

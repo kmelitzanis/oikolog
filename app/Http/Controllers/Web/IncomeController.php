@@ -236,7 +236,7 @@ class IncomeController extends Controller
         // the moment the source was created and the balance silently drifted.
         $this->syncOneOffDeposit($income->fresh(), $request->user(), $ledger);
 
-        return redirect()->route('income.show', $income)->with('success', 'Income updated.');
+        return redirect()->route('income.show', $income)->with('success', __('messages.income_updated'));
     }
 
     public function destroy(Income $income)
@@ -244,7 +244,7 @@ class IncomeController extends Controller
         $this->authorizeAccess($income);
         $income->delete();
 
-        return redirect()->route('income.index')->with('success', 'Income deleted.');
+        return redirect()->route('income.index')->with('success', __('messages.income_deleted'));
     }
 
     /**

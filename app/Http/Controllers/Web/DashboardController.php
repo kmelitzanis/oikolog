@@ -110,7 +110,7 @@ class DashboardController extends Controller
             // which dropped a month from the series and repeated another.
             $month = now()->startOfMonth()->subMonths($i);
             $ym = $month->format('Y-m');
-            $chartMonths[] = $month->format('M y');
+            $chartMonths[] = $month->translatedFormat('M y');
             $chartSpending[] = (float)($payments12[$ym] ?? 0);
             $chartIncome[] = $monthlyIncomeAmt;
         }
@@ -369,7 +369,7 @@ class DashboardController extends Controller
         // the Referer header, which another site controls.
         $back = url()->previous();
         if (! $back || parse_url($back, PHP_URL_HOST) !== request()->getHost()) {
-            $back = route('dashboard');
+            $back = Auth::check() ? route('dashboard') : route('login');
         }
         return redirect()->to($back)->with('success', __('messages.settings_updated'));
     }

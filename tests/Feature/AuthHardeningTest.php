@@ -148,4 +148,15 @@ class AuthHardeningTest extends TestCase
             ->assertOk()
             ->assertSee(__('messages.sign_in', [], 'el'));
     }
+
+    public function test_guests_get_their_browsers_language_and_can_switch(): void
+    {
+        $this->withHeader('Accept-Language', 'el-GR,el;q=0.9,en;q=0.5')
+            ->get(route('login'))
+            ->assertOk()
+            ->assertSee(__('messages.sign_in_title', [], 'el'));
+
+        $this->get(route('locale.set', 'en'))->assertRedirect();
+        $this->get(route('login'))->assertSee(__('messages.sign_in_title', [], 'en'));
+    }
 }
