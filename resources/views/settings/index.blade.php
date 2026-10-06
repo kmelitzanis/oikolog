@@ -80,6 +80,12 @@
                     <div class="{{ $cardTitle }}">{{ __('messages.security') }}</div>
 
                     <div>
+                        <label for="current_password" class="{{ $label }}">{{ __('messages.current_password') }}</label>
+                        <input type="password" id="current_password" name="current_password" autocomplete="current-password"
+                               class="{{ $input }}">
+                        <div class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">{{ __('messages.current_password_hint') }}</div>
+                    </div>
+                    <div class="mt-5">
                         <label class="{{ $label }}">
                             {{ __('messages.new_password') }}
                             <span class="text-gray-400 dark:text-slate-500 font-normal">({{ __('messages.leave_blank') }})</span>

@@ -2,8 +2,12 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -52,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
             // Skip if DB isn't ready (e.g. during migrations)
         }
 
+        $this->configureRateLimiting();
+
         // "Remember me" duration. Laravel's SessionGuard hard-codes this, so it
         // is set here to make it configurable per deployment; the guard is
         // resolved lazily so nothing is booted before it is needed.
@@ -70,6 +76,56 @@ class AppServiceProvider extends ServiceProvider
             } catch (\Throwable $e) {
                 $view->with('overdueBillCount', 0);
             }
+        });
+    }
+
+    /**
+     * Brute-force brakes for the doors that take a secret.
+     *
+     * Each limit is keyed on what is being guessed (the account, the pending
+     * 2FA user) as well as on the address, because proxies are trusted and an
+     * address alone is cheap to rotate. Distinct key prefixes keep the two
+     * limits from sharing one counter.
+     */
+    private function configureRateLimiting(): void
+    {
+        // A form gets its error back beside the field instead of a bare 429
+        // page; API callers get the usual JSON with Retry-After.
+        $tooMany = fn (string $field) => function (Request $request, array $headers) use ($field) {
+            $message = __('messages.too_many_attempts', ['seconds' => $headers['Retry-After'] ?? 60]);
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 429, $headers)
+                : back()->withErrors([$field => $message])->onlyInput('email');
+        };
+
+        RateLimiter::for('login', function (Request $request) use ($tooMany) {
+            $email = Str::lower((string) $request->input('email'));
+
+            return [
+                Limit::perMinute(5)->by('login-account:' . $email)->response($tooMany('email')),
+                Limit::perMinute(20)->by('login-ip:' . $request->ip())->response($tooMany('email')),
+            ];
+        });
+
+        // Six digits are a small space: the hourly cap is what keeps a patient
+        // guesser from walking it.
+        RateLimiter::for('two-factor', function (Request $request) use ($tooMany) {
+            $who = $request->user()?->getAuthIdentifier()
+                ?? ($request->hasSession() ? $request->session()->get('2fa_user_id') : null)
+                ?? $request->ip();
+
+            return [
+                Limit::perMinute(5)->by('2fa-minute:' . $who)->response($tooMany('code')),
+                Limit::perHour(20)->by('2fa-hour:' . $who)->response($tooMany('code')),
+            ];
+        });
+
+        // Joining a family by code is guessing a code.
+        RateLimiter::for('family-join', function (Request $request) use ($tooMany) {
+            return Limit::perMinute(5)
+                ->by('family-join:' . ($request->user()?->getAuthIdentifier() ?? $request->ip()))
+                ->response($tooMany('invite_code'));
         });
     }
 }

@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Intervention\Image\ImageManagerStatic as Image;
 
 class DashboardController extends Controller
@@ -176,7 +178,7 @@ class DashboardController extends Controller
         $user = User::where('email', $credentials['email'])->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            return back()->withErrors(['email' => 'Invalid credentials.'])->withInput();
+            return back()->withErrors(['email' => __('messages.invalid_credentials')])->onlyInput('email');
         }
 
         // Two-factor users are held at the door: the password is checked
@@ -188,9 +190,13 @@ class DashboardController extends Controller
         // the user's *other* devices — the phone got signed out each time the
         // laptop signed in.
         if ($user->two_factor_enabled) {
+            // A fresh session id for the half-signed-in state, so a session
+            // fixed by someone else before the password was typed is useless.
+            $request->session()->regenerate();
             $request->session()->put([
-                '2fa_user_id'  => $user->id,
-                '2fa_remember' => $remember,
+                '2fa_user_id'    => $user->id,
+                '2fa_remember'   => $remember,
+                '2fa_expires_at' => now()->addSeconds(TwoFactorController::PENDING_TTL_SECONDS)->getTimestamp(),
             ]);
 
             return redirect()->route('2fa.challenge');
@@ -200,6 +206,18 @@ class DashboardController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended('/');
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        // Drop everything the session carried and issue a new CSRF token, so
+        // nothing from the signed-in session can be reused afterwards.
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
     }
 
     // Show settings form
@@ -233,7 +251,10 @@ class DashboardController extends Controller
             'email' => ['required', 'email', 'unique:users,email,' . $user->id],
             'currency_code' => ['nullable', 'string', 'size:3'],
             'default_account_id' => ['nullable', 'exists:accounts,id'],
-            'password' => ['nullable', 'confirmed', 'min:8'],
+            'password' => ['nullable', 'confirmed', Password::min(8)],
+            // Changing the password needs the current one, so an unlocked
+            // laptop or a stolen session cannot lock the owner out.
+            'current_password' => ['nullable', 'required_with:password', 'current_password:web'],
             'avatar' => ['nullable', 'image', 'max:2048'],
             'avatar_url' => ['nullable', 'url'],
             'locale' => ['nullable', 'string'],
@@ -243,7 +264,7 @@ class DashboardController extends Controller
             'name' => $data['name'],
             'gender' => $data['gender'] ?? $user->gender,
             'email' => $data['email'],
-            'currency_code' => $data['currency_code'] ?? $user->currency_code,
+            'currency_code' => $data['currency_code'] ?? $user->currency_code ?? 'EUR',
             // Absent (an API caller) leaves it alone; blank means "no
             // preference" and the modal falls back as before.
             'default_account_id' => array_key_exists('default_account_id', $data)
@@ -296,7 +317,18 @@ class DashboardController extends Controller
         $user->update($update);
         $user->refresh();
 
-        return back()->with('success', 'Settings updated.');
+        if (! empty($data['password'])) {
+            // A new password should end "remember me" everywhere else:
+            // cycling the token voids every other device's recaller cookie.
+            // This browser is signed straight back in with the new one.
+            $remembered = $request->cookies->has(Auth::guard('web')->getRecallerName());
+            $user->setRememberToken(Str::random(60));
+            $user->save();
+            Auth::guard('web')->login($user, $remembered);
+            $request->session()->regenerate();
+        }
+
+        return back()->with('success', __('messages.settings_updated'));
     }
 
     // Set locale via quick route (session + user if authenticated)
@@ -311,7 +343,7 @@ class DashboardController extends Controller
         }
         // Redirect back explicitly so a fresh request picks up the session locale
         $back = url()->previous() ?: route('dashboard');
-        return redirect()->to($back)->with('success', __('Settings updated.'));
+        return redirect()->to($back)->with('success', __('messages.settings_updated'));
     }
 
     private function availableLocales(): array

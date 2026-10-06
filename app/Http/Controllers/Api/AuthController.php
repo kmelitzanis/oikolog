@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\TwoFactorVerifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,18 +12,35 @@ use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
-    public function login(Request $request): JsonResponse
+    public function login(Request $request, TwoFactorVerifier $twoFactor): JsonResponse
     {
         $data = $request->validate([
             'email'       => ['required', 'email'],
             'password'    => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:60'],
+            'code'        => ['nullable', 'string', 'max:20'],
         ]);
 
         $user = User::where('email', $data['email'])->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials.'], 401);
+            return response()->json(['message' => __('messages.invalid_credentials')], 401);
+        }
+
+        // A token is a full sign-in, so it has to clear the same second factor
+        // the web login asks for — otherwise 2FA is one API call away from
+        // being skipped. The client learns to ask for the code from the 422.
+        if ($user->two_factor_enabled) {
+            if (blank($data['code'] ?? null)) {
+                return response()->json([
+                    'message'             => __('messages.two_factor_required'),
+                    'two_factor_required' => true,
+                ], 422);
+            }
+
+            if (! $twoFactor->verify($user, $data['code'])) {
+                return response()->json(['message' => __('messages.two_factor_invalid_code')], 401);
+            }
         }
 
         if (isset($data['device_name'])) {
@@ -41,7 +59,13 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        // A cookie-authenticated SPA request carries a TransientToken, which
+        // has nothing to delete.
+        $token = $request->user()->currentAccessToken();
+        if ($token && method_exists($token, 'delete')) {
+            $token->delete();
+        }
+
         return response()->json(['message' => 'Logged out.']);
     }
 
@@ -81,7 +105,14 @@ class AuthController extends Controller
             'password'         => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        $request->user()->update(['password' => Hash::make($data['password'])]);
+        $user = $request->user();
+        $user->update(['password' => Hash::make($data['password'])]);
+
+        // Every other token was issued against the old password.
+        $current = $user->currentAccessToken();
+        $user->tokens()
+            ->when($current && isset($current->id), fn ($q) => $q->whereKeyNot($current->id))
+            ->delete();
 
         return response()->json(['message' => 'Password updated.']);
     }

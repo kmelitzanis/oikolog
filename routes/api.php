@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 });
 
 Route::get('/health', fn() => response()->json(['status' => 'ok', 'version' => '1.0']));
@@ -56,7 +56,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::prefix('family')->group(function () {
         Route::get('/',                      [FamilyController::class, 'show']);
         Route::post('/',                     [FamilyController::class, 'create']);
-        Route::post('/join',                 [FamilyController::class, 'join']);
+        Route::post('/join',                 [FamilyController::class, 'join'])->middleware('throttle:family-join');
         Route::delete('/leave',              [FamilyController::class, 'leave']);
         Route::post('/regenerate-code',      [FamilyController::class, 'regenerateCode']);
         Route::delete('/members/{member}',   [FamilyController::class, 'removeMember']);
