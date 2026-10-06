@@ -131,15 +131,26 @@ class Product extends Model
     // ── Buying rhythm ──────────────────────────────────────────────────────────
 
     /**
+     * Purchases, narrowed to the given buyers when any are named. The
+     * catalogue is shared between households; their shopping is not.
+     */
+    public function purchasesBy(?array $buyerIds = null): HasMany
+    {
+        return $buyerIds === null
+            ? $this->purchases()
+            : $this->purchases()->whereIn('purchased_by', $buyerIds);
+    }
+
+    /**
      * The average number of days between purchases, or null when there is not
      * enough history to say anything honest (fewer than three buys).
      *
      * Two purchases can be a coincidence; three start to be a habit, and this
      * figure is only worth showing once it is one.
      */
-    public function averageDaysBetweenPurchases(): ?int
+    public function averageDaysBetweenPurchases(?array $buyerIds = null): ?int
     {
-        $dates = $this->purchases()->orderBy('purchased_at')->pluck('purchased_at');
+        $dates = $this->purchasesBy($buyerIds)->orderBy('purchased_at')->pluck('purchased_at');
 
         if ($dates->count() < 3) {
             return null;
@@ -153,10 +164,10 @@ class Product extends Model
     }
 
     /** When the rhythm suggests it will run out again. */
-    public function expectedNextPurchase(): ?\Carbon\Carbon
+    public function expectedNextPurchase(?array $buyerIds = null): ?\Carbon\Carbon
     {
-        $every = $this->averageDaysBetweenPurchases();
-        $last = $this->purchases()->max('purchased_at');
+        $every = $this->averageDaysBetweenPurchases($buyerIds);
+        $last = $this->purchasesBy($buyerIds)->max('purchased_at');
 
         return $every && $last ? \Carbon\Carbon::parse($last)->addDays($every) : null;
     }

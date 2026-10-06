@@ -87,6 +87,21 @@ class User extends Authenticatable
         return $article . ' ' . $this->name;
     }
 
+    /**
+     * The ids of everyone whose activity this user may see: their family's
+     * members, or just themself without a family.
+     *
+     * @return array<int, string>
+     */
+    public function householdIds(): array
+    {
+        if (! $this->family_id) {
+            return [$this->getKey()];
+        }
+
+        return static::where('family_id', $this->family_id)->pluck('id')->all();
+    }
+
     public function isAdmin(): bool
     {
         return (bool)$this->is_admin;

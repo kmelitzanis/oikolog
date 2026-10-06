@@ -74,7 +74,9 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::patch('/{list}/items/{item}/toggle', [ShoppingListController::class, 'toggleItem']);
     });
 
-    Route::post('/shopping-lists/lookup-barcode', [ShoppingListController::class, 'lookupBarcode']);
+    // Each lookup is a request to Open Food Facts on the user's behalf.
+    Route::post('/shopping-lists/lookup-barcode', [ShoppingListController::class, 'lookupBarcode'])
+        ->middleware('throttle:30,1');
 
     Route::prefix('products')->group(function () {
         Route::get('/categories', [ProductController::class, 'categories']);

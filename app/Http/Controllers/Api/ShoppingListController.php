@@ -211,11 +211,11 @@ class ShoppingListController extends Controller
             }
 
             return response()->json($data);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error looking up barcode',
-                'error'   => $e->getMessage(),
-            ], 500);
+        } catch (\Throwable $e) {
+            // The detail goes to the log, not to the browser.
+            report($e);
+
+            return response()->json(['message' => 'Error looking up barcode'], 502);
         }
     }
 }

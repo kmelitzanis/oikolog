@@ -31,8 +31,15 @@ class SendPaymentPushNotification implements ShouldQueue
             return;
         }
 
+        // Only a bill the household shares is the household's business. A
+        // private bill's name and amount must not be announced to everyone
+        // else in the family just because one of them paid it.
+        if (! $payment->bill->is_shared || ! $payment->bill->family_id) {
+            return;
+        }
+
         $payer = $payment->paidBy;
-        $recipients = $this->recipients($payer);
+        $recipients = $this->recipients($payer, $payment->bill->family_id);
 
         if ($recipients->isEmpty()) {
             return;
@@ -65,18 +72,14 @@ class SendPaymentPushNotification implements ShouldQueue
     }
 
     /**
-     * Everyone in the payer's family except the payer — telling someone about
-     * their own action is noise. No family means no one to notify.
+     * Everyone in the bill's family except the payer — telling someone about
+     * their own action is noise.
      *
      * @return \Illuminate\Support\Collection<int, User>
      */
-    private function recipients(User $payer)
+    private function recipients(User $payer, string $familyId)
     {
-        if (! $payer->family_id) {
-            return collect();
-        }
-
-        return User::where('family_id', $payer->family_id)
+        return User::where('family_id', $familyId)
             ->whereKeyNot($payer->id)
             ->where('notifications_enabled', true)
             ->get();

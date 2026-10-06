@@ -778,4 +778,5 @@ return [
     'two_factor_enable' => 'Enable 2FA',
     'back_to_settings' => 'Back to settings',
     'invalid_selection' => 'The selected value is not valid.',
+    'push_endpoint_invalid' => 'This browser offered a notification address the server will not use.',
 ];

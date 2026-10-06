@@ -14,9 +14,17 @@ class NutritionApiService
      */
     public function lookupByBarcode(string $barcode): ?array
     {
+        // Barcodes are digits (EAN-8 up to GTIN-14 and a little slack). Anything
+        // else is free text someone typed, and must not become part of the
+        // path we request — `../` would walk to another endpoint.
+        $barcode = trim($barcode);
+        if (! preg_match('/^\d{4,20}$/', $barcode)) {
+            return null;
+        }
+
         try {
             $response = Http::timeout(10)
-                ->get(self::OPEN_FOOD_FACTS_API . "/{$barcode}.json");
+                ->get(self::OPEN_FOOD_FACTS_API . '/' . rawurlencode($barcode) . '.json');
 
             if ($response->successful() && $response->json('product')) {
                 $parsed = $this->parseOpenFoodFactsProduct($response->json('product'));

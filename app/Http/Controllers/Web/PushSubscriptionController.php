@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\PushSubscription;
+use App\Services\SafeUrlFetcher;
 use App\Services\WebPushSender;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 class PushSubscriptionController extends Controller
 {
@@ -19,14 +21,24 @@ class PushSubscriptionController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, SafeUrlFetcher $guard): JsonResponse
     {
         $data = $request->validate([
-            'endpoint'         => ['required', 'string', 'max:1000'],
-            'keys.p256dh'      => ['required', 'string'],
-            'keys.auth'        => ['required', 'string'],
-            'content_encoding' => ['nullable', 'string', 'max:20'],
+            'endpoint'         => ['required', 'string', 'max:1000', 'url:https'],
+            'keys.p256dh'      => ['required', 'string', 'max:255'],
+            'keys.auth'        => ['required', 'string', 'max:255'],
+            'content_encoding' => ['nullable', 'string', 'in:aes128gcm,aesgcm'],
         ]);
+
+        // The server POSTs to this address whenever someone in the family
+        // pays, so it is an outbound request the client chooses. Browsers
+        // only ever hand out public push-service URLs; anything pointing into
+        // the server's own network is refused.
+        try {
+            $guard->assertSafe($data['endpoint']);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => __('messages.push_endpoint_invalid')], 422);
+        }
 
         // Keyed on the endpoint so a browser that re-subscribes (key rotation,
         // permission re-grant) updates its row instead of piling up duplicates.
