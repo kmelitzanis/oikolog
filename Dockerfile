@@ -50,6 +50,7 @@ COPY --from=assets --chown=www-data:www-data /app/public/build /var/www/html/pub
 # Preserve assets outside the public volume for the entrypoint's boot-time sync.
 RUN cp -a public /opt/public-dist \
     && sed -i 's|^listen = .*|listen = 0.0.0.0:9000|' /usr/local/etc/php-fpm.d/www.conf
+COPY docker/php/oikolog.ini /usr/local/etc/php/conf.d/zz-oikolog.ini
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 EXPOSE 9000
 VOLUME ["/var/www/html/public"]
