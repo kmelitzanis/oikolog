@@ -160,6 +160,10 @@ pnpm run build         # production assets
 php artisan test       # Pest + PHPUnit
 ```
 
+Pages take their CSS from the Vite dev server while `pnpm run dev` runs, and from `public/build` otherwise. Tailwind
+only emits the classes it finds at build time, so after pulling changes without the dev server running, rebuild
+(`pnpm install && pnpm run build`) — a stale build renders new markup half-styled.
+
 Useful commands:
 
 | Command                            | Purpose                                                                         |
