@@ -14,40 +14,72 @@ class SettingsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_the_mailbox_form_renders_normally(): void
+    public function test_the_mailbox_card_offers_gmail_and_no_raw_imap_fields(): void
     {
         $this->actingAs(User::factory()->create())
             ->get(route('settings'))
             ->assertOk()
-            ->assertSee(__('messages.imap_host'))
+            ->assertSee(__('messages.mailbox_gmail_connect'))
+            ->assertDontSee(__('messages.imap_host'))
             ->assertDontSee(__('messages.mailbox_needs_migration'));
     }
 
     /**
-     * The scan button is disabled until a mailbox is stored.
+     * Test and scan only appear once a mailbox is connected.
      *
-     * It is asserted through a rendered request because the bug this replaces
-     * was a *compile* failure: a Blade directive inside a `<x-btn>` tag stopped
-     * the tag being compiled as a component and unbalanced the whole file, so
-     * the page 500'd in production while every existing test still passed.
+     * Asserted through a rendered request because an earlier bug here was a
+     * *compile* failure: a Blade directive inside a `<x-btn>` tag unbalanced
+     * the whole file, so the page 500'd while every other test still passed.
      */
-    public function test_the_scan_button_follows_whether_a_mailbox_exists(): void
+    public function test_scan_appears_once_a_mailbox_is_connected(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)->get(route('settings'))->assertOk()
-            ->assertSee('form="mailbox-scan-form" disabled="disabled"', false);
+            ->assertDontSee('form="mailbox-scan-form"', false);
 
         Mailbox::create([
             'user_id'  => $user->id,
-            'host'     => 'imap.example.com',
-            'username' => 'someone@example.com',
+            'host'     => 'imap.gmail.com',
+            'username' => 'someone@gmail.com',
             'password' => 'secret',
             'folder'   => 'INBOX',
         ]);
 
         $this->actingAs($user)->get(route('settings'))->assertOk()
-            ->assertDontSee('form="mailbox-scan-form" disabled', false);
+            ->assertSee('form="mailbox-scan-form"', false)
+            ->assertSee('someone@gmail.com');
+    }
+
+    public function test_connecting_gmail_fills_in_the_server_details(): void
+    {
+        $user = User::factory()->create();
+        $this->mock(\App\Services\InvoiceMailScanner::class)
+            ->shouldReceive('openFolder')->once()->andReturn(null);
+
+        $this->actingAs($user)->post(route('mailbox.update'), [
+            'username' => 'me@gmail.com',
+            'password' => 'abcd efgh ijkl mnop',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $mailbox = Mailbox::firstWhere('user_id', $user->id);
+        $this->assertSame('imap.gmail.com', $mailbox->host);
+        $this->assertSame(993, $mailbox->port);
+        $this->assertSame('abcdefghijklmnop', $mailbox->password);
+    }
+
+    public function test_a_rejected_gmail_password_is_not_saved(): void
+    {
+        $user = User::factory()->create();
+        $this->mock(\App\Services\InvoiceMailScanner::class)
+            ->shouldReceive('openFolder')->once()->andThrow(new \RuntimeException('[AUTHENTICATIONFAILED] Invalid credentials'));
+
+        $this->actingAs($user)->post(route('mailbox.update'), [
+            'username' => 'me@gmail.com',
+            'password' => 'wrong',
+        ])->assertSessionHasErrors('password');
+
+        $this->assertNull(Mailbox::firstWhere('user_id', $user->id));
     }
 
     /**

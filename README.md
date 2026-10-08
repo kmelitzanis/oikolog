@@ -186,6 +186,27 @@ files accumulate:
 * * * * * cd /path/to/oikolog && php artisan schedule:run >> /dev/null 2>&1
 ```
 
+### Invoice mail with Outlook
+
+Outlook.com / Hotmail and Microsoft 365 refuse every password over IMAP, so those mailboxes connect with
+**Connect with Microsoft** in Settings (OAuth). The button appears once the app is registered in Azure:
+
+1. [portal.azure.com](https://portal.azure.com) → **App registrations** → **New registration**. Supported account
+   types: *Accounts in any organizational directory and personal Microsoft accounts*. Redirect URI: platform **Web**,
+   `https://<your-domain>/mailbox/microsoft/callback`.
+2. **Certificates & secrets** → **New client secret**; copy the *Value*.
+3. **API permissions** → **Add a permission** → **APIs my organization uses** → *Office 365 Exchange Online* →
+   **Delegated** → `IMAP.AccessAsUser.All`. Keep the default `User.Read`; `offline_access`, `openid` and `email` are
+   requested at sign-in.
+4. Put the values in `.env`:
+
+```
+MICROSOFT_CLIENT_ID=<Application (client) ID>
+MICROSOFT_CLIENT_SECRET=<secret value>
+```
+
+Gmail does not need this: use an app password (2-Step Verification → App passwords) in the regular form.
+
 ### Push notifications
 
 Web push needs a VAPID keypair. Generate one and put it in `.env` as `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and

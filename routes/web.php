@@ -181,6 +181,9 @@ Route::middleware('auth')->group(function () {
             Route::post('/', 'update')->name('update');
             Route::post('/test', 'test')->name('test');
             Route::post('/scan', 'scan')->name('scan');
+            Route::get('/microsoft/connect', 'microsoftConnect')->name('microsoft.connect');
+            Route::get('/microsoft/callback', 'microsoftCallback')->name('microsoft.callback');
+            Route::post('/disconnect', 'disconnect')->name('disconnect');
         });
 
     // Translations management

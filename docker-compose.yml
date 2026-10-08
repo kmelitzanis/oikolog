@@ -27,6 +27,10 @@ services:
       - VAPID_SUBJECT=${VAPID_SUBJECT:-}
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      # "Connect with Microsoft" for the invoice mailbox (Outlook/Hotmail).
+      # From the Azure app registration — see README → "Invoice mail with Outlook".
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
       # Behind an HTTPS reverse proxy, set SESSION_SECURE_COOKIE=true so the
       # session cookie never travels over plain HTTP.
       #

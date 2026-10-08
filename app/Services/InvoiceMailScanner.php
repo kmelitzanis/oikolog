@@ -20,8 +20,10 @@ use Webklex\PHPIMAP\ClientManager;
  */
 class InvoiceMailScanner
 {
-    public function __construct(private BillAmountExtractor $extractor)
-    {
+    public function __construct(
+        private BillAmountExtractor $extractor,
+        private MicrosoftMailAuth $microsoft,
+    ) {
     }
 
     /**
@@ -138,6 +140,11 @@ class InvoiceMailScanner
             return __('messages.mailbox_basic_auth_disabled');
         }
 
+        // Gmail answers a normal password with this; an app password works.
+        if (str_contains($m, 'invalid credentials') || str_contains($m, 'web login required')) {
+            return __('messages.mailbox_gmail_app_password');
+        }
+
         if (str_contains($m, 'application-specific password')
             || str_contains($m, 'app password')) {
             return __('messages.mailbox_needs_app_password');
@@ -149,13 +156,26 @@ class InvoiceMailScanner
     /** Opens the configured folder, throwing on bad credentials or host. */
     public function openFolder(Mailbox $mailbox)
     {
-        $client = (new ClientManager())->make([
-            'host'          => $mailbox->host,
-            'port'          => $mailbox->port,
-            'encryption'    => $mailbox->encryption === 'none' ? false : $mailbox->encryption,
+        // A Microsoft-connected mailbox logs in with XOAUTH2: the "password"
+        // is a fresh access token, refreshed here when it is about to expire.
+        $config = $mailbox->usesMicrosoft()
+            ? [
+                'host'           => MicrosoftMailAuth::IMAP_HOST,
+                'port'           => 993,
+                'encryption'     => 'ssl',
+                'authentication' => 'oauth',
+                'password'       => $this->microsoft->accessToken($mailbox),
+            ]
+            : [
+                'host'       => $mailbox->host,
+                'port'       => $mailbox->port,
+                'encryption' => $mailbox->encryption === 'none' ? false : $mailbox->encryption,
+                'password'   => $mailbox->password,
+            ];
+
+        $client = (new ClientManager())->make($config + [
             'validate_cert' => true,
             'username'      => $mailbox->username,
-            'password'      => $mailbox->password,
             'protocol'      => 'imap',
         ]);
 

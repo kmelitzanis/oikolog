@@ -204,95 +204,93 @@
                         <p class="mb-3 text-xs text-red-500">{{ $message }}</p>
                     @enderror
 
-                    <div class="space-y-3">
-                        <div class="grid grid-cols-3 gap-2">
-                            <div class="col-span-2">
-                                <label class="{{ $label }}">{{ __('messages.imap_host') }}</label>
-                                <input form="mailbox-form" type="text" name="host" required
-                                       value="{{ old('host', $mailbox->host ?? 'imap.gmail.com') }}" class="{{ $input }}">
+                    {{-- Two ways in, one per provider. Microsoft only takes OAuth;
+                         Gmail takes an app password, which (unlike Google OAuth for
+                         an unverified app) never expires. Host, port and folder
+                         are filled in server-side, so the user types only what
+                         they actually know. --}}
+                    @php($microsoftReady = app(\App\Services\MicrosoftMailAuth::class)->isConfigured())
+
+                    @if($mailbox?->exists)
+                        <div class="rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 p-3 flex items-center gap-3">
+                            @if($mailbox->usesMicrosoft())
+                                <svg width="20" height="20" viewBox="0 0 21 21" aria-hidden="true" class="shrink-0">
+                                    <rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                                    <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                                </svg>
+                            @else
+                                <span class="material-icons-round text-red-500 shrink-0">mail</span>
+                            @endif
+                            <div class="min-w-0 flex-1">
+                                <div class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                    {{ __('messages.mailbox_connected_as', ['email' => $mailbox->username]) }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-slate-400">
+                                    @if($mailbox->last_scanned_at)
+                                        {{ __('messages.last_scanned', ['when' => $mailbox->last_scanned_at->diffForHumans()]) }}
+                                    @else
+                                        {{ $mailbox->usesMicrosoft() ? 'Microsoft' : 'Gmail' }}
+                                    @endif
+                                </div>
                             </div>
-                            <div>
-                                <label class="{{ $label }}">{{ __('messages.imap_port') }}</label>
-                                <input form="mailbox-form" type="number" name="port" required
-                                       value="{{ old('port', $mailbox->port ?? 993) }}" class="{{ $input }}">
-                            </div>
+                            <form method="POST" action="{{ route('mailbox.disconnect') }}"
+                                  onsubmit="return confirm({{ Illuminate\Support\Js::from(__('messages.mailbox_disconnect') . '?') }})">
+                                @csrf
+                                <x-btn variant="ghost" size="sm" type="submit" icon="link_off">{{ __('messages.mailbox_disconnect') }}</x-btn>
+                            </form>
                         </div>
 
-                        <div>
-                            <label class="{{ $label }}">{{ __('messages.email') }}</label>
-                            <input form="mailbox-form" type="text" name="username" required autocomplete="off"
-                                   value="{{ old('username', $mailbox->username ?? '') }}" class="{{ $input }}">
-                        </div>
-
-                        <div>
-                            <label class="{{ $label }}">
-                                {{ __('messages.app_password') }}
-                                @if($mailbox?->exists)
-                                    <span class="text-gray-400 dark:text-slate-500 font-normal">({{ __('messages.leave_blank') }})</span>
-                                @endif
-                            </label>
-                            {{-- Never rendered back to the browser, only replaced. --}}
-                            <input form="mailbox-form" type="password" name="password" autocomplete="new-password"
-                                   class="{{ $input }}" @if(! $mailbox?->exists) required @endif>
-                            <p class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">{{ __('messages.app_password_hint') }}</p>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="{{ $label }}">{{ __('messages.imap_folder') }}</label>
-                                <input form="mailbox-form" type="text" name="folder" required
-                                       value="{{ old('folder', $mailbox->folder ?? 'INBOX') }}" class="{{ $input }}">
-                            </div>
-                            <div>
-                                <label class="{{ $label }}">{{ __('messages.encryption') }}</label>
-                                <select form="mailbox-form" name="encryption" class="{{ $input }}">
-                                    @foreach(['ssl' => 'SSL', 'tls' => 'TLS', 'none' => '—'] as $v => $l)
-                                        <option value="{{ $v }}" @selected(old('encryption', $mailbox->encryption ?? 'ssl') === $v)>{{ $l }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        <label class="flex items-center gap-3 cursor-pointer pt-1">
-                            <input form="mailbox-form" type="hidden" name="is_active" value="0">
-                            <input form="mailbox-form" type="checkbox" name="is_active" value="1"
-                                   class="w-4 h-4 accent-amber-500" @checked(old('is_active', $mailbox->is_active ?? true))>
-                            <span class="text-sm text-gray-700 dark:text-slate-200">{{ __('messages.mailbox_active') }}</span>
-                        </label>
-
-                        @if($mailbox?->last_scanned_at)
-                            <p class="text-xs text-gray-400 dark:text-slate-500">
-                                {{ __('messages.last_scanned', ['when' => $mailbox->last_scanned_at->diffForHumans()]) }}
-                            </p>
-                        @endif
-                        @if($mailbox?->last_error)
-                            <p class="text-xs text-red-500">{{ $mailbox->last_error }}</p>
+                        @if($mailbox->last_error)
+                            <p class="text-xs text-red-500 mt-2">{{ $mailbox->last_error }}</p>
                         @endif
 
-                        {{-- Save is the commitment; test and scan act on what is
-                             already stored, so they read as one secondary pair.
-                             x-btn keeps all three the same height — hand-rolled
-                             markup had drifted apart. --}}
-                        <div class="pt-2 space-y-2">
-                            <x-btn form="mailbox-form" type="submit" icon="save" class="w-full sm:w-auto">
-                                {{ __('messages.save') }}
+                        <div class="grid grid-cols-2 gap-2 mt-3">
+                            <x-btn form="mailbox-test-form" type="submit" variant="outline" icon="wifi_tethering">
+                                {{ __('messages.test_connection') }}
                             </x-btn>
+                            <x-btn form="mailbox-scan-form" type="submit" variant="outline" icon="sync">
+                                {{ __('messages.scan_now') }}
+                            </x-btn>
+                        </div>
+                    @else
+                        <div x-data="{ gmail: {{ $errors->has('username') || $errors->has('password') ? 'true' : 'false' }} }" class="space-y-2">
+                            @if($microsoftReady)
+                                <a href="{{ route('mailbox.microsoft.connect') }}"
+                                   class="w-full h-11 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2.5 text-sm font-semibold text-gray-700 dark:text-slate-200 transition">
+                                    <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
+                                        <rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                                        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                                    </svg>
+                                    {{ __('messages.mailbox_microsoft_connect') }}
+                                </a>
+                            @endif
 
-                            <div class="grid grid-cols-2 gap-2">
-                                <x-btn form="mailbox-test-form" type="submit" variant="outline" icon="wifi_tethering">
-                                    {{ __('messages.test_connection') }}
-                                </x-btn>
-                                {{-- A bound attribute, not @disabled(): a Blade
-                                     directive inside a component tag stops the
-                                     tag being compiled as a component at all,
-                                     which unbalances the whole file. --}}
-                                <x-btn form="mailbox-scan-form" type="submit" variant="outline" icon="sync"
-                                       :disabled="! $mailbox?->exists">
-                                    {{ __('messages.scan_now') }}
+                            <button type="button" @click="gmail = !gmail"
+                                    class="w-full h-11 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2.5 text-sm font-semibold text-gray-700 dark:text-slate-200 transition">
+                                <span class="material-icons-round text-red-500 text-lg">mail</span>
+                                {{ __('messages.mailbox_gmail_connect') }}
+                            </button>
+
+                            <div x-show="gmail" x-cloak class="rounded-xl border border-gray-100 dark:border-slate-700 p-3 space-y-3">
+                                <div>
+                                    <label class="{{ $label }}">{{ __('messages.email') }}</label>
+                                    <input form="mailbox-form" type="email" name="username" autocomplete="off"
+                                           placeholder="you@gmail.com" value="{{ old('username') }}" class="{{ $input }}">
+                                    @error('username') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label class="{{ $label }}">{{ __('messages.app_password') }}</label>
+                                    {{-- Never rendered back to the browser. --}}
+                                    <input form="mailbox-form" type="password" name="password" autocomplete="new-password" class="{{ $input }}">
+                                    @error('password') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                                    <p class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">{{ __('messages.mailbox_gmail_app_password_hint') }}</p>
+                                </div>
+                                <x-btn form="mailbox-form" type="submit" icon="link" class="w-full">
+                                    {{ __('messages.mailbox_gmail_save') }}
                                 </x-btn>
                             </div>
                         </div>
-                    </div>
+                    @endif
                 </x-card>
                 @else
                 {{-- The table is missing, so the form has nowhere to save to.
