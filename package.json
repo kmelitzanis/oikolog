@@ -26,7 +26,8 @@
         "@fullcalendar/daygrid": "^6.1.21",
         "@fullcalendar/interaction": "^6.1.21",
         "@zxing/browser": "^0.2.1",
-        "@zxing/library": "^0.23.0"
+        "@zxing/library": "^0.23.0",
+        "flatpickr": "^4.6.13"
     },
     "packageManager": "pnpm@12.4.2"
 }

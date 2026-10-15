@@ -181,6 +181,9 @@ importers:
       '@zxing/library':
         specifier: ^0.23.0
         version: 0.23.0
+      flatpickr:
+        specifier: ^4.6.13
+        version: 4.6.13
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.3
@@ -790,6 +793,9 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  flatpickr@4.6.13:
+    resolution: {integrity: sha512-97PMG/aywoYpB4IvbvUJi0RQi8vearvU0oov1WW3k0WZPBMrTQVqekSX5CjSG/M4Q3i6A/0FKXC7RyAoAUUSPw==}
 
   follow-redirects@1.16.0:
     resolution: {integrity: sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==}
@@ -1556,6 +1562,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
       picomatch: 4.0.7
+
+  flatpickr@4.6.13: {}
 
   follow-redirects@1.16.0(debug@4.4.3(supports-color@8.1.1)):
     optionalDependencies:

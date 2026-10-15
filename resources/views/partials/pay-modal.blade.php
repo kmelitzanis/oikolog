@@ -196,7 +196,7 @@
                     {{-- Defaults to today, but a payment remembered late has to
                          be datable to when it actually happened — that date is
                          what charges it to the right income period. --}}
-                    <input type="date" x-model="paidAt" max="{{ now()->toDateString() }}"
+                    <input type="date" x-model="paidAt" x-effect="$el._flatpickr && $el._flatpickr.setDate(paidAt, false)" max="{{ now()->toDateString() }}"
                            class="w-full bg-transparent border-0 outline-none p-0 mt-0.5 text-[0.84rem] font-semibold text-gray-700 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]">
                 </div>
                 <div class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-3.5 py-[11px] min-w-0">
