@@ -233,11 +233,12 @@
                                     @endif
                                 </div>
                             </div>
-                            <form method="POST" action="{{ route('mailbox.disconnect') }}"
-                                  onsubmit="return confirm({{ Illuminate\Support\Js::from(__('messages.mailbox_disconnect') . '?') }})">
-                                @csrf
-                                <x-btn variant="ghost" size="sm" type="submit" icon="link_off">{{ __('messages.mailbox_disconnect') }}</x-btn>
-                            </form>
+                            {{-- form= attribute, not a nested <form>: this card sits
+                                 inside the settings form, and browsers drop a nested
+                                 form tag, so the button used to submit the profile. --}}
+                            <x-btn form="mailbox-disconnect-form" variant="ghost" size="sm" type="submit" icon="link_off">
+                                {{ __('messages.mailbox_disconnect') }}
+                            </x-btn>
                         </div>
 
                         @if($mailbox->last_error)
@@ -341,4 +342,6 @@
     <form id="mailbox-form" method="POST" action="{{ route('mailbox.update') }}" class="hidden">@csrf</form>
     <form id="mailbox-test-form" method="POST" action="{{ route('mailbox.test') }}" class="hidden">@csrf</form>
     <form id="mailbox-scan-form" method="POST" action="{{ route('mailbox.scan') }}" class="hidden">@csrf</form>
+    <form id="mailbox-disconnect-form" method="POST" action="{{ route('mailbox.disconnect') }}" class="hidden"
+          onsubmit="return confirm({{ Illuminate\Support\Js::from(__('messages.mailbox_disconnect') . '?') }})">@csrf</form>
 @endsection

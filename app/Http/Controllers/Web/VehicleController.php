@@ -40,11 +40,19 @@ class VehicleController extends Controller
 
         $vehicle->load(['reminders', 'services', 'expenses']);
 
+        // One timeline: a workshop visit and a fill-up are both "something
+        // that happened to the car", and are looked up by date either way.
+        $history = $vehicle->services->map(fn(VehicleService $s) => ['type' => 'service', 'date' => $s->performed_at, 'item' => $s])
+            ->concat($vehicle->expenses->map(fn(VehicleExpense $e) => ['type' => 'expense', 'date' => $e->spent_at, 'item' => $e]))
+            ->sortByDesc(fn($row) => $row['date']?->timestamp ?? 0)
+            ->values();
+
         return view('vehicles.show', [
             'vehicle'   => $vehicle,
             'reminders' => $vehicle->reminders->whereNull('completed_at')
+                ->sortBy(fn($r) => $r->due_date?->timestamp ?? PHP_INT_MAX)
                 ->each->setRelation('vehicle', $vehicle),
-            'services'  => $vehicle->services,
+            'history'   => $history,
             'breakdown' => $vehicle->expenseBreakdown(Carbon::today()->subYear()),
         ]);
     }
@@ -141,6 +149,23 @@ class VehicleController extends Controller
     {
         $this->authorizeVehicle($request, $vehicle);
 
+        $vehicle->reminders()->create($this->validatedReminder($request));
+
+        return back()->with('success', __('messages.vehicle_reminder_added'));
+    }
+
+    public function updateReminder(Request $request, Vehicle $vehicle, VehicleReminder $reminder)
+    {
+        $this->authorizeVehicle($request, $vehicle);
+        abort_unless($reminder->vehicle_id === $vehicle->id, 404);
+
+        $reminder->update($this->validatedReminder($request));
+
+        return back()->with('success', __('messages.vehicle_entry_updated'));
+    }
+
+    private function validatedReminder(Request $request): array
+    {
         $data = $request->validate([
             'label'           => ['required', 'string', 'max:120'],
             'due_date'        => ['nullable', 'date'],
@@ -152,12 +177,10 @@ class VehicleController extends Controller
 
         // A reminder due on neither a date nor a mileage can never come due.
         if (empty($data['due_date']) && empty($data['due_km'])) {
-            return back()->withErrors(['due_date' => __('messages.vehicle_reminder_needs_due')])->withInput();
+            throw ValidationException::withMessages(['due_date' => __('messages.vehicle_reminder_needs_due')]);
         }
 
-        $vehicle->reminders()->create($data);
-
-        return back()->with('success', __('messages.vehicle_reminder_added'));
+        return $data;
     }
 
     /**
@@ -208,6 +231,27 @@ class VehicleController extends Controller
     {
         $this->authorizeVehicle($request, $vehicle);
 
+        $data = $this->validatedService($request);
+        $vehicle->services()->create($data);
+        $this->advanceOdometer($vehicle, $data['odometer_km'] ?? null, $data['performed_at']);
+
+        return back()->with('success', __('messages.vehicle_service_added'));
+    }
+
+    public function updateService(Request $request, Vehicle $vehicle, VehicleService $service)
+    {
+        $this->authorizeVehicle($request, $vehicle);
+        abort_unless($service->vehicle_id === $vehicle->id, 404);
+
+        $data = $this->validatedService($request);
+        $service->update($data);
+        $this->advanceOdometer($vehicle, $data['odometer_km'] ?? null, $data['performed_at']);
+
+        return back()->with('success', __('messages.vehicle_entry_updated'));
+    }
+
+    private function validatedService(Request $request): array
+    {
         $data = $request->validate([
             'performed_at'  => ['required', 'date'],
             'odometer_km'   => ['nullable', 'integer', 'min:0', 'max:9999999'],
@@ -227,17 +271,19 @@ class VehicleController extends Controller
 
         $data['total'] = $data['total'] ?? 0;
 
-        $vehicle->services()->create($data);
+        return $data;
+    }
 
-        // A service reading is also an odometer reading, and a fresher one.
-        if (! empty($data['odometer_km']) && $data['odometer_km'] > $vehicle->odometer_km) {
-            $vehicle->update([
-                'odometer_km'      => $data['odometer_km'],
-                'odometer_read_at' => $data['performed_at'],
-            ]);
+    /**
+     * A service or expense reading is also an odometer reading. Only a
+     * higher one moves the clock — an edit to an old entry, or a stale
+     * receipt, must never wind it backwards.
+     */
+    private function advanceOdometer(Vehicle $vehicle, $km, $when): void
+    {
+        if (! empty($km) && $km > $vehicle->odometer_km) {
+            $vehicle->update(['odometer_km' => $km, 'odometer_read_at' => $when]);
         }
-
-        return back()->with('success', __('messages.vehicle_service_added'));
     }
 
     public function destroyService(Request $request, Vehicle $vehicle, VehicleService $service)
@@ -254,7 +300,28 @@ class VehicleController extends Controller
     {
         $this->authorizeVehicle($request, $vehicle);
 
-        $data = $request->validate([
+        $data = $this->validatedExpense($request);
+        $vehicle->expenses()->create($data + ['created_by' => $request->user()->id]);
+        $this->advanceOdometer($vehicle, $data['odometer_km'] ?? null, $data['spent_at']);
+
+        return back()->with('success', __('messages.vehicle_expense_added'));
+    }
+
+    public function updateExpense(Request $request, Vehicle $vehicle, VehicleExpense $expense)
+    {
+        $this->authorizeVehicle($request, $vehicle);
+        abort_unless($expense->vehicle_id === $vehicle->id, 404);
+
+        $data = $this->validatedExpense($request);
+        $expense->update($data);
+        $this->advanceOdometer($vehicle, $data['odometer_km'] ?? null, $data['spent_at']);
+
+        return back()->with('success', __('messages.vehicle_entry_updated'));
+    }
+
+    private function validatedExpense(Request $request): array
+    {
+        return $request->validate([
             'category'    => ['required', Rule::in(VehicleExpense::CATEGORIES)],
             'amount'      => ['required', 'numeric', 'min:0', 'max:999999'],
             'spent_at'    => ['required', 'date'],
@@ -262,17 +329,6 @@ class VehicleController extends Controller
             'litres'      => ['nullable', 'numeric', 'min:0', 'max:9999'],
             'note'        => ['nullable', 'string', 'max:255'],
         ]);
-
-        $vehicle->expenses()->create($data + ['created_by' => $request->user()->id]);
-
-        if (! empty($data['odometer_km']) && $data['odometer_km'] > $vehicle->odometer_km) {
-            $vehicle->update([
-                'odometer_km'      => $data['odometer_km'],
-                'odometer_read_at' => $data['spent_at'],
-            ]);
-        }
-
-        return back()->with('success', __('messages.vehicle_expense_added'));
     }
 
     public function destroyExpense(Request $request, Vehicle $vehicle, VehicleExpense $expense)

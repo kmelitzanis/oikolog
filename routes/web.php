@@ -112,12 +112,15 @@ Route::middleware('auth')->group(function () {
 
             Route::post('/{vehicle}/reminders', 'storeReminder')->name('reminders.store');
             Route::post('/{vehicle}/reminders/{reminder}/complete', 'completeReminder')->name('reminders.complete');
+            Route::put('/{vehicle}/reminders/{reminder}', 'updateReminder')->name('reminders.update');
             Route::delete('/{vehicle}/reminders/{reminder}', 'destroyReminder')->name('reminders.destroy');
 
             Route::post('/{vehicle}/services', 'storeService')->name('services.store');
+            Route::put('/{vehicle}/services/{service}', 'updateService')->name('services.update');
             Route::delete('/{vehicle}/services/{service}', 'destroyService')->name('services.destroy');
 
             Route::post('/{vehicle}/expenses', 'storeExpense')->name('expenses.store');
+            Route::put('/{vehicle}/expenses/{expense}', 'updateExpense')->name('expenses.update');
             Route::delete('/{vehicle}/expenses/{expense}', 'destroyExpense')->name('expenses.destroy');
         });
 

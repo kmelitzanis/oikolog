@@ -126,5 +126,22 @@ class SettingsTest extends TestCase
         $this->assertEquals('el', $user->locale);
         Storage::disk('public')->assertExists(str_replace('/storage/', '', parse_url($user->avatar_url, PHP_URL_PATH)));
     }
-}
 
+    /**
+     * The mailbox card lives inside the settings <form>. A nested form is
+     * dropped by the browser, so Disconnect must point at an outside form
+     * via the form= attribute — otherwise it submits the profile instead.
+     */
+    public function test_disconnect_targets_its_own_form_outside_the_settings_form(): void
+    {
+        $user = User::factory()->create();
+        Mailbox::create([
+            'user_id' => $user->id, 'host' => 'imap.gmail.com',
+            'username' => 'someone@gmail.com', 'password' => 'secret', 'folder' => 'INBOX',
+        ]);
+
+        $this->actingAs($user)->get(route('settings'))->assertOk()
+            ->assertSee('form="mailbox-disconnect-form"', false)
+            ->assertSee('id="mailbox-disconnect-form" method="POST" action="' . route('mailbox.disconnect') . '"', false);
+    }
+}

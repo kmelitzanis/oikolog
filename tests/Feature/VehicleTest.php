@@ -156,4 +156,95 @@ class VehicleTest extends TestCase
 
         $this->actingAs($mine)->get(route('vehicles.show', $vehicle))->assertForbidden();
     }
+
+    public function test_a_service_can_be_edited_and_deleted(): void
+    {
+        $user = User::factory()->create();
+        $vehicle = $this->vehicle($user);
+        $service = $vehicle->services()->create(['performed_at' => now()->subMonth(), 'shop' => 'Old shop', 'total' => 100]);
+
+        $this->actingAs($user)->put(route('vehicles.services.update', [$vehicle, $service]), [
+            'performed_at' => now()->subMonth()->toDateString(),
+            'shop'         => 'AUTOTEC',
+            'total'        => 345,
+            'lines'        => [['what' => 'Oil', 'cost' => ''], ['what' => '', 'cost' => '']],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $service->refresh();
+        $this->assertSame('AUTOTEC', $service->shop);
+        $this->assertSame(345.0, (float) $service->total);
+        $this->assertCount(1, $service->lines);
+
+        $this->actingAs($user)->delete(route('vehicles.services.destroy', [$vehicle, $service]))->assertRedirect();
+        $this->assertNull($service->fresh());
+    }
+
+    public function test_an_expense_can_be_edited_and_deleted(): void
+    {
+        $user = User::factory()->create();
+        $vehicle = $this->vehicle($user);
+        $expense = $vehicle->expenses()->create([
+            'category' => 'fuel', 'amount' => 50, 'spent_at' => now()->subDay(), 'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)->put(route('vehicles.expenses.update', [$vehicle, $expense]), [
+            'category' => 'insurance', 'amount' => 320, 'spent_at' => now()->toDateString(), 'note' => 'Yearly',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $expense->refresh();
+        $this->assertSame('insurance', $expense->category);
+        $this->assertSame(320.0, (float) $expense->amount);
+
+        $this->actingAs($user)->delete(route('vehicles.expenses.destroy', [$vehicle, $expense]))->assertRedirect();
+        $this->assertNull($expense->fresh());
+    }
+
+    public function test_a_reminder_can_be_edited_but_not_left_without_a_due(): void
+    {
+        $user = User::factory()->create();
+        $vehicle = $this->vehicle($user);
+        $reminder = $vehicle->reminders()->create(['label' => 'Oil', 'due_km' => 90_000]);
+
+        $this->actingAs($user)->put(route('vehicles.reminders.update', [$vehicle, $reminder]), [
+            'label' => 'Oil & filter', 'due_km' => 95_000, 'interval_km' => 15_000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('Oil & filter', $reminder->fresh()->label);
+        $this->assertSame(95_000, $reminder->fresh()->due_km);
+
+        $this->actingAs($user)->put(route('vehicles.reminders.update', [$vehicle, $reminder]), ['label' => 'Oil'])
+            ->assertSessionHasErrors('due_date');
+    }
+
+    public function test_entries_of_another_vehicle_cannot_be_edited_through_this_one(): void
+    {
+        $user = User::factory()->create();
+        $mine = $this->vehicle($user);
+        $other = $this->vehicle($user, ['name' => 'Other']);
+        $expense = $other->expenses()->create([
+            'category' => 'fuel', 'amount' => 50, 'spent_at' => now(), 'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)->put(route('vehicles.expenses.update', [$mine, $expense]), [
+            'category' => 'fuel', 'amount' => 1, 'spent_at' => now()->toDateString(),
+        ])->assertNotFound();
+    }
+
+    public function test_the_page_lists_every_entry_with_edit_and_delete(): void
+    {
+        $user = User::factory()->create(['locale' => 'en']);
+        $vehicle = $this->vehicle($user);
+        $service = $vehicle->services()->create(['performed_at' => now(), 'shop' => 'AUTOTEC', 'total' => 345]);
+        $expense = $vehicle->expenses()->create([
+            'category' => 'fuel', 'amount' => 60, 'spent_at' => now(), 'created_by' => $user->id,
+        ]);
+        $reminder = $vehicle->reminders()->create(['label' => 'Brake fluid', 'due_km' => 90_000]);
+
+        $this->actingAs($user)->get(route('vehicles.show', $vehicle))->assertOk()
+            ->assertSee('AUTOTEC')
+            ->assertSee(route('vehicles.services.update', [$vehicle, $service]), false)
+            ->assertSee(route('vehicles.services.destroy', [$vehicle, $service]), false)
+            ->assertSee(route('vehicles.expenses.update', [$vehicle, $expense]), false)
+            ->assertSee(route('vehicles.expenses.destroy', [$vehicle, $expense]), false)
+            ->assertSee(route('vehicles.reminders.update', [$vehicle, $reminder]), false);
+    }
 }
