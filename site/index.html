@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="el" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Oikolog — τα οικονομικά του σπιτιού</title>
+    <meta name="description" content="Oikolog: open-source, self-hosted εφαρμογή για λογαριασμούς, έσοδα, αποταμίευση, λίστες αγορών, συνταγές και οχήματα — για όλη την οικογένεια.">
+    <meta property="og:title" content="Oikolog — τα οικονομικά του σπιτιού">
+    <meta property="og:description" content="Open-source, self-hosted: λογαριασμοί, έσοδα, αποταμίευση, αγορές, συνταγές και οχήματα σε ένα μέρος.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="screenshots/dashboard.webp">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="preload" as="image" href="screenshots/dashboard.webp">
+
+    <!-- Theme before paint, so a dark-mode visitor never sees a white flash. -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('oikolog-site-theme');
+                if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+                document.documentElement.dataset.theme = t;
+            } catch (e) {}
+            document.documentElement.classList.add('js');
+        })();
+    </script>
+
+    <style>
+        :root {
+            --amber: #f59e0b; --amber-2: #fbbf24;
+            --amber-soft: rgba(245, 158, 11, .14);
+            --red: #ef4444; --orange: #f97316; --emerald: #10b981; --sky: #0ea5e9;
+            --radius: 24px; --max: 1180px;
+            --ease: cubic-bezier(.2, .8, .2, 1);
+        }
+        :root[data-theme="dark"] {
+            --bg: #0b1222; --bg-2: #0f172a; --surface: #1e293b; --surface-2: #273449;
+            --line: rgba(148, 163, 184, .14); --ink: #f8fafc; --ink-2: #cbd5e1; --muted: #94a3b8;
+            --shadow: 0 40px 100px rgba(0, 0, 0, .55); --grid: rgba(148, 163, 184, .06);
+        }
+        :root[data-theme="light"] {
+            --bg: #f8fafc; --bg-2: #ffffff; --surface: #ffffff; --surface-2: #f1f5f9;
+            --line: rgba(15, 23, 42, .09); --ink: #0f172a; --ink-2: #334155; --muted: #64748b;
+            --shadow: 0 40px 100px rgba(15, 23, 42, .16); --grid: rgba(15, 23, 42, .04);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; background: var(--bg); color: var(--ink); overflow-x: hidden;
+               font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+               line-height: 1.55; -webkit-font-smoothing: antialiased; transition: background .4s ease, color .4s ease; }
+        a { color: inherit; text-decoration: none; }
+        img { display: block; max-width: 100%; height: auto; }
+        .mi { font-family: 'Material Icons Round'; font-weight: normal; font-style: normal; line-height: 1;
+              display: inline-block; font-feature-settings: 'liga'; -webkit-font-feature-settings: 'liga'; }
+        .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+
+        /* ── Scroll reveal ─────────────────────────────────────
+           Only with JS on: without it everything is simply visible. */
+        .js .reveal { opacity: 0; transform: translateY(28px); transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: var(--d, 0s); }
+        .js .reveal.in { opacity: 1; transform: none; }
+        .js .reveal-scale { opacity: 0; transform: translateY(40px) scale(.96); transition: opacity 1s var(--ease), transform 1s var(--ease); transition-delay: var(--d, 0s); }
+        .js .reveal-scale.in { opacity: 1; transform: none; }
+
+        /* ── Logo ───────────────────────────────────────────── */
+        .logo { display: inline-flex; align-items: center; font-weight: 800; letter-spacing: -.03em; font-size: 1.35rem; color: var(--ink); }
+        .logo svg { width: .625em; height: .962em; margin: 0 .048em; overflow: visible; }
+        .logo svg rect { transform-origin: left center; }
+        .logo:hover svg rect { animation: beam .6s var(--ease) both; }
+        .logo:hover svg rect:nth-child(2) { animation-delay: .05s; }
+        .logo:hover svg rect:nth-child(3) { animation-delay: .1s; }
+        .logo:hover svg rect:nth-child(4) { animation-delay: .15s; }
+        @keyframes beam { 0% { transform: scaleX(1); } 40% { transform: scaleX(.35); } 100% { transform: scaleX(1); } }
+
+        /* ── Nav ────────────────────────────────────────────── */
+        nav { position: sticky; top: 0; z-index: 30; transition: background .3s ease, border-color .3s ease; border-bottom: 1px solid transparent; }
+        nav.scrolled { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+                       background: color-mix(in srgb, var(--bg) 75%, transparent); border-bottom-color: var(--line); }
+        nav .wrap { display: flex; align-items: center; gap: 18px; height: 68px; }
+        .nav-links { display: flex; gap: 24px; margin-left: 16px; font-size: .9rem; font-weight: 500; color: var(--ink-2); }
+        .nav-links a { position: relative; }
+        .nav-links a::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; border-radius: 2px;
+                              background: var(--amber); transform: scaleX(0); transition: transform .3s var(--ease); }
+        .nav-links a:hover { color: var(--ink); }
+        .nav-links a:hover::after { transform: scaleX(1); }
+        .nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .chip-btn { height: 38px; min-width: 38px; padding: 0 11px; border-radius: 11px; border: 1px solid var(--line);
+                    background: var(--surface); color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center;
+                    gap: 6px; font: 600 .8rem/1 inherit; cursor: pointer; transition: color .2s ease, transform .2s ease; }
+        .chip-btn:hover { color: var(--ink); transform: translateY(-1px); }
+        .chip-btn .mi { font-size: 18px; transition: transform .5s var(--ease); }
+        #theme:hover .mi { transform: rotate(40deg); }
+
+        /* ── Buttons ───────────────────────────────────────── */
+        .btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 22px;
+               border-radius: 15px; font-weight: 700; font-size: .95rem; transition: transform .25s var(--ease), box-shadow .25s ease, background .2s ease; }
+        .btn .mi { font-size: 20px; transition: transform .3s var(--ease); }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:hover .mi { transform: translateX(2px) rotate(-8deg); }
+        .btn-primary { background: var(--amber); color: #0f172a; box-shadow: 0 12px 34px rgba(245, 158, 11, .38); }
+        .btn-primary:hover { background: var(--amber-2); box-shadow: 0 16px 44px rgba(245, 158, 11, .5); }
+        /* A light sweep across the primary button every few seconds. */
+        .btn-primary::after { content: ''; position: absolute; inset: 0; transform: translateX(-120%) skewX(-20deg);
+                              background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation: sweep 5s ease-in-out 2s infinite; }
+        @keyframes sweep { 0%, 70% { transform: translateX(-120%) skewX(-20deg); } 100% { transform: translateX(220%) skewX(-20deg); } }
+        .btn-ghost { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+
+        /* ── Hero ──────────────────────────────────────────── */
+        .hero { position: relative; padding: 56px 0 30px; overflow: hidden; }
+        .hero-bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        .hero-bg::before { content: ''; position: absolute; inset: 0;
+                           background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+                           background-size: 48px 48px; mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+                           -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%); }
+        .orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .55; animation: drift 18s ease-in-out infinite alternate; }
+        .orb.a { width: 520px; height: 520px; background: rgba(245,158,11,.35); top: -180px; right: -120px; }
+        .orb.b { width: 420px; height: 420px; background: rgba(16,185,129,.18); top: 260px; left: -180px; animation-duration: 22s; }
+        .orb.c { width: 360px; height: 360px; background: rgba(99,102,241,.16); top: 120px; left: 40%; animation-duration: 26s; }
+        :root[data-theme="light"] .orb { opacity: .35; }
+        @keyframes drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-60px, 40px) scale(1.12); } }
+
+        .hero-copy { position: relative; text-align: center; max-width: 980px; margin: 0 auto; }
+        .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 8px; border-radius: 999px;
+                   background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); font-size: .8rem; font-weight: 600; }
+        .eyebrow b { background: var(--amber); color: #0f172a; border-radius: 999px; padding: 3px 9px; font-size: .7rem; font-weight: 800; }
+        h1 { font-size: clamp(2.5rem, 6.2vw, 4.6rem); line-height: 1.02; letter-spacing: -.045em; margin: 22px 0 20px; font-weight: 800; }
+        h1 .line { display: block; overflow: hidden; padding-bottom: .08em; }
+        h1 .line > span { display: inline-block; }
+        .js h1 .line > span { transform: translateY(105%); animation: rise .9s var(--ease) forwards; animation-delay: var(--d, .1s); }
+        @keyframes rise { to { transform: none; } }
+        h1 em { font-style: normal; background: linear-gradient(90deg, #f59e0b, #fbbf24, #f97316, #f59e0b); background-size: 300% 100%;
+                -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 8s linear infinite; }
+        @keyframes shimmer { to { background-position: 300% 0; } }
+        .lead { font-size: 1.15rem; color: var(--ink-2); max-width: 40rem; margin: 0 auto 30px; }
+        .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+        .hero-meta { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 24px; font-size: .84rem; color: var(--muted); }
+        .hero-meta span { display: inline-flex; align-items: center; gap: 6px; }
+        .hero-meta .mi { font-size: 17px; color: var(--emerald); }
+
+        /* Stage: a browser frame with the real dashboard, a phone overlapping it,
+           and a couple of floating chips. Tilts toward the pointer. */
+        .stage { position: relative; margin: 56px auto 0; max-width: 1080px; perspective: 1800px; }
+        .stage-inner { position: relative; transform-style: preserve-3d; transition: transform .6s var(--ease);
+                       transform: rotateX(var(--rx, 8deg)) rotateY(var(--ry, 0deg)); }
+        .browser { border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+        .browser-bar { display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+        .browser-bar i { width: 11px; height: 11px; border-radius: 50%; background: #ef4444; opacity: .85; }
+        .browser-bar i:nth-child(2) { background: #f59e0b; } .browser-bar i:nth-child(3) { background: #10b981; }
+        .browser-bar .url { margin: 0 auto; transform: translateX(-24px); font-size: .74rem; color: var(--muted); background: var(--bg-2);
+                            padding: 4px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; }
+        .browser-bar .url .mi { font-size: 13px; color: var(--emerald); }
+        .shot { position: relative; aspect-ratio: 1440 / 900; background: var(--bg-2); }
+        .shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; transition: opacity .6s ease; }
+        .theme-light-only { opacity: 0; }
+        :root[data-theme="light"] .theme-light-only { opacity: 1; }
+
+        .phone { position: absolute; right: -2%; bottom: -6%; width: 17%; min-width: 120px; border-radius: 34px; padding: 9px;
+                 background: #0b1222; border: 1px solid rgba(148,163,184,.25); box-shadow: 0 40px 80px rgba(0,0,0,.5);
+                 transform: translateZ(50px); animation: bob 6s ease-in-out infinite; }
+        .phone::before { content: ''; position: absolute; top: 15px; left: 50%; width: 30%; height: 18px; transform: translateX(-50%);
+                         background: #000; border-radius: 12px; z-index: 2; }
+        .phone img { border-radius: 26px; aspect-ratio: 390 / 844; object-fit: cover; object-position: top; }
+        @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+
+        .float-chip { position: absolute; display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 16px;
+                      background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+                      border: 1px solid var(--line); box-shadow: 0 20px 40px rgba(0,0,0,.25); font-size: .8rem; font-weight: 700; color: var(--ink);
+                      transform: translateZ(120px); animation: bob 7s ease-in-out infinite; }
+        .float-chip .ic { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .float-chip small { display: block; font-weight: 500; color: var(--muted); font-size: .7rem; }
+        .chip-a { left: -4%; top: 18%; animation-delay: -2s; }
+        .chip-a .ic { background: rgba(16,185,129,.16); color: var(--emerald); }
+        .chip-b { left: 6%; bottom: -6%; animation-delay: -4s; }
+        .chip-b .ic { background: rgba(245,158,11,.16); color: var(--amber); }
+
+        /* ── Ticker of what it tracks ────────────────────────── */
+        .ticker { margin-top: 110px; padding: 18px 0; border-block: 1px solid var(--line); overflow: hidden; position: relative;
+                  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+                  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+        .ticker-track { display: flex; gap: 44px; width: max-content; animation: scroll-x 40s linear infinite; }
+        .ticker span { display: inline-flex; align-items: center; gap: 9px; color: var(--muted); font-weight: 600; font-size: .95rem; white-space: nowrap; }
+        .ticker .mi { color: var(--amber); font-size: 20px; }
+        @keyframes scroll-x { to { transform: translateX(-50%); } }
+
+        /* ── Sections ─────────────────────────────────────── */
+        section { padding: 100px 0; position: relative; }
+        .sec-head { max-width: 660px; margin-bottom: 44px; }
+        .sec-head.center { margin-left: auto; margin-right: auto; text-align: center; }
+        .kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--amber); font-weight: 800; font-size: .76rem; letter-spacing: .14em; text-transform: uppercase; }
+        .kicker::before { content: ''; width: 18px; height: 2px; background: currentColor; border-radius: 2px; }
+        h2 { font-size: clamp(1.9rem, 3.8vw, 2.8rem); letter-spacing: -.035em; line-height: 1.1; margin: 12px 0 14px; }
+        .sec-head p { color: var(--ink-2); margin: 0; font-size: 1.06rem; }
+
+        /* ── Tour: tabs + screenshot, auto-advancing ─────────── */
+        .tour { display: grid; grid-template-columns: 340px 1fr; gap: 28px; align-items: center; }
+        .tabs { display: grid; gap: 8px; }
+        .tab { position: relative; text-align: left; border: 1px solid transparent; background: transparent; color: var(--ink);
+               padding: 16px 18px; border-radius: 18px; cursor: pointer; font: inherit; overflow: hidden;
+               transition: background .3s ease, border-color .3s ease; }
+        .tab:hover { background: var(--surface); }
+        .tab.on { background: var(--surface); border-color: var(--line); box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+        .tab-title { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        .tab-title .mi { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+                         background: var(--surface-2); color: var(--muted); font-size: 19px; transition: background .3s ease, color .3s ease; }
+        .tab.on .tab-title .mi { background: var(--amber-soft); color: var(--amber); }
+        .tab-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .45s var(--ease); }
+        .tab-body > div { overflow: hidden; }
+        .tab-body p { margin: 8px 0 2px 44px; color: var(--muted); font-size: .9rem; }
+        .tab.on .tab-body { grid-template-rows: 1fr; }
+        .tab-progress { position: absolute; left: 18px; right: 18px; bottom: 0; height: 2px; border-radius: 2px; background: var(--line); opacity: 0; }
+        .tab.on .tab-progress { opacity: 1; }
+        .tab-progress i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--amber); }
+        .tab.on.running .tab-progress i { animation: fill var(--dur, 6s) linear forwards; }
+        @keyframes fill { to { width: 100%; } }
+        .tour-view { position: relative; }
+        .tour-view .shot img { opacity: 0; transform: scale(1.02); transition: opacity .6s ease, transform 1.2s var(--ease); }
+        .tour-view .shot img.on { opacity: 1; transform: none; }
+
+        /* ── Features ─────────────────────────────────────── */
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .card { position: relative; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+                padding: 24px; transition: transform .35s var(--ease), border-color .3s ease; }
+        /* Spotlight that follows the pointer (--mx/--my set from JS). */
+        .card::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .3s ease; pointer-events: none;
+                        background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(245,158,11,.14), transparent 70%); }
+        .card:hover::before { opacity: 1; }
+        .card:hover { transform: translateY(-4px); border-color: rgba(245, 158, 11, .35); }
+        .card .ic { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+                    background: var(--amber-soft); color: var(--amber); margin-bottom: 16px; transition: transform .4s var(--ease); }
+        .card:hover .ic { transform: scale(1.08) rotate(-6deg); }
+        .card .ic .mi { font-size: 24px; }
+        .card h3 { font-size: 1.03rem; margin: 0 0 6px; letter-spacing: -.01em; position: relative; }
+        .card p { margin: 0; color: var(--muted); font-size: .89rem; position: relative; }
+
+        /* ── Mobile showcase ──────────────────────────────── */
+        .mobile { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+        .phones { position: relative; height: 620px; }
+        .phones .phone { position: absolute; width: 270px; min-width: 0; right: auto; bottom: auto; transform: none; }
+        .phones .p1 { left: 4%; top: 0; z-index: 2; }
+        .phones .p2 { left: 44%; top: 70px; animation-delay: -3s; opacity: .95; }
+        .checks { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 14px; }
+        .checks li { display: flex; gap: 12px; color: var(--ink-2); font-size: .97rem; }
+        .checks .mi { color: var(--emerald); font-size: 21px; flex-shrink: 0; margin-top: 1px; }
+
+        /* ── Self-hosted panels ────────────────────────────── */
+        .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 30px; }
+
+        /* ── Install ───────────────────────────────────────── */
+        .steps { counter-reset: s; display: grid; gap: 16px; }
+        .step { display: grid; grid-template-columns: 42px 1fr; gap: 14px; align-items: start; }
+        .step::before { counter-increment: s; content: counter(s); width: 42px; height: 42px; border-radius: 13px; display: flex;
+                        align-items: center; justify-content: center; background: var(--amber); color: #0f172a; font-weight: 800; }
+        .step h4 { margin: 9px 0 9px; font-size: 1rem; }
+        .code { position: relative; background: #0b1222; color: #e2e8f0; border: 1px solid rgba(148,163,184,.18); border-radius: 14px;
+                padding: 14px 52px 14px 16px; font: 500 .84rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-x: auto; white-space: pre; }
+        .code .c { color: #64748b; }
+        .copy { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 9px; border: 1px solid rgba(148,163,184,.2);
+                background: #1e293b; color: #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform .2s ease; }
+        .copy:hover { transform: scale(1.06); }
+        .copy .mi { font-size: 17px; }
+        .note { font-size: .86rem; color: var(--muted); margin-top: 18px; }
+        .note a { color: var(--amber); font-weight: 600; }
+
+        /* ── Closing band + footer ─────────────────────────── */
+        .band { border-radius: 32px; padding: 64px 40px; text-align: center; position: relative; overflow: hidden;
+                background: linear-gradient(135deg, #0f172a, #1e293b); color: #f8fafc; border: 1px solid rgba(245,158,11,.25); }
+        .band::after { content: ''; position: absolute; width: 520px; height: 520px; right: -140px; top: -200px; border-radius: 50%;
+                       background: radial-gradient(circle, rgba(245,158,11,.32), transparent 65%); animation: drift 14s ease-in-out infinite alternate; }
+        .band h2 { color: #fff; position: relative; }
+        .band p { color: #cbd5e1; position: relative; max-width: 560px; margin: 0 auto 26px; }
+        .band .cta { position: relative; }
+        .band .btn-ghost { background: rgba(255,255,255,.06); color: #fff; border-color: rgba(255,255,255,.15); }
+        footer { padding: 40px 0 56px; color: var(--muted); font-size: .85rem; }
+        footer .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; }
+        footer .links { display: flex; flex-wrap: wrap; gap: 20px; margin-left: auto; align-items: center; }
+        footer a:hover { color: var(--ink); }
+        /* Support link: present, not pushy. */
+        .beer { display: inline-flex; align-items: center; gap: 5px; font-size: .8rem; opacity: .75; transition: opacity .2s ease, color .2s ease; }
+        .beer:hover { opacity: 1; color: var(--amber); }
+        .beer .mi { font-size: 15px; }
+
+        /* ── Responsive ────────────────────────────────────── */
+        @media (max-width: 980px) {
+            .tour { grid-template-columns: 1fr; }
+            .tabs { grid-template-columns: repeat(5, minmax(150px, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+            .tab-body { display: none; }
+            .grid { grid-template-columns: repeat(2, 1fr); }
+            .split, .mobile { grid-template-columns: 1fr; }
+            .phones { height: 560px; max-width: 520px; }
+            .float-chip { display: none; }
+        }
+        @media (max-width: 640px) {
+            .nav-links, .nav-right .gh-label { display: none; }
+            .hero { padding-top: 34px; }
+            .stage { margin-top: 40px; }
+            .stage-inner { transform: none !important; }
+            .phone { width: 30%; min-width: 0; padding: 5px; border-radius: 20px; right: -3%; bottom: -10%; }
+            .phone img { border-radius: 16px; }
+            .phone::before { display: none; }
+            .grid { grid-template-columns: 1fr; }
+            section { padding: 72px 0; }
+            .ticker { margin-top: 80px; }
+            .phones { height: 470px; }
+            .phones .phone { width: 210px; }
+            .phones .p2 { left: 36%; }
+            .band { padding: 44px 22px; }
+            footer .links { margin-left: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+            .js .reveal, .js .reveal-scale, .js h1 .line > span { opacity: 1 !important; transform: none !important; }
+            .tour-view .shot img.on { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<nav id="nav">
+    <div class="wrap">
+        <a href="#" class="logo" aria-label="Oikolog">
+            <span>oiko</span>
+            <svg viewBox="0 0 16 24" aria-hidden="true">
+                <rect x="2" y="4" width="7" height="2.6" rx="1.3" fill="currentColor"/>
+                <rect x="2" y="8.6" width="12" height="2.6" rx="1.3" fill="currentColor"/>
+                <rect x="2" y="13.2" width="9" height="2.6" rx="1.3" fill="currentColor"/>
+                <rect x="2" y="17.8" width="12" height="2.6" rx="1.3" fill="#f59e0b"/>
+            </svg>
+            <span>og</span>
+        </a>
+        <div class="nav-links">
+            <a href="#tour" data-i18n="nav_tour">Περιήγηση</a>
+            <a href="#features" data-i18n="nav_features">Δυνατότητες</a>
+            <a href="#selfhost" data-i18n="nav_selfhost">Self-hosted</a>
+            <a href="#install" data-i18n="nav_install">Εγκατάσταση</a>
+        </div>
+        <div class="nav-right">
+            <button class="chip-btn" id="lang" type="button" aria-label="Language">EN</button>
+            <button class="chip-btn" id="theme" type="button" aria-label="Theme"><span class="mi">light_mode</span></button>
+            <a class="chip-btn" href="https://github.com/kmelitzanis/oikolog" aria-label="GitHub">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.780-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                <span class="gh-label">GitHub</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="hero-bg" aria-hidden="true"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
+    <div class="wrap">
+        <div class="hero-copy">
+            <span class="eyebrow reveal"><b>GPL-3.0</b> <span data-i18n="eyebrow">Open source · Self-hosted · Δωρεάν</span></span>
+            <h1>
+                <span class="line"><span style="--d:.1s" data-i18n="h1a">Τα οικονομικά του σπιτιού,</span></span>
+                <span class="line"><span style="--d:.25s"><em data-i18n="h1b">σε ένα μέρος.</em></span></span>
+            </h1>
+            <p class="lead reveal" style="--d:.35s" data-i18n="lead">Λογαριασμοί που ξέρουν πότε λήγουν, έσοδα, αποταμίευση, λίστες αγορών, συνταγές και τα οχήματά σου — μοιρασμένα με όλη την οικογένεια, στον δικό σου server.</p>
+            <div class="cta reveal" style="--d:.45s">
+                <a class="btn btn-primary" href="#install"><span class="mi">rocket_launch</span><span data-i18n="cta_install">Εγκατάσταση με Docker</span></a>
+                <a class="btn btn-ghost" href="#tour"><span class="mi">play_circle</span><span data-i18n="cta_tour">Δες πώς δουλεύει</span></a>
+            </div>
+            <div class="hero-meta reveal" style="--d:.55s">
+                <span><span class="mi">check_circle</span><span data-i18n="meta1">Τα δεδομένα μένουν σε σένα</span></span>
+                <span><span class="mi">check_circle</span><span data-i18n="meta2">Ελληνικά & English</span></span>
+                <span><span class="mi">check_circle</span><span data-i18n="meta3">Εγκαθίσταται σαν app</span></span>
+            </div>
+        </div>
+
+        <div class="stage reveal-scale" style="--d:.5s" id="stage">
+            <div class="stage-inner" id="stage-inner">
+                <div class="browser">
+                    <div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home</span></div>
+                    <div class="shot">
+                        <img src="screenshots/dashboard.webp" alt="Ο πίνακας του Oikolog: καθαρό του μήνα, λογαριασμοί που χρειάζονται προσοχή, επόμενες λήξεις και έξοδα ανά κατηγορία" width="1440" height="900">
+                        <img class="theme-light-only" src="screenshots/dashboard-light.webp" alt="" width="1440" height="900" loading="lazy">
+                    </div>
+                </div>
+                <div class="phone"><img src="screenshots/phone-dashboard.webp" alt="Ο πίνακας σε κινητό" width="390" height="844"></div>
+                <div class="float-chip chip-a"><div class="ic"><span class="mi">check</span></div>
+                    <div><span data-i18n="chip_a">Το ενοίκιο πληρώθηκε</span><small data-i18n="chip_a_sub">από τον Γιώργο · μόλις τώρα</small></div></div>
+                <div class="float-chip chip-b"><div class="ic"><span class="mi">savings</span></div>
+                    <div><span data-i18n="chip_b">+€240 στην αποταμίευση</span><small data-i18n="chip_b_sub">περίσσευμα του κύκλου</small></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ticker" aria-hidden="true">
+        <div class="ticker-track" id="ticker">
+            <span><span class="mi">bolt</span><span data-i18n="tk1">Ρεύμα</span></span>
+            <span><span class="mi">wifi</span><span data-i18n="tk2">Internet</span></span>
+            <span><span class="mi">water_drop</span><span data-i18n="tk3">Νερό</span></span>
+            <span><span class="mi">home</span><span data-i18n="tk4">Ενοίκιο</span></span>
+            <span><span class="mi">payments</span><span data-i18n="tk5">Μισθοδοσία</span></span>
+            <span><span class="mi">savings</span><span data-i18n="tk6">Αποταμίευση</span></span>
+            <span><span class="mi">directions_car</span><span data-i18n="tk7">Σέρβις αυτοκινήτου</span></span>
+            <span><span class="mi">shield</span><span data-i18n="tk8">Ασφάλειες</span></span>
+            <span><span class="mi">shopping_cart</span><span data-i18n="tk9">Σούπερ μάρκετ</span></span>
+            <span><span class="mi">restaurant</span><span data-i18n="tk10">Πρόγραμμα γευμάτων</span></span>
+            <span><span class="mi">subscriptions</span><span data-i18n="tk11">Συνδρομές</span></span>
+            <span><span class="mi">account_balance</span><span data-i18n="tk12">Δάνεια</span></span>
+        </div>
+    </div>
+</header>
+
+<section id="tour">
+    <div class="wrap">
+        <div class="sec-head center reveal">
+            <div class="kicker" data-i18n="tour_kicker">Περιήγηση</div>
+            <h2 data-i18n="tour_h2">Μια ματιά μέσα στην εφαρμογή.</h2>
+            <p data-i18n="tour_p">Πραγματικές οθόνες του Oikolog, με δεδομένα μιας φανταστικής οικογένειας.</p>
+        </div>
+        <div class="tour reveal" style="--d:.1s">
+            <div class="tabs" id="tabs" role="tablist">
+                <button class="tab on" type="button" role="tab" data-shot="0">
+                    <span class="tab-title"><span class="mi">receipt_long</span><span data-i18n="t1">Λογαριασμοί</span></span>
+                    <span class="tab-body"><div><p data-i18n="t1p">Ομαδοποιημένοι κατά επείγον: ληξιπρόθεσμοι, μερικώς πληρωμένοι, σύντομα, πληρωμένοι.</p></div></span>
+                    <span class="tab-progress"><i></i></span></button>
+                <button class="tab" type="button" role="tab" data-shot="1">
+                    <span class="tab-title"><span class="mi">calendar_month</span><span data-i18n="t2">Ημερολόγιο</span></span>
+                    <span class="tab-body"><div><p data-i18n="t2p">Όλος ο μήνας με μια ματιά, με χρώμα ανά κατάσταση.</p></div></span>
+                    <span class="tab-progress"><i></i></span></button>
+                <button class="tab" type="button" role="tab" data-shot="2">
+                    <span class="tab-title"><span class="mi">account_balance_wallet</span><span data-i18n="t3">Έσοδα & λογαριασμοί</span></span>
+                    <span class="tab-body"><div><p data-i18n="t3p">Μισθοδοσία που επιβεβαιώνεις, φάκελοι εξόδων ανά κύκλο και αποταμίευση.</p></div></span>
+                    <span class="tab-progress"><i></i></span></button>
+                <button class="tab" type="button" role="tab" data-shot="3">
+                    <span class="tab-title"><span class="mi">directions_car</span><span data-i18n="t4">Οχήματα</span></span>
+                    <span class="tab-body"><div><p data-i18n="t4p">Ιστορικό σέρβις και εξόδων, υπενθυμίσεις και κόστος ανά χιλιόμετρο.</p></div></span>
+                    <span class="tab-progress"><i></i></span></button>
+                <button class="tab" type="button" role="tab" data-shot="4">
+                    <span class="tab-title"><span class="mi">restaurant_menu</span><span data-i18n="t5">Πρόγραμμα γευμάτων</span></span>
+                    <span class="tab-body"><div><p data-i18n="t5p">Η εβδομάδα σε πλέγμα· τα υλικά πάνε με ένα κλικ στη λίστα αγορών.</p></div></span>
+                    <span class="tab-progress"><i></i></span></button>
+            </div>
+            <div class="tour-view">
+                <div class="browser">
+                    <div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span><span id="tour-url">oikolog.home/bills</span></span></div>
+                    <div class="shot" id="tour-shots">
+                        <img class="on" src="screenshots/bills.webp" alt="Η λίστα λογαριασμών ομαδοποιημένη κατά κατάσταση" width="1440" height="900" loading="lazy">
+                        <img src="screenshots/calendar.webp" alt="Το ημερολόγιο λογαριασμών του μήνα" width="1440" height="900" loading="lazy">
+                        <img src="screenshots/income.webp" alt="Έσοδα, συνολικό υπόλοιπο και λογαριασμοί χρημάτων" width="1440" height="900" loading="lazy">
+                        <img src="screenshots/vehicle.webp" alt="Η σελίδα ενός οχήματος με ιστορικό και υπενθυμίσεις" width="1440" height="900" loading="lazy">
+                        <img src="screenshots/meal-planner.webp" alt="Το εβδομαδιαίο πρόγραμμα γευμάτων" width="1440" height="900" loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="features" style="padding-top:20px">
+    <div class="wrap">
+        <div class="sec-head reveal">
+            <div class="kicker" data-i18n="feat_kicker">Δυνατότητες</div>
+            <h2 data-i18n="feat_h2">Ό,τι χρειάζεται ένα σπίτι για να μην του ξεφεύγει τίποτα.</h2>
+            <p data-i18n="feat_p">Από την ΔΕΗ μέχρι το σέρβις του αυτοκινήτου — κάθε υποχρέωση με ημερομηνία, ποσό και ιστορικό.</p>
+        </div>
+        <div class="grid">
+            <div class="card reveal" style="--d:0s"><div class="ic"><span class="mi">receipt_long</span></div>
+                <h3 data-i18n="f1_t">Λογαριασμοί & πληρωμές</h3>
+                <p data-i18n="f1_p">Επαναλαμβανόμενοι ή μία φορά, με αυτόματη επόμενη λήξη, μερικές πληρωμές και δάνεια με υπόλοιπο που μειώνεται σε κάθε πληρωμή.</p></div>
+            <div class="card reveal" style="--d:.06s"><div class="ic"><span class="mi">savings</span></div>
+                <h3 data-i18n="f2_t">Φάκελοι & αποταμίευση</h3>
+                <p data-i18n="f2_p">Λογαριασμοί εξόδων με ποσό ανά κύκλο μισθοδοσίας — και ό,τι περισσέψει, μεταφέρεται με ένα κλικ στην αποταμίευση.</p></div>
+            <div class="card reveal" style="--d:.12s"><div class="ic"><span class="mi">payments</span></div>
+                <h3 data-i18n="f3_t">Έσοδα</h3>
+                <p data-i18n="f3_p">Μισθοδοσία και άλλα έσοδα που επιβεβαιώνεις όταν μπουν — με ένδειξη για το πόσο νωρίτερα ή αργότερα ήρθαν.</p></div>
+            <div class="card reveal" style="--d:.18s"><div class="ic"><span class="mi">mark_email_read</span></div>
+                <h3 data-i18n="f4_t">Τιμολόγια από email</h3>
+                <p data-i18n="f4_p">Συνδέεις Gmail ή Outlook και το Oikolog διαβάζει τα τιμολόγια των παρόχων, προτείνοντας το ποσό. Μόνο ανάγνωση.</p></div>
+            <div class="card reveal" style="--d:0s"><div class="ic"><span class="mi">family_restroom</span></div>
+                <h3 data-i18n="f5_t">Για όλη την οικογένεια</h3>
+                <p data-i18n="f5_p">Κοινόχρηστοι λογαριασμοί, κωδικός πρόσκλησης και ειδοποίηση στο κινητό όταν κάποιος πληρώσει.</p></div>
+            <div class="card reveal" style="--d:.06s"><div class="ic"><span class="mi">qr_code_scanner</span></div>
+                <h3 data-i18n="f6_t">Λίστες αγορών</h3>
+                <p data-i18n="f6_p">Κοινές λίστες, κατάλογος προϊόντων και σάρωση barcode με την κάμερα του κινητού, με διατροφικά στοιχεία.</p></div>
+            <div class="card reveal" style="--d:.12s"><div class="ic"><span class="mi">restaurant_menu</span></div>
+                <h3 data-i18n="f7_t">Συνταγές & πρόγραμμα</h3>
+                <p data-i18n="f7_p">Εισαγωγή συνταγών από URL και εβδομαδιαίο πρόγραμμα γευμάτων που στέλνει τα υλικά στη λίστα αγορών.</p></div>
+            <div class="card reveal" style="--d:.18s"><div class="ic"><span class="mi">directions_car</span></div>
+                <h3 data-i18n="f8_t">Οχήματα</h3>
+                <p data-i18n="f8_p">Χιλιόμετρα, υπενθυμίσεις σέρβις ανά ημερομηνία ή χιλιόμετρα, ιστορικό εργασιών και κόστος ανά χιλιόμετρο.</p></div>
+        </div>
+    </div>
+</section>
+
+<section id="mobile" style="padding-top:20px">
+    <div class="wrap mobile">
+        <div class="phones reveal-scale" aria-hidden="true">
+            <div class="phone p1"><img src="screenshots/phone-dashboard.webp" alt="" width="390" height="844" loading="lazy"></div>
+            <div class="phone p2"><img src="screenshots/phone-income.webp" alt="" width="390" height="844" loading="lazy"></div>
+        </div>
+        <div class="reveal" style="--d:.1s">
+            <div class="kicker" data-i18n="mob_kicker">Στο κινητό</div>
+            <h2 data-i18n="mob_h2">Σαν εφαρμογή, χωρίς app store.</h2>
+            <p style="color:var(--ink-2);margin:0;font-size:1.06rem" data-i18n="mob_p">Εγκαθίσταται από τον browser ως PWA, με κάτω μπάρα πλοήγησης, ειδοποιήσεις και σκούρο θέμα — φτιαγμένο για να πληρώνεις έναν λογαριασμό στο πόδι.</p>
+            <ul class="checks">
+                <li><span class="mi">check_circle</span><span data-i18n="mob_1">Ειδοποίηση όταν κάποιος στην οικογένεια πληρώσει</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="mob_2">Σάρωση barcode με την κάμερα για τη λίστα αγορών</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="mob_3">Ημερομηνίες σε μορφή ΗΗ/ΜΜ/ΕΕΕΕ, ελληνικά παντού</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section id="selfhost" style="padding-top:20px">
+    <div class="wrap split">
+        <div class="panel reveal">
+            <div class="kicker" data-i18n="sh_kicker">Self-hosted</div>
+            <h2 data-i18n="sh_h2">Τα δεδομένα σου, στο δικό σου σπίτι.</h2>
+            <p style="color:var(--ink-2);margin:0" data-i18n="sh_p">Το Oikolog τρέχει στον δικό σου server, NAS ή VPS. Οι λογαριασμοί και οι πληρωμές σου δεν περνούν από κανέναν τρίτο.</p>
+            <ul class="checks">
+                <li><span class="mi">check_circle</span><span data-i18n="sh_1">Ένα docker compose up και είσαι έτοιμος</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="sh_2">Έλεγχος ταυτότητας δύο βημάτων (TOTP)</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="sh_3">Κωδικοί email αποθηκευμένοι κρυπτογραφημένοι — ή καθόλου, με σύνδεση Microsoft</span></li>
+            </ul>
+        </div>
+        <div class="panel reveal" style="--d:.1s">
+            <div class="kicker" data-i18n="pl_kicker">Ανοιχτός κώδικας</div>
+            <h2 data-i18n="pl_h2">Δικό σου να το αλλάξεις.</h2>
+            <p style="color:var(--ink-2);margin:0" data-i18n="pl_p">Laravel, Alpine και Tailwind, υπό GPL-3.0. Διάβασε τον κώδικα, άνοιξε ένα issue ή στείλε ένα pull request.</p>
+            <ul class="checks">
+                <li><span class="mi">check_circle</span><span data-i18n="pl_1">Ελληνικά και αγγλικά, με μεταφράσεις που αλλάζεις από την εφαρμογή</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="pl_2">Διαχείριση κατηγοριών, παρόχων και χρηστών για τον admin</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="pl_3">Service worker με σελίδα εκτός σύνδεσης</span></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section id="install" style="padding-top:20px">
+    <div class="wrap split" style="align-items:start">
+        <div class="sec-head reveal" style="margin:0">
+            <div class="kicker" data-i18n="in_kicker">Εγκατάσταση</div>
+            <h2 data-i18n="in_h2">Σε λειτουργία σε λίγα λεπτά.</h2>
+            <p data-i18n="in_p">Χρειάζεσαι μόνο Docker. Το image περιλαμβάνει την εφαρμογή έτοιμη· η βάση MySQL έρχεται με το compose.</p>
+            <p class="note" data-i18n-html="in_note">Για NAS, HTTPS και ειδοποιήσεις, δες τον <a href="https://github.com/kmelitzanis/oikolog/blob/master/README.DOCKER.md">οδηγό Docker</a>.</p>
+        </div>
+        <div class="steps">
+            <div class="step reveal"><div>
+                <h4 data-i18n="st1">Κατέβασε το project</h4>
+                <div class="code"><button class="copy" type="button" aria-label="Copy"><span class="mi">content_copy</span></button>git clone https://github.com/kmelitzanis/oikolog.git
+cd oikolog</div>
+            </div></div>
+            <div class="step reveal" style="--d:.08s"><div>
+                <h4 data-i18n="st2">Όρισε τα στοιχεία σου</h4>
+                <div class="code"><button class="copy" type="button" aria-label="Copy"><span class="mi">content_copy</span></button>cp .env.example .env
+docker run --rm kostasmel/oikolog-app php artisan key:generate --show
+<span class="c" data-i18n="st2_c"># βάλε το κλειδί στο APP_KEY, μαζί με APP_URL και κωδικούς βάσης</span></div>
+            </div></div>
+            <div class="step reveal" style="--d:.16s"><div>
+                <h4 data-i18n="st3">Ξεκίνα</h4>
+                <div class="code"><button class="copy" type="button" aria-label="Copy"><span class="mi">content_copy</span></button>docker compose up -d
+docker compose exec app php artisan make:user --admin</div>
+                <p class="note" data-i18n="st3_note">Άνοιξε το http://localhost:8000 και συνδέσου.</p>
+            </div></div>
+        </div>
+    </div>
+</section>
+
+<section style="padding-top:20px">
+    <div class="wrap">
+        <div class="band reveal-scale">
+            <h2 data-i18n="band_h2">Δωρεάν, για πάντα.</h2>
+            <p data-i18n="band_p">Το Oikolog είναι ανοιχτού κώδικα. Αν σου είναι χρήσιμο, ένα αστέρι στο GitHub βοηθάει να το βρουν κι άλλοι.</p>
+            <div class="cta">
+                <a class="btn btn-primary" href="https://github.com/kmelitzanis/oikolog"><span class="mi">star</span><span data-i18n="band_star">Αστέρι στο GitHub</span></a>
+                <a class="btn btn-ghost" href="#install"><span class="mi">download</span><span data-i18n="band_install">Εγκατάσταση</span></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="wrap">
+        <span class="logo" style="font-size:1.1rem">
+            <span>oiko</span>
+            <svg viewBox="0 0 16 24" aria-hidden="true">
+                <rect x="2" y="4" width="7" height="2.6" rx="1.3" fill="currentColor"/>
+                <rect x="2" y="8.6" width="12" height="2.6" rx="1.3" fill="currentColor"/>
+                <rect x="2" y="13.2" width="9" height="2.6" rx="1.3" fill="currentColor"/>
+                <rect x="2" y="17.8" width="12" height="2.6" rx="1.3" fill="#f59e0b"/>
+            </svg>
+            <span>og</span>
+        </span>
+        <span>© <span id="year">2026</span> Kostas Melitzanis · GPL-3.0</span>
+        <div class="links">
+            <a href="https://github.com/kmelitzanis/oikolog">GitHub</a>
+            <a href="https://github.com/kmelitzanis/oikolog/blob/master/README.md">Docs</a>
+            <a href="https://github.com/kmelitzanis/oikolog/issues" data-i18n="ft_issues">Αναφορά προβλήματος</a>
+            <a class="beer" href="https://buymeacoffee.com/kostasmel"><span class="mi">sports_bar</span><span data-i18n="ft_beer">Κέρασε μια μπύρα</span></a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ── i18n: Greek is the page's source text; English is swapped in. ──
+    var EN = {
+        nav_tour: 'Tour', nav_features: 'Features', nav_selfhost: 'Self-hosted', nav_install: 'Install',
+        eyebrow: 'Open source · Self-hosted · Free',
+        h1a: 'Your household finances,', h1b: 'in one place.',
+        lead: 'Bills that know when they are due, income, savings, shopping lists, recipes and your vehicles — shared with the whole family, on your own server.',
+        cta_install: 'Install with Docker', cta_tour: 'See how it works',
+        meta1: 'Your data stays yours', meta2: 'Greek & English', meta3: 'Installs like an app',
+        chip_a: 'Rent paid', chip_a_sub: 'by George · just now', chip_b: '+€240 to savings', chip_b_sub: 'left over from the cycle',
+        tk1: 'Electricity', tk2: 'Internet', tk3: 'Water', tk4: 'Rent', tk5: 'Salary', tk6: 'Savings', tk7: 'Car service',
+        tk8: 'Insurance', tk9: 'Groceries', tk10: 'Meal plan', tk11: 'Subscriptions', tk12: 'Loans',
+        tour_kicker: 'Tour', tour_h2: 'A look inside the app.', tour_p: 'Real Oikolog screens, with data from an imaginary family.',
+        t1: 'Bills', t1p: 'Grouped by urgency: overdue, partly paid, due soon, paid.',
+        t2: 'Calendar', t2p: 'The whole month at a glance, coloured by status.',
+        t3: 'Income & accounts', t3p: 'Salary you confirm, spending envelopes per pay cycle, and savings.',
+        t4: 'Vehicles', t4p: 'Service and expense history, reminders and cost per kilometre.',
+        t5: 'Meal plan', t5p: 'The week as a grid; ingredients go to the shopping list in one click.',
+        feat_kicker: 'Features', feat_h2: 'Everything a home needs so nothing slips through.',
+        feat_p: 'From the power bill to the car service — every obligation with a date, an amount and a history.',
+        f1_t: 'Bills & payments', f1_p: 'Recurring or one-off, with automatic next due dates, partial payments, and loans whose balance goes down with every payment.',
+        f2_t: 'Envelopes & savings', f2_p: 'Spending accounts with an amount per pay cycle — and whatever is left moves to savings in one click.',
+        f3_t: 'Income', f3_p: 'Salary and other income you confirm when it lands — with how early or late it arrived.',
+        f4_t: 'Invoices from email', f4_p: 'Connect Gmail or Outlook and Oikolog reads providers’ invoices and suggests the amount. Read-only.',
+        f5_t: 'For the whole family', f5_p: 'Shared bills, an invite code, and a push notification when someone pays.',
+        f6_t: 'Shopping lists', f6_p: 'Shared lists, a product catalogue and barcode scanning with your phone camera, with nutrition data.',
+        f7_t: 'Recipes & meal plan', f7_p: 'Import recipes from a URL and plan the week; the ingredients go straight to a shopping list.',
+        f8_t: 'Vehicles', f8_p: 'Mileage, service reminders by date or distance, a work history and cost per kilometre.',
+        mob_kicker: 'On your phone', mob_h2: 'Like an app, without an app store.',
+        mob_p: 'Installs from the browser as a PWA, with a bottom navigation bar, notifications and a dark theme — built for paying a bill on the go.',
+        mob_1: 'A notification when someone in the family pays', mob_2: 'Barcode scanning with the camera for the shopping list',
+        mob_3: 'Dates as DD/MM/YYYY, fully translated',
+        sh_kicker: 'Self-hosted', sh_h2: 'Your data, in your own home.',
+        sh_p: 'Oikolog runs on your own server, NAS or VPS. Your bills and payments never pass through a third party.',
+        sh_1: 'One docker compose up and you are ready', sh_2: 'Two-factor authentication (TOTP)',
+        sh_3: 'Mail passwords stored encrypted — or none at all, with Microsoft sign-in',
+        pl_kicker: 'Open source', pl_h2: 'Yours to change.', pl_p: 'Laravel, Alpine and Tailwind, under GPL-3.0. Read the code, open an issue or send a pull request.',
+        pl_1: 'Greek and English, with translations you can edit in the app', pl_2: 'Admin area for categories, providers and users',
+        pl_3: 'Service worker with an offline fallback page',
+        in_kicker: 'Install', in_h2: 'Up and running in minutes.',
+        in_p: 'All you need is Docker. The image ships the app ready to go; MySQL comes with the compose file.',
+        in_note: 'For a NAS, HTTPS and notifications, see the <a href="https://github.com/kmelitzanis/oikolog/blob/master/README.DOCKER.md">Docker guide</a>.',
+        st1: 'Get the project', st2: 'Set your details', st2_c: '# put the key in APP_KEY, along with APP_URL and database passwords',
+        st3: 'Start it', st3_note: 'Open http://localhost:8000 and sign in.',
+        band_h2: 'Free, forever.', band_p: 'Oikolog is open source. If it is useful to you, a star on GitHub helps others find it.',
+        band_star: 'Star on GitHub', band_install: 'Install', ft_issues: 'Report an issue', ft_beer: 'Buy me a beer',
+        title: 'Oikolog — household finances in one place'
+    };
+    var nodes = document.querySelectorAll('[data-i18n], [data-i18n-html]');
+    var EL = { title: document.title };
+    nodes.forEach(function (n) {
+        var k = n.dataset.i18n || n.dataset.i18nHtml;
+        EL[k] = n.dataset.i18nHtml ? n.innerHTML : n.textContent;
+    });
+    function setLang(lang) {
+        var dict = lang === 'en' ? EN : EL;
+        nodes.forEach(function (n) {
+            var k = n.dataset.i18n || n.dataset.i18nHtml;
+            if (dict[k] == null) return;
+            if (n.dataset.i18nHtml) n.innerHTML = dict[k]; else n.textContent = dict[k];
+        });
+        document.title = dict.title;
+        document.documentElement.lang = lang;
+        document.getElementById('lang').textContent = lang === 'en' ? 'EL' : 'EN';
+        try { localStorage.setItem('oikolog-site-lang', lang); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('oikolog-site-lang'); } catch (e) {}
+    setLang(saved || ((navigator.language || '').toLowerCase().startsWith('el') ? 'el' : 'en'));
+    document.getElementById('lang').addEventListener('click', function () {
+        setLang(document.documentElement.lang === 'en' ? 'el' : 'en');
+    });
+
+    // ── Theme ──
+    var themeBtn = document.getElementById('theme');
+    function paintThemeIcon() {
+        themeBtn.firstElementChild.textContent = document.documentElement.dataset.theme === 'dark' ? 'light_mode' : 'dark_mode';
+    }
+    paintThemeIcon();
+    themeBtn.addEventListener('click', function () {
+        var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('oikolog-site-theme', next); } catch (e) {}
+        paintThemeIcon();
+    });
+
+    // ── Nav gets a backdrop once the page scrolls ──
+    var nav = document.getElementById('nav');
+    function onScroll() { nav.classList.toggle('scrolled', scrollY > 10); }
+    addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+    // ── Scroll reveal ──
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: .15, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal, .reveal-scale').forEach(function (el) { io.observe(el); });
+
+    // ── Hero stage: flattens as you scroll, tilts toward the pointer ──
+    var stage = document.getElementById('stage'), inner = document.getElementById('stage-inner');
+    var tiltX = 8, pointerY = 0;
+    function applyTilt() { inner.style.setProperty('--rx', tiltX + 'deg'); inner.style.setProperty('--ry', pointerY + 'deg'); }
+    if (!reduced) {
+        addEventListener('scroll', function () {
+            var r = stage.getBoundingClientRect();
+            var p = Math.min(1, Math.max(0, 1 - r.top / innerHeight));
+            tiltX = 8 * (1 - p); applyTilt();
+        }, { passive: true });
+        stage.addEventListener('pointermove', function (e) {
+            var r = stage.getBoundingClientRect();
+            pointerY = ((e.clientX - r.left) / r.width - .5) * 6; applyTilt();
+        });
+        stage.addEventListener('pointerleave', function () { pointerY = 0; applyTilt(); });
+    }
+
+    // ── Ticker: duplicate the run so the loop is seamless ──
+    var track = document.getElementById('ticker');
+    track.innerHTML += track.innerHTML;
+    nodes = document.querySelectorAll('[data-i18n], [data-i18n-html]');
+
+    // ── Tour tabs, auto-advancing while visible ──
+    var tabs = [].slice.call(document.querySelectorAll('#tabs .tab'));
+    var shots = [].slice.call(document.querySelectorAll('#tour-shots img'));
+    var urls = ['bills', 'bills?view=calendar', 'income', 'vehicles/toyota-yaris', 'meal-planner'];
+    var DUR = 6000, current = 0, timer = null, tourVisible = false;
+    function show(i, auto) {
+        current = i;
+        tabs.forEach(function (t, j) { t.classList.toggle('on', j === i); t.classList.remove('running'); t.setAttribute('aria-selected', j === i); });
+        shots.forEach(function (s, j) { s.classList.toggle('on', j === i); });
+        document.getElementById('tour-url').textContent = 'oikolog.home/' + urls[i];
+        clearTimeout(timer);
+        if (auto && tourVisible && !reduced) {
+            void tabs[i].offsetWidth; tabs[i].style.setProperty('--dur', DUR + 'ms'); tabs[i].classList.add('running');
+            timer = setTimeout(function () { show((i + 1) % tabs.length, true); }, DUR);
+        }
+    }
+    tabs.forEach(function (t, i) { t.addEventListener('click', function () { show(i, false); }); });
+    new IntersectionObserver(function (entries) {
+        tourVisible = entries[0].isIntersecting;
+        if (tourVisible) show(current, true); else clearTimeout(timer);
+    }, { threshold: .35 }).observe(document.getElementById('tour'));
+
+    // ── Feature cards: spotlight follows the pointer ──
+    document.querySelectorAll('.card').forEach(function (c) {
+        c.addEventListener('pointermove', function (e) {
+            var r = c.getBoundingClientRect();
+            c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        });
+    });
+
+    // ── Copy buttons copy the commands, not the comments ──
+    document.querySelectorAll('.copy').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var text = b.parentElement.innerText.split('\n')
+                .filter(function (l) { return l.trim() && !l.trim().startsWith('#') && l.trim() !== 'content_copy' && l.trim() !== 'check'; })
+                .join('\n');
+            navigator.clipboard && navigator.clipboard.writeText(text).then(function () {
+                b.firstElementChild.textContent = 'check';
+                setTimeout(function () { b.firstElementChild.textContent = 'content_copy'; }, 1400);
+            });
+        });
+    });
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

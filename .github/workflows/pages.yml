@@ -1,0 +1,42 @@
+name: Deploy website to GitHub Pages
+
+# The landing page lives in site/ as plain static files — no build step.
+# It deploys only when something under site/ changes (or on demand), so app
+# pushes don't republish the website.
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths: [ "site/**", ".github/workflows/pages.yml" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push supersedes a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
