@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
 use App\Models\VehicleExpense;
 use App\Models\VehicleReminder;
+use App\Models\VehicleScan;
 use App\Models\VehicleService;
+use App\Support\Obd\DtcDictionary;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -38,7 +40,7 @@ class VehicleController extends Controller
     {
         $this->authorizeVehicle($request, $vehicle);
 
-        $vehicle->load(['reminders', 'services', 'expenses']);
+        $vehicle->load(['reminders', 'services', 'expenses', 'scans']);
 
         // One timeline: a workshop visit and a fill-up are both "something
         // that happened to the car", and are looked up by date either way.
@@ -54,6 +56,7 @@ class VehicleController extends Controller
                 ->each->setRelation('vehicle', $vehicle),
             'history'   => $history,
             'breakdown' => $vehicle->expenseBreakdown(Carbon::today()->subYear()),
+            'scans'     => $vehicle->scans,
         ]);
     }
 
@@ -339,6 +342,88 @@ class VehicleController extends Controller
         $expense->delete();
 
         return back()->with('success', __('messages.vehicle_expense_deleted'));
+    }
+
+    // ── OBD diagnostics ──────────────────────────────────────────────────
+
+    /**
+     * Record a diagnostic scan — read from a Bluetooth adapter in the browser
+     * (JSON) or typed in by hand (form). Only known codes and readings are
+     * kept: the browser is a client like any other, so its payload is
+     * validated and filtered, never stored as given.
+     */
+    public function storeScan(Request $request, Vehicle $vehicle)
+    {
+        $this->authorizeVehicle($request, $vehicle);
+
+        // A manual entry arrives as "P0420, p0171 P0300": split it first.
+        if (is_string($request->input('codes_text'))) {
+            $request->merge(['codes' => collect(preg_split('/[\s,;]+/', $request->input('codes_text'), -1, PREG_SPLIT_NO_EMPTY))
+                ->map(fn($c) => ['code' => DtcDictionary::normalize($c), 'status' => 'stored'])->all()]);
+        }
+
+        $data = $request->validate([
+            'source'          => ['nullable', Rule::in(VehicleScan::SOURCES)],
+            'odometer_km'     => ['nullable', 'integer', 'min:0', 'max:9999999'],
+            'vin'             => ['nullable', 'string', 'regex:/^[A-HJ-NPR-Z0-9]{17}$/i'],
+            'mil_on'          => ['nullable', 'boolean'],
+            'codes'           => ['nullable', 'array', 'max:60'],
+            'codes.*.code'    => ['required', 'string', function ($attr, $value, $fail) {
+                if (! DtcDictionary::isValid($value)) $fail(__('messages.obd_invalid_code', ['code' => $value]));
+            }],
+            'codes.*.status'  => ['nullable', Rule::in(VehicleScan::STATUSES)],
+            'readings'        => ['nullable', 'array'],
+            'readings.*'      => ['nullable', 'numeric', 'between:-100000,10000000'],
+            'adapter'         => ['nullable', 'string', 'max:120'],
+            'note'            => ['nullable', 'string', 'max:255'],
+        ]);
+
+        // One row per code: an adapter reports a code as both pending and
+        // stored at times; the more serious status wins.
+        $rank  = ['permanent' => 0, 'stored' => 1, 'pending' => 2];
+        $codes = collect($data['codes'] ?? [])
+            ->map(fn($c) => ['code' => DtcDictionary::normalize($c['code']), 'status' => $c['status'] ?? 'stored'])
+            ->sortBy(fn($c) => $rank[$c['status']])
+            ->unique('code')
+            ->values()
+            ->all();
+
+        $readings = collect($data['readings'] ?? [])
+            ->only(array_keys(VehicleScan::READINGS))
+            ->filter(fn($v) => $v !== null && $v !== '')
+            ->map(fn($v) => round((float) $v, 2))
+            ->all();
+
+        $scan = $vehicle->scans()->create([
+            'scanned_at'  => now(),
+            'source'      => $data['source'] ?? 'manual',
+            'odometer_km' => $data['odometer_km'] ?? null,
+            'vin'         => isset($data['vin']) ? strtoupper($data['vin']) : null,
+            'mil_on'      => $data['mil_on'] ?? null,
+            'codes'       => $codes,
+            'readings'    => $readings ?: null,
+            'adapter'     => $data['adapter'] ?? null,
+            'note'        => $data['note'] ?? null,
+            'created_by'  => $request->user()->id,
+        ]);
+
+        $this->advanceOdometer($vehicle, $scan->odometer_km, now());
+
+        if ($request->wantsJson()) {
+            return response()->json(['id' => $scan->id, 'codes' => count($codes)], 201);
+        }
+
+        return back()->with('success', __('messages.obd_scan_saved'));
+    }
+
+    public function destroyScan(Request $request, Vehicle $vehicle, VehicleScan $scan)
+    {
+        $this->authorizeVehicle($request, $vehicle);
+        abort_unless($scan->vehicle_id === $vehicle->id, 404);
+
+        $scan->delete();
+
+        return back()->with('success', __('messages.obd_scan_deleted'));
     }
 
     // ── Shared ───────────────────────────────────────────────────────────

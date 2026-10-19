@@ -235,6 +235,11 @@
             {{-- ── Side column ─────────────────────────────────────────── --}}
             <div class="space-y-5">
 
+                {{-- OBD-II only applies to cars. --}}
+                @if($vehicle->type === 'car')
+                    @include('vehicles.partials.obd-card', ['vehicle' => $vehicle, 'scans' => $scans])
+                @endif
+
                 {{-- Reminders --}}
                 <x-card x-data="{ adding: false }">
                     <div class="flex items-center justify-between mb-3">

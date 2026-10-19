@@ -64,6 +64,11 @@ class Vehicle extends Model
         return $this->hasMany(VehicleExpense::class)->orderByDesc('spent_at');
     }
 
+    public function scans(): HasMany
+    {
+        return $this->hasMany(VehicleScan::class)->orderByDesc('scanned_at');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

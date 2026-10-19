@@ -25,7 +25,7 @@ class SecurityHeaders
             'X-Frame-Options'         => 'SAMEORIGIN',
             'Referrer-Policy'         => 'strict-origin-when-cross-origin',
             // The barcode scanner needs the camera; nothing needs the rest.
-            'Permissions-Policy'      => 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()',
+            'Permissions-Policy'      => 'camera=(self), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(self)',
             'Content-Security-Policy' => "frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'",
         ];
 

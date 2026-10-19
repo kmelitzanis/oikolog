@@ -119,6 +119,9 @@ Route::middleware('auth')->group(function () {
             Route::put('/{vehicle}/services/{service}', 'updateService')->name('services.update');
             Route::delete('/{vehicle}/services/{service}', 'destroyService')->name('services.destroy');
 
+            Route::post('/{vehicle}/scans', 'storeScan')->name('scans.store');
+            Route::delete('/{vehicle}/scans/{scan}', 'destroyScan')->name('scans.destroy');
+
             Route::post('/{vehicle}/expenses', 'storeExpense')->name('expenses.store');
             Route::put('/{vehicle}/expenses/{expense}', 'updateExpense')->name('expenses.update');
             Route::delete('/{vehicle}/expenses/{expense}', 'destroyExpense')->name('expenses.destroy');

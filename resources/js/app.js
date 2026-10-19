@@ -21,4 +21,5 @@ import './pages/recipes';
 import './pages/meal-planner';
 import './pages/push';
 import './pages/editable-amount';
+import './pages/obd-scanner';
 
