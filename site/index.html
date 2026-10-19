@@ -27,6 +27,17 @@
                 document.documentElement.dataset.theme = t;
             } catch (e) {}
             document.documentElement.classList.add('js');
+            // The cinematic intro: hold the page dark until it starts. If the
+            // motion script never runs (offline CDN, old browser), show the
+            // page anyway after a moment.
+            try {
+                if (!location.hash && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    document.documentElement.classList.add('intro-pending');
+                    setTimeout(function () {
+                        if (!window.__oikIntro) document.documentElement.classList.remove('intro-pending');
+                    }, 2500);
+                }
+            } catch (e) {}
         })();
     </script>
 
@@ -50,8 +61,8 @@
         }
 
         *, *::before, *::after { box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body { margin: 0; background: var(--bg); color: var(--ink); overflow-x: hidden;
+        html { scroll-behavior: smooth; overflow-x: clip; }  /* clip: nothing that pokes out sideways may widen the mobile layout viewport */
+        body { margin: 0; background: var(--bg); color: var(--ink); overflow-x: clip;
                font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
                line-height: 1.55; -webkit-font-smoothing: antialiased; transition: background .4s ease, color .4s ease; }
         a { color: inherit; text-decoration: none; }
@@ -111,7 +122,7 @@
         .btn-ghost { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 
         /* ── Hero ──────────────────────────────────────────── */
-        .hero { position: relative; padding: 56px 0 30px; overflow: hidden; }
+        .hero { position: relative; padding: 56px 0 30px; overflow: clip; } /* clip, not hidden: hidden would break the sticky pin */
         .hero-bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
         .hero-bg::before { content: ''; position: absolute; inset: 0;
                            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
@@ -131,7 +142,28 @@
         h1 { font-size: clamp(2.5rem, 6.2vw, 4.6rem); line-height: 1.02; letter-spacing: -.045em; margin: 22px 0 20px; font-weight: 800; }
         h1 .line { display: block; overflow: hidden; padding-bottom: .08em; }
         h1 .line > span { display: inline-block; }
-        .js h1 .line > span { transform: translateY(105%); animation: rise .9s var(--ease) forwards; animation-delay: var(--d, .1s); }
+        .js h1 .line > span { transform: translateY(105%); }
+        /* The headline rises once the intro has opened the page. */
+        .js:not(.intro-pending):not(.intro-running) h1 .line > span { animation: rise .9s var(--ease) forwards; animation-delay: var(--d, .1s); }
+
+        /* ── Cinematic intro ─────────────────────────────────────── */
+        .intro-pending body { background: #05070f; }
+        .intro-pending body > *:not(.intro) { opacity: 0; }
+        .intro { position: fixed; inset: 0; z-index: 100; background: radial-gradient(ellipse at 50% 45%, #0b1222 0%, #05070f 70%);
+                 --r: 0px; cursor: pointer;
+                 -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent var(--r), #000 calc(var(--r) + 1px));
+                 mask-image: radial-gradient(circle at 50% 50%, transparent var(--r), #000 calc(var(--r) + 1px)); }
+        .intro canvas { position: absolute; inset: 0; }
+        .intro-mark { position: absolute; left: 50%; top: 50%; width: 92px; height: 138px; margin: -69px 0 0 -46px; overflow: visible; }
+        .intro-mark rect { transform-box: fill-box; transform-origin: left center; opacity: 0; }
+        .intro-flash { position: absolute; inset: 0; background: #fff7e6; opacity: 0; pointer-events: none; }
+        .intro-ring { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%;
+                      border: 2px solid #f59e0b; box-shadow: 0 0 40px #f59e0b, inset 0 0 30px rgba(245,158,11,.5); opacity: 0; transform: scale(0); }
+        .intro-tag { position: absolute; left: 0; right: 0; top: calc(50% + min(19vw, 32vh, 260px) * .62); text-align: center; color: #94a3b8;
+                     font-size: .78rem; font-weight: 700; letter-spacing: .25em; text-transform: uppercase; opacity: 0; }
+        .intro-skip { position: absolute; right: 22px; bottom: 20px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+                      color: #cbd5e1; font: 600 .78rem/1 Inter, system-ui, sans-serif; padding: 9px 14px; border-radius: 10px; cursor: pointer; opacity: 0; }
+        .intro-skip:hover { color: #fff; }
         @keyframes rise { to { transform: none; } }
         h1 em { font-style: normal; background: linear-gradient(90deg, #f59e0b, #fbbf24, #f97316, #f59e0b); background-size: 300% 100%;
                 -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 8s linear infinite; }
@@ -177,6 +209,41 @@
         .chip-a .ic { background: rgba(16,185,129,.16); color: var(--emerald); }
         .chip-b { left: 6%; bottom: -6%; animation-delay: -4s; }
         .chip-b .ic { background: rgba(245,158,11,.16); color: var(--amber); }
+
+        /* ── Shards: interface pieces around the window ─────────── */
+        .shard { position: absolute; z-index: 3; border-radius: 16px; padding: 12px 14px; font-size: .78rem; color: var(--ink);
+                 background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+                 border: 1px solid var(--line); box-shadow: 0 24px 50px rgba(0,0,0,.28); will-change: transform, opacity; }
+        .shard-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; font-size: .78rem; margin-bottom: 8px; }
+        .shard-head b { background: rgba(239,68,68,.15); color: #ef4444; border-radius: 8px; padding: 1px 7px; font-size: .7rem; }
+        .shard-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+        .shard-row em { margin-left: auto; font-style: normal; font-weight: 700; color: var(--ink); }
+        .shard-row .dot { width: 7px; height: 7px; border-radius: 50%; }
+        .shard-big { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; }
+        .shard-bar { height: 6px; border-radius: 9px; background: var(--surface-2); overflow: hidden; margin: 6px 0; }
+        .shard-bar i { display: block; width: 68%; height: 100%; border-radius: inherit; background: #10b981; }
+        .shard small { color: var(--muted); font-size: .68rem; }
+        .s-attn { width: 220px; right: -7%; top: 10%; }
+        .s-env  { width: 210px; left: -8%; top: 46%; }
+        .s-obd  { display: flex; align-items: center; gap: 10px; right: 16%; bottom: -7%; }
+        .s-obd b { font-family: ui-monospace, Menlo, monospace; font-size: .85rem; }
+        .s-obd small { display: block; }
+        .s-obd .mi { font-size: 22px; }
+
+        /* ── Pinned hero (anime.js on, wide screens) ───────────────
+           The block is three screens tall; its content sticks to the
+           viewport while the scroll drives the assembly timeline. */
+        .anime-on .hero { padding: 0; }
+        .anime-on .hero-pin { height: 260vh; }
+        .anime-on .hero-sticky { position: sticky; top: 0; height: 100vh; }
+        .anime-on .hero-copy { position: absolute; left: 0; right: 0; top: calc(68px + 7vh); z-index: 4; }
+        .anime-on .stage { position: absolute; inset: 68px 0 0 0; margin: auto; width: min(1040px, 82vw); height: max-content; max-width: none; perspective: 2000px; }
+        .anime-on .stage-inner { transform-origin: 50% 0; }
+        .anime-on .phone, .anime-on .float-chip { animation: none; }
+        .anime-on .ticker { margin-top: 0; }
+        .stage-glow { position: absolute; inset: -12% -8%; border-radius: 50%; pointer-events: none; z-index: -1; opacity: 0;
+                      background: radial-gradient(closest-side, rgba(245,158,11,.30), transparent 70%); filter: blur(30px); }
+        @media (max-width: 980px) { .shard { display: none; } }
 
         /* ── Ticker of what it tracks ────────────────────────── */
         .ticker { margin-top: 110px; padding: 18px 0; border-block: 1px solid var(--line); overflow: hidden; position: relative;
@@ -236,6 +303,31 @@
         .card .ic .mi { font-size: 24px; }
         .card h3 { font-size: 1.03rem; margin: 0 0 6px; letter-spacing: -.01em; position: relative; }
         .card p { margin: 0; color: var(--muted); font-size: .89rem; position: relative; }
+
+        /* ── Showcase rows ─────────────────────────────────── */
+        .showcase { display: grid; gap: 110px; }
+        .sc-row { display: grid; grid-template-columns: 1fr 1.25fr; gap: 56px; align-items: center; }
+        .sc-row.flip .sc-copy { order: 2; }
+        .sc-copy p { color: var(--ink-2); font-size: 1.06rem; margin: 0; }
+        .sc-copy .checks .mi { color: var(--amber); }
+        .sc-shot { position: relative; }
+        .sc-shot::before { content: ''; position: absolute; inset: 8% -6% -8% 6%; border-radius: 28px; z-index: -1;
+                           background: radial-gradient(closest-side, rgba(245,158,11,.22), transparent 75%); filter: blur(20px); }
+        .sc-row.flip .sc-shot::before { inset: 8% 6% -8% -6%; }
+        .sc-shot .browser { transition: transform .6s var(--ease); }
+        .sc-shot:hover .browser { transform: translateY(-6px) rotate(-.4deg); }
+        .providers { margin-top: 90px; display: grid; gap: 14px; overflow: hidden;
+                     mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+                     -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+        .prov-track { display: flex; gap: 12px; width: max-content; animation: scroll-x 60s linear infinite; }
+        .prov-row.rev .prov-track { animation-direction: reverse; animation-duration: 70s; }
+        .prov-track span { padding: 10px 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface);
+                           font-weight: 700; font-size: .95rem; color: var(--ink-2); white-space: nowrap; }
+        @media (max-width: 980px) {
+            .sc-row { grid-template-columns: 1fr; gap: 28px; }
+            .sc-row.flip .sc-copy { order: 0; }
+            .showcase { gap: 72px; }
+        }
 
         /* ── Mobile showcase ──────────────────────────────── */
         .mobile { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
@@ -337,6 +429,7 @@
         <div class="nav-links">
             <a href="#tour" data-i18n="nav_tour">Περιήγηση</a>
             <a href="#features" data-i18n="nav_features">Δυνατότητες</a>
+            <a href="#showcase" data-i18n="nav_showcase">Οικογένεια & συνταγές</a>
             <a href="#selfhost" data-i18n="nav_selfhost">Self-hosted</a>
             <a href="#install" data-i18n="nav_install">Εγκατάσταση</a>
         </div>
@@ -353,26 +446,29 @@
 
 <header class="hero">
     <div class="hero-bg" aria-hidden="true"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
-    <div class="wrap">
-        <div class="hero-copy">
-            <span class="eyebrow reveal"><b>GPL-3.0</b> <span data-i18n="eyebrow">Open source · Self-hosted · Δωρεάν</span></span>
+    <!-- On wide screens with anime.js loaded, this block is pinned while the
+         page scrolls through it, and the scroll assembles the stage. -->
+    <div class="hero-pin" id="hero-pin"><div class="hero-sticky wrap">
+        <div class="hero-copy" id="hero-copy">
+            <span class="eyebrow"><b>GPL-3.0</b> <span data-i18n="eyebrow">Open source · Self-hosted · Δωρεάν</span></span>
             <h1>
                 <span class="line"><span style="--d:.1s" data-i18n="h1a">Τα οικονομικά του σπιτιού,</span></span>
                 <span class="line"><span style="--d:.25s"><em data-i18n="h1b">σε ένα μέρος.</em></span></span>
             </h1>
-            <p class="lead reveal" style="--d:.35s" data-i18n="lead">Λογαριασμοί που ξέρουν πότε λήγουν, έσοδα, αποταμίευση, λίστες αγορών, συνταγές και τα οχήματά σου — μοιρασμένα με όλη την οικογένεια, στον δικό σου server.</p>
-            <div class="cta reveal" style="--d:.45s">
+            <p class="lead" data-i18n="lead">Λογαριασμοί που ξέρουν πότε λήγουν, έσοδα, αποταμίευση, λίστες αγορών, συνταγές και τα οχήματά σου — μοιρασμένα με όλη την οικογένεια, στον δικό σου server.</p>
+            <div class="cta">
                 <a class="btn btn-primary" href="#install"><span class="mi">rocket_launch</span><span data-i18n="cta_install">Εγκατάσταση με Docker</span></a>
                 <a class="btn btn-ghost" href="#tour"><span class="mi">play_circle</span><span data-i18n="cta_tour">Δες πώς δουλεύει</span></a>
             </div>
-            <div class="hero-meta reveal" style="--d:.55s">
+            <div class="hero-meta">
                 <span><span class="mi">check_circle</span><span data-i18n="meta1">Τα δεδομένα μένουν σε σένα</span></span>
                 <span><span class="mi">check_circle</span><span data-i18n="meta2">Ελληνικά & English</span></span>
                 <span><span class="mi">check_circle</span><span data-i18n="meta3">Εγκαθίσταται σαν app</span></span>
             </div>
         </div>
 
-        <div class="stage reveal-scale" style="--d:.5s" id="stage">
+        <div class="stage" id="stage">
+            <div class="stage-glow" id="stage-glow" aria-hidden="true"></div>
             <div class="stage-inner" id="stage-inner">
                 <div class="browser">
                     <div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home</span></div>
@@ -386,9 +482,26 @@
                     <div><span data-i18n="chip_a">Το ενοίκιο πληρώθηκε</span><small data-i18n="chip_a_sub">από τον Γιώργο · μόλις τώρα</small></div></div>
                 <div class="float-chip chip-b"><div class="ic"><span class="mi">savings</span></div>
                     <div><span data-i18n="chip_b">+€240 στην αποταμίευση</span><small data-i18n="chip_b_sub">περίσσευμα του κύκλου</small></div></div>
+
+                <!-- Pieces of the interface that fly in and dock around the window. -->
+                <div class="shard s-attn" aria-hidden="true">
+                    <div class="shard-head"><span data-i18n="sh_attn">Χρειάζονται προσοχή</span><b>2</b></div>
+                    <div class="shard-row"><span class="dot" style="background:#ef4444"></span><span data-i18n="sh_attn_1">Ρεύμα</span><em>€98,40</em></div>
+                    <div class="shard-row"><span class="dot" style="background:#84cc16"></span><span data-i18n="sh_attn_2">Γυμναστήριο</span><em>€20,00</em></div>
+                </div>
+                <div class="shard s-env" aria-hidden="true">
+                    <div class="shard-head"><span data-i18n="sh_env">Έξοδα σπιτιού</span><span class="mi" style="font-size:16px;color:#f59e0b">shopping_cart</span></div>
+                    <div class="shard-big">€379,36</div>
+                    <div class="shard-bar"><i></i></div>
+                    <small data-i18n="sh_env_sub">απομένουν από €1.200 · νέος κύκλος 25/10</small>
+                </div>
+                <div class="shard s-obd" aria-hidden="true">
+                    <span class="mi" style="color:#f97316">monitor_heart</span>
+                    <div><b>P0420</b><small data-i18n="sh_obd">Απόδοση καταλύτη κάτω από το όριο</small></div>
+                </div>
             </div>
         </div>
-    </div>
+    </div></div>
 
     <div class="ticker" aria-hidden="true">
         <div class="ticker-track" id="ticker">
@@ -431,7 +544,7 @@
                     <span class="tab-progress"><i></i></span></button>
                 <button class="tab" type="button" role="tab" data-shot="3">
                     <span class="tab-title"><span class="mi">directions_car</span><span data-i18n="t4">Οχήματα</span></span>
-                    <span class="tab-body"><div><p data-i18n="t4p">Ιστορικό σέρβις και εξόδων, υπενθυμίσεις και κόστος ανά χιλιόμετρο.</p></div></span>
+                    <span class="tab-body"><div><p data-i18n="t4p">Ιστορικό σέρβις και εξόδων, υπενθυμίσεις, και κωδικοί βλάβης από το OBD με εξήγηση.</p></div></span>
                     <span class="tab-progress"><i></i></span></button>
                 <button class="tab" type="button" role="tab" data-shot="4">
                     <span class="tab-title"><span class="mi">restaurant_menu</span><span data-i18n="t5">Πρόγραμμα γευμάτων</span></span>
@@ -479,14 +592,94 @@
                 <p data-i18n="f5_p">Κοινόχρηστοι λογαριασμοί, κωδικός πρόσκλησης και ειδοποίηση στο κινητό όταν κάποιος πληρώσει.</p></div>
             <div class="card reveal" style="--d:.06s"><div class="ic"><span class="mi">qr_code_scanner</span></div>
                 <h3 data-i18n="f6_t">Λίστες αγορών</h3>
-                <p data-i18n="f6_p">Κοινές λίστες, κατάλογος προϊόντων και σάρωση barcode με την κάμερα του κινητού, με διατροφικά στοιχεία.</p></div>
+                <p data-i18n="f6_p">Λίστες με ποσότητες, κατάλογος προϊόντων και σάρωση barcode με την κάμερα του κινητού, με διατροφικά στοιχεία.</p></div>
             <div class="card reveal" style="--d:.12s"><div class="ic"><span class="mi">restaurant_menu</span></div>
                 <h3 data-i18n="f7_t">Συνταγές & πρόγραμμα</h3>
                 <p data-i18n="f7_p">Εισαγωγή συνταγών από URL και εβδομαδιαίο πρόγραμμα γευμάτων που στέλνει τα υλικά στη λίστα αγορών.</p></div>
             <div class="card reveal" style="--d:.18s"><div class="ic"><span class="mi">directions_car</span></div>
                 <h3 data-i18n="f8_t">Οχήματα</h3>
-                <p data-i18n="f8_p">Χιλιόμετρα, υπενθυμίσεις σέρβις ανά ημερομηνία ή χιλιόμετρα, ιστορικό εργασιών και κόστος ανά χιλιόμετρο.</p></div>
+                <p data-i18n="f8_p">Χιλιόμετρα, υπενθυμίσεις σέρβις, ιστορικό εργασιών, κόστος ανά χιλιόμετρο — και διάγνωση OBD μέσω Bluetooth.</p></div>
         </div>
+    </div>
+</section>
+
+<!-- Deep dives: the features people ask about, each with a real screen. -->
+<section id="showcase" style="padding-top:20px">
+    <div class="wrap showcase">
+
+        <div class="sc-row">
+            <div class="sc-copy reveal">
+                <div class="kicker" data-i18n="sc1_k">Για όλη την οικογένεια</div>
+                <h2 data-i18n="sc1_h">Ένα σπίτι, ένας λογαριασμός — για όλους.</h2>
+                <p data-i18n="sc1_p">Φτιάχνεις μια οικογένεια και οι υπόλοιποι μπαίνουν με έναν κωδικό πρόσκλησης. Από εκεί και πέρα όλοι βλέπουν το ίδιο σπίτι.</p>
+                <ul class="checks">
+                    <li><span class="mi">group_add</span><span data-i18n="sc1_1">Πρόσκληση με κωδικό, ρόλοι ιδιοκτήτη και μέλους, μεταβίβαση ιδιοκτησίας</span></li>
+                    <li><span class="mi">sync_alt</span><span data-i18n="sc1_2">Κοινοί λογαριασμοί, έσοδα, λογαριασμοί χρημάτων και οχήματα — ό,τι δεν μοιράζεσαι μένει ιδιωτικό</span></li>
+                    <li><span class="mi">notifications_active</span><span data-i18n="sc1_3">Ειδοποίηση στο κινητό όταν κάποιος πληρώσει, και ποιος πλήρωσε τι</span></li>
+                    <li><span class="mi">history</span><span data-i18n="sc1_4">Ροή δραστηριότητας: ποιος πρόσθεσε ή άλλαξε τι</span></li>
+                </ul>
+            </div>
+            <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/family</span></div>
+                <div class="shot"><img src="screenshots/family.webp" alt="Η σελίδα οικογένειας με μέλη, ρόλους, κωδικό πρόσκλησης και δραστηριότητα" width="1440" height="900" loading="lazy"></div></div></div>
+        </div>
+
+        <div class="sc-row flip">
+            <div class="sc-copy reveal">
+                <div class="kicker" data-i18n="sc2_k">Συνταγές</div>
+                <h2 data-i18n="sc2_h">Επικόλλησε έναν σύνδεσμο. Η συνταγή γράφεται μόνη της.</h2>
+                <p data-i18n="sc2_p">Δίνεις το link μιας συνταγής και το Oikolog τη διαβάζει από τη σελίδα: όνομα, φωτογραφία, μερίδες, χρόνοι, υλικά και βήματα — μαζί με τις ενότητές τους.</p>
+                <ul class="checks">
+                    <li><span class="mi">link</span><span data-i18n="sc2_1">Δουλεύει με τα περισσότερα μεγάλα sites συνταγών (όσα δημοσιεύουν δομημένα δεδομένα συνταγής)</span></li>
+                    <li><span class="mi">star</span><span data-i18n="sc2_2">Ειδική υποστήριξη για το akispetretzikis.com</span></li>
+                    <li><span class="mi">straighten</span><span data-i18n="sc2_3">Ελληνικές μονάδες (κ.σ., κ.γ., φλ., γρ.) αναγνωρίζονται και κανονικοποιούνται</span></li>
+                    <li><span class="mi">calendar_view_week</span><span data-i18n="sc2_4">Εβδομαδιαίο πρόγραμμα γευμάτων — και τα υλικά της εβδομάδας στη λίστα αγορών με ένα κλικ</span></li>
+                </ul>
+            </div>
+            <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/recipes/create</span></div>
+                <div class="shot"><img src="screenshots/recipe-import.webp" alt="Νέα συνταγή με εισαγωγή από σύνδεσμο" width="1440" height="900" loading="lazy"></div></div></div>
+        </div>
+
+        <div class="sc-row">
+            <div class="sc-copy reveal">
+                <div class="kicker" data-i18n="sc3_k">Λίστες αγορών</div>
+                <h2 data-i18n="sc3_h">Η λίστα του σούπερ μάρκετ, στην τσέπη σου.</h2>
+                <p data-i18n="sc3_p">Λίστες με ποσότητες και μονάδες, που τσεκάρεις καθώς ψωνίζεις — και ένας κατάλογος προϊόντων που μεγαλώνει μαζί σου.</p>
+                <ul class="checks">
+                    <li><span class="mi">qr_code_scanner</span><span data-i18n="sc3_1">Σάρωση barcode με την κάμερα του κινητού</span></li>
+                    <li><span class="mi">eco</span><span data-i18n="sc3_2">Όνομα, διατροφικά στοιχεία και Nutri-Score από το Open Food Facts</span></li>
+                    <li><span class="mi">inventory_2</span><span data-i18n="sc3_3">Κατάλογος προϊόντων με ιστορικό αγορών</span></li>
+                    <li><span class="mi">restaurant</span><span data-i18n="sc3_4">Γεμίζει αυτόματα από το πρόγραμμα γευμάτων</span></li>
+                </ul>
+            </div>
+            <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/shopping-lists</span></div>
+                <div class="shot"><img src="screenshots/shopping-list.webp" alt="Λίστα αγορών με ποσότητες και τσεκαρισμένα προϊόντα" width="1440" height="900" loading="lazy"></div></div></div>
+        </div>
+
+        <div class="sc-row flip">
+            <div class="sc-copy reveal">
+                <div class="kicker" data-i18n="sc4_k">Φτιαγμένο για την Ελλάδα</div>
+                <h2 data-i18n="sc4_h">Όλοι οι γνωστοί πάροχοι, έτοιμοι από την πρώτη μέρα.</h2>
+                <p data-i18n="sc4_p">Πάνω από 50 ελληνικοί και διεθνείς πάροχοι έρχονται προεγκατεστημένοι, σε 16 κατηγορίες. Και όλα παραμετροποιούνται.</p>
+                <ul class="checks">
+                    <li><span class="mi">bolt</span><span data-i18n="sc4_1">Ρεύμα, νερό, αέριο, τηλεφωνία, τράπεζες, ασφάλειες, σούπερ μάρκετ, μεταφορές, streaming</span></li>
+                    <li><span class="mi">category</span><span data-i18n="sc4_2">Δικές σου κατηγορίες με εικονίδιο και χρώμα</span></li>
+                    <li><span class="mi">add_business</span><span data-i18n="sc4_3">Πρόσθεσε ή άλλαξε παρόχους — ένας πάροχος μπορεί να ανήκει σε πολλές κατηγορίες</span></li>
+                    <li><span class="mi">translate</span><span data-i18n="sc4_4">Ελληνικά και αγγλικά, με μεταφράσεις που αλλάζεις από την εφαρμογή</span></li>
+                </ul>
+            </div>
+            <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/admin/providers</span></div>
+                <div class="shot"><img src="screenshots/providers.webp" alt="Η λίστα παρόχων με κατηγορίες" width="1440" height="900" loading="lazy"></div></div></div>
+        </div>
+    </div>
+
+    <!-- The providers themselves, as two drifting rows. -->
+    <div class="providers" aria-label="Πάροχοι">
+        <div class="prov-row"><div class="prov-track">
+            <span>ΔΕΗ</span><span>Heron</span><span>NRG</span><span>Protergia</span><span>Elpedison</span><span>Zenith</span><span>ΕΥΔΑΠ</span><span>ΕΥΑΘ</span><span>ΕΔΑ Αττικής</span><span>ΕΔΑ ΘΕΣΣ</span><span>Cosmote</span><span>Vodafone</span><span>Nova</span><span>Cyta</span><span>Netflix</span><span>Disney+</span><span>Spotify</span><span>YouTube Premium</span><span>Amazon Prime</span><span>Max</span><span>Apple TV+</span><span>PlayStation Plus</span><span>Xbox Game Pass</span><span>Steam</span>
+        </div></div>
+        <div class="prov-row rev"><div class="prov-track">
+            <span>Alpha Bank</span><span>Eurobank</span><span>Τράπεζα Πειραιώς</span><span>Εθνική Τράπεζα</span><span>Attica Bank</span><span>Revolut</span><span>American Express</span><span>Interamerican</span><span>Εθνική Ασφαλιστική</span><span>Allianz</span><span>AXA</span><span>Eurolife FFH</span><span>Generali</span><span>ΑΒ Βασιλόπουλος</span><span>Σκλαβενίτης</span><span>Lidl</span><span>My Market</span><span>Μασούτης</span><span>ΟΑΣΑ</span><span>ΟΣΕ</span><span>Aegean</span><span>Ryanair</span><span>Holmes Place</span><span>Coursera</span>
+        </div></div>
     </div>
 </section>
 
@@ -503,7 +696,7 @@
             <ul class="checks">
                 <li><span class="mi">check_circle</span><span data-i18n="mob_1">Ειδοποίηση όταν κάποιος στην οικογένεια πληρώσει</span></li>
                 <li><span class="mi">check_circle</span><span data-i18n="mob_2">Σάρωση barcode με την κάμερα για τη λίστα αγορών</span></li>
-                <li><span class="mi">check_circle</span><span data-i18n="mob_3">Ημερομηνίες σε μορφή ΗΗ/ΜΜ/ΕΕΕΕ, ελληνικά παντού</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="mob_3">Διάγνωση OBD του αυτοκινήτου μέσω Bluetooth, από τον browser</span></li>
             </ul>
         </div>
     </div>
@@ -604,12 +797,13 @@ docker compose exec app php artisan make:user --admin</div>
 
     // ── i18n: Greek is the page's source text; English is swapped in. ──
     var EN = {
-        nav_tour: 'Tour', nav_features: 'Features', nav_selfhost: 'Self-hosted', nav_install: 'Install',
+        nav_tour: 'Tour', nav_features: 'Features', nav_showcase: 'Family & recipes', nav_selfhost: 'Self-hosted', nav_install: 'Install',
         eyebrow: 'Open source · Self-hosted · Free',
         h1a: 'Your household finances,', h1b: 'in one place.',
         lead: 'Bills that know when they are due, income, savings, shopping lists, recipes and your vehicles — shared with the whole family, on your own server.',
         cta_install: 'Install with Docker', cta_tour: 'See how it works',
         meta1: 'Your data stays yours', meta2: 'Greek & English', meta3: 'Installs like an app',
+        sh_attn: 'Needs attention', sh_attn_1: 'Electricity', sh_attn_2: 'Gym', sh_env: 'Household', sh_env_sub: 'left of €1,200 · new cycle 25/10', sh_obd: 'Catalyst efficiency below threshold',
         chip_a: 'Rent paid', chip_a_sub: 'by George · just now', chip_b: '+€240 to savings', chip_b_sub: 'left over from the cycle',
         tk1: 'Electricity', tk2: 'Internet', tk3: 'Water', tk4: 'Rent', tk5: 'Salary', tk6: 'Savings', tk7: 'Car service',
         tk8: 'Insurance', tk9: 'Groceries', tk10: 'Meal plan', tk11: 'Subscriptions', tk12: 'Loans',
@@ -617,7 +811,7 @@ docker compose exec app php artisan make:user --admin</div>
         t1: 'Bills', t1p: 'Grouped by urgency: overdue, partly paid, due soon, paid.',
         t2: 'Calendar', t2p: 'The whole month at a glance, coloured by status.',
         t3: 'Income & accounts', t3p: 'Salary you confirm, spending envelopes per pay cycle, and savings.',
-        t4: 'Vehicles', t4p: 'Service and expense history, reminders and cost per kilometre.',
+        t4: 'Vehicles', t4p: 'Service and expense history, reminders, and OBD trouble codes explained.',
         t5: 'Meal plan', t5p: 'The week as a grid; ingredients go to the shopping list in one click.',
         feat_kicker: 'Features', feat_h2: 'Everything a home needs so nothing slips through.',
         feat_p: 'From the power bill to the car service — every obligation with a date, an amount and a history.',
@@ -626,13 +820,35 @@ docker compose exec app php artisan make:user --admin</div>
         f3_t: 'Income', f3_p: 'Salary and other income you confirm when it lands — with how early or late it arrived.',
         f4_t: 'Invoices from email', f4_p: 'Connect Gmail or Outlook and Oikolog reads providers’ invoices and suggests the amount. Read-only.',
         f5_t: 'For the whole family', f5_p: 'Shared bills, an invite code, and a push notification when someone pays.',
-        f6_t: 'Shopping lists', f6_p: 'Shared lists, a product catalogue and barcode scanning with your phone camera, with nutrition data.',
+        f6_t: 'Shopping lists', f6_p: 'Lists with quantities, a product catalogue and barcode scanning with your phone camera, with nutrition data.',
         f7_t: 'Recipes & meal plan', f7_p: 'Import recipes from a URL and plan the week; the ingredients go straight to a shopping list.',
-        f8_t: 'Vehicles', f8_p: 'Mileage, service reminders by date or distance, a work history and cost per kilometre.',
+        f8_t: 'Vehicles', f8_p: 'Mileage, service reminders, a work history, cost per kilometre — and OBD diagnostics over Bluetooth.',
+        sc1_k: 'For the whole family', sc1_h: 'One home, one account — for everyone.',
+        sc1_p: 'Create a family and the others join with an invite code. From then on everyone sees the same home.',
+        sc1_1: 'Invite code, owner and member roles, ownership transfer',
+        sc1_2: 'Shared bills, income, money accounts and vehicles — whatever you don’t share stays private',
+        sc1_3: 'A phone notification when someone pays, and who paid what',
+        sc1_4: 'An activity feed: who added or changed what',
+        sc2_k: 'Recipes', sc2_h: 'Paste a link. The recipe writes itself.',
+        sc2_p: 'Give it a recipe link and Oikolog reads it from the page: name, photo, servings, times, ingredients and steps — with their sections.',
+        sc2_1: 'Works with most big recipe sites (those that publish structured recipe data)',
+        sc2_2: 'Dedicated support for akispetretzikis.com',
+        sc2_3: 'Greek units (κ.σ., κ.γ., φλ., γρ.) are recognised and normalised',
+        sc2_4: 'A weekly meal plan — and the week’s ingredients go to the shopping list in one click',
+        sc3_k: 'Shopping lists', sc3_h: 'The grocery list, in your pocket.',
+        sc3_p: 'Lists with quantities and units that you tick off as you shop — and a product catalogue that grows with you.',
+        sc3_1: 'Barcode scanning with your phone camera', sc3_2: 'Name, nutrition facts and Nutri-Score from Open Food Facts',
+        sc3_3: 'A product catalogue with purchase history', sc3_4: 'Fills itself from the meal plan',
+        sc4_k: 'Made for Greece', sc4_h: 'Every well-known provider, ready on day one.',
+        sc4_p: 'More than 50 Greek and international providers come pre-installed, across 16 categories. And all of it is customisable.',
+        sc4_1: 'Electricity, water, gas, telecoms, banks, insurance, supermarkets, transport, streaming',
+        sc4_2: 'Your own categories, with an icon and a colour',
+        sc4_3: 'Add or edit providers — one provider can belong to several categories',
+        sc4_4: 'Greek and English, with translations you can edit in the app',
         mob_kicker: 'On your phone', mob_h2: 'Like an app, without an app store.',
         mob_p: 'Installs from the browser as a PWA, with a bottom navigation bar, notifications and a dark theme — built for paying a bill on the go.',
         mob_1: 'A notification when someone in the family pays', mob_2: 'Barcode scanning with the camera for the shopping list',
-        mob_3: 'Dates as DD/MM/YYYY, fully translated',
+        mob_3: 'OBD diagnostics for your car over Bluetooth, right from the browser',
         sh_kicker: 'Self-hosted', sh_h2: 'Your data, in your own home.',
         sh_p: 'Oikolog runs on your own server, NAS or VPS. Your bills and payments never pass through a third party.',
         sh_1: 'One docker compose up and you are ready', sh_2: 'Two-factor authentication (TOTP)',
@@ -698,26 +914,10 @@ docker compose exec app php artisan make:user --admin</div>
     }, { threshold: .15, rootMargin: '0px 0px -40px 0px' });
     document.querySelectorAll('.reveal, .reveal-scale').forEach(function (el) { io.observe(el); });
 
-    // ── Hero stage: flattens as you scroll, tilts toward the pointer ──
-    var stage = document.getElementById('stage'), inner = document.getElementById('stage-inner');
-    var tiltX = 8, pointerY = 0;
-    function applyTilt() { inner.style.setProperty('--rx', tiltX + 'deg'); inner.style.setProperty('--ry', pointerY + 'deg'); }
-    if (!reduced) {
-        addEventListener('scroll', function () {
-            var r = stage.getBoundingClientRect();
-            var p = Math.min(1, Math.max(0, 1 - r.top / innerHeight));
-            tiltX = 8 * (1 - p); applyTilt();
-        }, { passive: true });
-        stage.addEventListener('pointermove', function (e) {
-            var r = stage.getBoundingClientRect();
-            pointerY = ((e.clientX - r.left) / r.width - .5) * 6; applyTilt();
-        });
-        stage.addEventListener('pointerleave', function () { pointerY = 0; applyTilt(); });
-    }
-
     // ── Ticker: duplicate the run so the loop is seamless ──
     var track = document.getElementById('ticker');
     track.innerHTML += track.innerHTML;
+    document.querySelectorAll('.prov-track').forEach(function (t) { t.innerHTML += t.innerHTML; });
     nodes = document.querySelectorAll('[data-i18n], [data-i18n-html]');
 
     // ── Tour tabs, auto-advancing while visible ──
@@ -764,6 +964,305 @@ docker compose exec app php artisan make:user --admin</div>
     });
 
     document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+<!-- Motion, with anime.js v4. Loaded as a module: if the CDN is unreachable
+     the page simply stays static, fully readable. -->
+<script type="module">
+    import { animate, createTimeline, stagger } from 'https://cdn.jsdelivr.net/npm/animejs@4/+esm';
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) document.documentElement.classList.remove('intro-pending');
+    if (!reduced) {
+        const root = document.documentElement;
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => [...document.querySelectorAll(s)];
+        const wide = matchMedia('(min-width: 981px)');
+
+        // ── Cinematic intro ─────────────────────────────────────────────
+        // The logo's four ledger beams draw in, burst into ~1,500 particles,
+        // regroup into the word "oikolog" (the "l" in amber, as in the logo),
+        // then streak past like a jump to hyperspace while an iris opens onto
+        // the page. anime.js drives every phase; the particles themselves are
+        // drawn on a canvas, which is the only way to move that many at 60fps.
+        async function runIntro(done) {
+            window.__oikIntro = true;
+            root.classList.add('intro-running');
+            const el = (root.lang || '').startsWith('el');
+
+            const ov = document.createElement('div');
+            ov.className = 'intro';
+            ov.setAttribute('aria-hidden', 'true');
+            ov.innerHTML = `
+                <canvas></canvas>
+                <div class="intro-ring"></div>
+                <svg class="intro-mark" viewBox="0 0 16 24">
+                    <rect x="2" y="4" width="7" height="2.6" rx="1.3" fill="#e2e8f0"/>
+                    <rect x="2" y="8.6" width="12" height="2.6" rx="1.3" fill="#e2e8f0"/>
+                    <rect x="2" y="13.2" width="9" height="2.6" rx="1.3" fill="#e2e8f0"/>
+                    <rect x="2" y="17.8" width="12" height="2.6" rx="1.3" fill="#f59e0b"/>
+                </svg>
+                <div class="intro-flash"></div>
+                <div class="intro-tag">${el ? 'λογαριασμοί · έσοδα · αποταμίευση · οχήματα' : 'bills · income · savings · vehicles'}</div>
+                <button class="intro-skip" type="button">${el ? 'Παράλειψη ›' : 'Skip ›'}</button>`;
+            document.body.appendChild(ov);
+            root.classList.remove('intro-pending');
+
+            const cv = ov.querySelector('canvas');
+            const ctx = cv.getContext('2d');
+            const W = innerWidth, H = innerHeight, cx = W / 2, cy = H / 2;
+            const dpr = Math.min(2, devicePixelRatio || 1);
+            cv.width = W * dpr; cv.height = H * dpr;
+            cv.style.width = W + 'px'; cv.style.height = H + 'px';
+            ctx.scale(dpr, dpr);
+
+            // Where the particles end up: the pixels of "oikolog".
+            try { await Promise.race([document.fonts.load('800 200px Inter'), new Promise((r) => setTimeout(r, 900))]); } catch (e) {}
+            const fs = Math.min(W * .19, H * .32, 260);
+            const off = document.createElement('canvas');
+            off.width = W; off.height = H;
+            const o = off.getContext('2d');
+            o.font = `800 ${fs}px Inter, system-ui, sans-serif`;
+            o.textBaseline = 'middle';
+            const word = 'oikolog';
+            const x0 = (W - o.measureText(word).width) / 2;
+            o.fillStyle = '#fff';
+            o.fillText(word, x0, cy);
+            const lStart = x0 + o.measureText('oiko').width, lEnd = lStart + o.measureText('l').width;
+            const px = o.getImageData(0, 0, W, H).data;
+            const gap = Math.max(3, Math.round(fs / 34));
+            let pts = [];
+            for (let y = 0; y < H; y += gap) for (let x = 0; x < W; x += gap) if (px[(y * W + x) * 4 + 3] > 140) pts.push([x, y]);
+            if (!pts.length) for (let i = 0; i < 600; i++) { const a = i / 600 * Math.PI * 2; pts.push([cx + Math.cos(a) * fs, cy + Math.sin(a) * fs * .5]); }
+            for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pts[i], pts[j]] = [pts[j], pts[i]]; }
+
+            // Where they start: along the four beams of the mark.
+            const beams = [...ov.querySelectorAll('.intro-mark rect')].map((r) => r.getBoundingClientRect());
+            const N = Math.min(W < 700 ? 900 : 1600, Math.max(700, pts.length));
+            const R = Math.hypot(W, H);
+            const parts = [];
+            for (let i = 0; i < N; i++) {
+                const [tx, ty] = pts[i % pts.length];
+                const b = beams[i % 4];
+                const sx = b.left + Math.random() * b.width, sy = b.top + Math.random() * b.height;
+                const ang = Math.random() * Math.PI * 2, rad = (.15 + Math.random() ** .7 * .85) * R * .55;
+                const dx = tx - cx, dy = ty - cy, d = Math.hypot(dx, dy) || 1;
+                const amber = tx >= lStart && tx <= lEnd;
+                parts.push({
+                    sx, sy, tx: tx + (Math.random() - .5) * gap * .6, ty: ty + (Math.random() - .5) * gap * .6,
+                    bx: cx + Math.cos(ang) * rad, by: cy + Math.sin(ang) * rad,
+                    spin: (Math.random() - .5) * 2.4,
+                    ux: dx / d + (Math.random() - .5) * .3, uy: dy / d + (Math.random() - .5) * .3,
+                    sp: .4 + Math.random() * 1.1, ph: Math.random() * 6.3,
+                    w: 2 + Math.random() * 5, h: 1.6 + Math.random() * .8,
+                    c: amber ? `rgba(240,${120 + (Math.random() * 30 | 0)},10,${.55 + Math.random() * .25})` : `rgba(${210 + (Math.random() * 40 | 0)},${220 + (Math.random() * 30 | 0)},240,${.55 + Math.random() * .4})`,
+                });
+            }
+
+            // Phases, 0 → 1 each, animated by anime.js and read by the renderer.
+            const S = { burst: 0, gather: 0, shimmer: 0, warp: 0, iris: 0, cue: 0 };
+            let running = true, revealed = false;
+
+            function reveal() {
+                if (revealed) return;
+                revealed = true;
+                root.classList.remove('intro-running');
+                animate('.hero-sticky', { scale: [1.08, 1], filter: ['blur(14px)', 'blur(0px)'], duration: 1300, ease: 'outExpo',
+                    onComplete: (a) => { const t = document.querySelector('.hero-sticky'); t.style.transform = ''; t.style.filter = ''; } });
+                done();
+            }
+
+            function finish() {
+                if (!running) return;
+                running = false;
+                reveal();
+                ov.remove();
+                ['click', 'keydown', 'wheel', 'touchstart'].forEach((e) => removeEventListener(e, skip, true));
+            }
+
+            const tl = createTimeline({ onComplete: finish })
+                .add('.intro-skip', { opacity: [0, 1], duration: 500 }, 400)
+                .add('.intro-mark rect', { scaleX: [0, 1], opacity: [0, 1], delay: stagger(120), duration: 700, ease: 'outExpo' }, 150)
+                .add('.intro-mark', { scale: [1, 1.12], filter: ['drop-shadow(0 0 0px #f59e0b)', 'drop-shadow(0 0 28px #f59e0b)'], duration: 380, ease: 'inQuad' }, 760)
+                .add('.intro-mark', { scale: [1.12, .15], opacity: [1, 0], duration: 160, ease: 'inExpo' }, 1140)
+                .add('.intro-flash', { opacity: [0, .55], duration: 70, ease: 'linear' }, 1260)
+                .add('.intro-flash', { opacity: [.55, 0], duration: 600, ease: 'outQuad' }, 1330)
+                .add('.intro-ring', { scale: [0, 16], opacity: [1, 0], duration: 1200, ease: 'outExpo' }, 1260)
+                .add(S, { burst: [0, 1], duration: 1100, ease: 'outExpo' }, 1260)
+                .add(S, { gather: [0, 1], duration: 1350, ease: 'inOutQuart' }, 1800)
+                .add('.intro-tag', { opacity: [0, 1], y: [16, 0], letterSpacing: ['.7em', '.25em'], duration: 800, ease: 'outExpo' }, 2750)
+                .add(S, { shimmer: [0, 1], duration: 800, ease: 'linear' }, 3050)
+                .add('.intro-tag', { opacity: [1, 0], duration: 260, ease: 'inQuad' }, 3600)
+                .add('.intro-skip', { opacity: [1, 0], duration: 260 }, 3600)
+                .add(S, { warp: [0, 1], duration: 1100, ease: 'inCubic' }, 3600)
+                .add(S, { iris: [0, 1], duration: 900, ease: 'inQuart' }, 4050)
+                .add(S, { cue: [0, 1], duration: 1, onComplete: reveal }, 4350);
+
+            // Click, key, wheel or touch jumps straight to the exit.
+            function skip() { if (tl.currentTime < 3600) tl.seek(3600); }
+            ['click', 'keydown', 'wheel', 'touchstart'].forEach((e) => addEventListener(e, skip, { capture: true, passive: true }));
+
+            function draw(now) {
+                if (!running) return;
+                const t = now / 1000;
+                // Fading the previous frame instead of clearing it leaves light trails.
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = `rgba(5,7,15,${S.warp > 0 ? .22 : .3})`;
+                ctx.fillRect(0, 0, W, H);
+
+                if (S.burst > 0) {
+                    ctx.globalCompositeOperation = 'lighter';
+                    const b = S.burst, g = S.gather, k = S.warp * S.warp;
+                    for (const p of parts) {
+                        let x = p.sx + (p.bx - p.sx) * b, y = p.sy + (p.by - p.sy) * b;
+                        // A swirl while they are in flight, gone once they land.
+                        const a = p.spin * b * (1 - g);
+                        if (a) { const rx = x - cx, ry = y - cy, c = Math.cos(a), s = Math.sin(a); x = cx + rx * c - ry * s; y = cy + rx * s + ry * c; }
+                        x += (p.tx - x) * g; y += (p.ty - y) * g;
+                        if (S.shimmer) { x += Math.sin(t * 4 + p.ph) * 1.4 * S.shimmer * (1 - S.warp); y += Math.cos(t * 3 + p.ph) * 1.4 * S.shimmer * (1 - S.warp); }
+                        ctx.fillStyle = p.c;
+                        if (k > 0) {
+                            // Hyperspace: each particle becomes a streak racing outwards.
+                            const dist = k * p.sp * R * 1.1, len = 6 + k * p.sp * 240;
+                            const hx = x + p.ux * dist, hy = y + p.uy * dist;
+                            ctx.strokeStyle = p.c; ctx.lineWidth = p.h * (1 + k * 2);
+                            ctx.beginPath(); ctx.moveTo(hx - p.ux * len, hy - p.uy * len); ctx.lineTo(hx, hy); ctx.stroke();
+                        } else {
+                            ctx.fillRect(x, y, p.w, p.h);
+                        }
+                    }
+                }
+                if (S.iris > 0) ov.style.setProperty('--r', (S.iris * R * .62) + 'px');
+                requestAnimationFrame(draw);
+            }
+            requestAnimationFrame(draw);
+        }
+
+        // ── Hero copy, once the page is open ───────────────────────────
+        const heroIn = () => animate(['.eyebrow', '.lead', '.cta', '.hero-meta'], {
+            opacity: [0, 1], y: [26, 0], filter: ['blur(6px)', 'blur(0px)'],
+            delay: stagger(110, { start: 380 }), duration: 1100, ease: 'outExpo',
+        });
+        if (root.classList.contains('intro-pending')) runIntro(heroIn);
+        else heroIn();
+
+        // ── Scroll-assembled stage ──────────────────────────────────────
+        // Each piece gets its own paused anime.js animation and a slice of
+        // the scroll range ([start, end] in 0–1). The scroll position, eased
+        // towards every frame so motion glides rather than steps, is mapped
+        // into each slice and the animation is seeked there — before its
+        // slice a piece sits at its "from" state, after it at its "to".
+        let tracks = [], target = 0, current = -1, raf = 0;
+        const pin = $('#hero-pin');
+
+        function track(el, params, start, end, ease = 'inOutCubic') {
+            const anim = animate(el, { ...params, duration: 1000, ease, autoplay: false });
+            tracks.push({ anim, start, end });
+        }
+
+        function build() {
+            tracks.forEach((t) => t.anim.revert());
+            tracks = [];
+            if (!wide.matches) { root.classList.remove('anime-on'); return; }
+            root.classList.add('anime-on');
+
+            const w = innerWidth, h = innerHeight;
+            const inner = $('#stage-inner');
+            // Fit the finished composition under the nav with some air.
+            const fit = Math.min(1, (h - 68 - 70) / inner.offsetHeight);
+
+            // The headline steps back as the window rises.
+            track('#hero-copy', { y: [0, -h * .22], opacity: [1, 0], filter: ['blur(0px)', 'blur(10px)'] }, 0, .38, 'inQuad');
+            // The window: tilted and low at first, upright and centred at the end.
+            track(inner, { y: [h * .58, 0], scale: [.6, fit], rotateX: [34, 0] }, 0, .72);
+            track('#stage-glow', { opacity: [0, 1], scale: [.6, 1] }, .3, .9);
+            track('.browser .shot img', { scale: [1.12, 1], filter: ['saturate(.4) brightness(.7)', 'saturate(1) brightness(1)'] }, .15, .75);
+            // Pieces fly in from the edges and dock.
+            track('.s-attn', { x: [w * .38, 0], y: [-h * .25, 0], rotate: [18, 0], scale: [.7, 1], opacity: [0, 1] }, .30, .76, 'outCubic');
+            track('.chip-a', { x: [-w * .36, 0], y: [-h * .2, 0], rotate: [-20, 0], opacity: [0, 1] }, .36, .80, 'outCubic');
+            track('.s-env',  { x: [-w * .42, 0], y: [h * .12, 0], rotate: [-24, 0], scale: [.75, 1], opacity: [0, 1] }, .42, .88, 'outCubic');
+            track('.phone',  { x: [w * .5, 0], y: [h * .3, 0], rotate: [26, 0], opacity: [0, 1] }, .44, .96, 'outCubic');
+            track('.chip-b', { x: [-w * .3, 0], y: [h * .35, 0], rotate: [16, 0], opacity: [0, 1] }, .52, .96, 'outCubic');
+            track('.s-obd',  { x: [w * .22, 0], y: [h * .45, 0], rotate: [22, 0], opacity: [0, 1] }, .56, 1, 'outCubic');
+
+            measure();
+            current = -1;   // force a render at the new values
+        }
+
+        function render(p) {
+            for (const t of tracks) {
+                const local = Math.min(1, Math.max(0, (p - t.start) / (t.end - t.start)));
+                t.anim.seek(local * t.anim.duration);
+            }
+        }
+
+        function measure() {
+            const total = pin.offsetHeight - innerHeight;
+            target = total > 0 ? Math.min(1, Math.max(0, -pin.getBoundingClientRect().top / total)) : 0;
+        }
+
+        function frame() {
+            if (tracks.length) {
+                if (current < 0) { current = target; render(current); }
+                else if (current !== target) {
+                    current += (target - current) * .1;
+                    if (Math.abs(target - current) < .0004) current = target;
+                    render(current);
+                }
+            }
+            raf = requestAnimationFrame(frame);
+        }
+
+        let resizeTimer;
+        addEventListener('scroll', measure, { passive: true });
+        addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(build, 180); });
+        wide.addEventListener('change', build);
+
+        // Images decide the stage height; build once they are in.
+        const ready = () => { build(); cancelAnimationFrame(raf); frame(); };
+        if (document.readyState === 'complete') ready(); else addEventListener('load', ready);
+
+        // On narrow screens the stage just rises into place.
+        if (!wide.matches) {
+            animate('#stage', { opacity: [0, 1], y: [60, 0], scale: [.96, 1], duration: 1300, delay: 600, ease: 'outExpo' });
+        }
+
+        // ── Sections: staggered entrances as they come into view ───────
+        // These replace the CSS reveal for the groups below.
+        const groups = [
+            ['#features .grid', '.card', { y: [50, 0], scale: [.94, 1], rotate: [-3, 0] }],
+            ['#install .steps', '.step', { x: [40, 0] }],
+            ['#selfhost', '.panel', { y: [50, 0], rotateX: [12, 0] }],
+            ['#mobile .phones', '.phone', { y: [120, 0], rotate: [-8, 0] }],
+        ];
+        for (const [parentSel, childSel, extra] of groups) {
+            const parent = $(parentSel);
+            if (!parent) continue;
+            const kids = [...parent.querySelectorAll(childSel)];
+            kids.forEach((k) => { k.classList.remove('reveal', 'reveal-scale'); k.style.opacity = 0; });
+            parent.classList.remove('reveal', 'reveal-scale');
+            const io = new IntersectionObserver((entries) => {
+                if (!entries[0].isIntersecting) return;
+                io.disconnect();
+                animate(kids, { opacity: [0, 1], ...extra, duration: 1100, delay: stagger(90), ease: 'outElastic(1, .85)' });
+            }, { threshold: .2 });
+            io.observe(parent);
+        }
+
+        // Tour: the new screenshot slides and settles in.
+        document.querySelectorAll('#tabs .tab').forEach((t) => t.addEventListener('click', () => {
+            const img = document.querySelector('#tour-shots img.on');
+            if (img) animate(img, { opacity: [0, 1], scale: [1.04, 1], filter: ['blur(8px)', 'blur(0px)'], duration: 700, ease: 'outExpo' });
+        }));
+
+        // Buttons lean towards the pointer a little.
+        $$('.btn').forEach((b) => {
+            b.addEventListener('pointermove', (e) => {
+                const r = b.getBoundingClientRect();
+                animate(b, { x: (e.clientX - r.left - r.width / 2) * .15, y: (e.clientY - r.top - r.height / 2) * .25, duration: 400, ease: 'outQuad' });
+            });
+            b.addEventListener('pointerleave', () => animate(b, { x: 0, y: 0, duration: 700, ease: 'outElastic(1, .5)' }));
+        });
+    }
 </script>
 </body>
 </html>
