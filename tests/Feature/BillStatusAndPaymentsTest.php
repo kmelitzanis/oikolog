@@ -342,4 +342,18 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->actingAs($user)->get(route('bills.show', $bill))->assertOk()
             ->assertSee(route('bills.unpay', $bill), false);
     }
+
+    public function test_the_dashboard_never_shows_negative_days_for_a_part_paid_bill(): void
+    {
+        $user = User::factory()->create(['locale' => 'en']);
+        $this->makeBill($user, [
+            'next_due_date'     => now()->subDays(10)->toDateString(),
+            'remaining_balance' => 20,
+            'last_paid_date'    => now()->subDays(11)->toDateString(),
+        ]);
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()
+            ->assertDontSee(__('messages.in_days', ['days' => -10]))
+            ->assertSee(__('messages.overdue_by', ['days' => 10]));
+    }
 }

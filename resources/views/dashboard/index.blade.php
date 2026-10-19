@@ -122,7 +122,9 @@
                     <div class="flex-1 min-w-0">
                         <div class="text-[0.9rem] font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</div>
                         <div class="text-[0.74rem] mt-0.5" style="color: {{ $accent }}">
-                            @if($isOverdue)
+                            {{-- By the date, not the status: a part-paid bill is
+                                 'partial' even once its due date has passed. --}}
+                            @if($daysUntil < 0)
                                 {{ __('messages.overdue_by', ['days' => abs($daysUntil)]) }}
                             @elseif($daysUntil === 0)
                                 {{ __('messages.due_today') }}
@@ -181,7 +183,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="text-[0.84rem] font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</div>
                         <div class="text-[0.7rem] text-gray-400 dark:text-slate-500 mt-px">
-                            @if($bill->status() === 'overdue')
+                            @if($daysUntil !== null && $daysUntil < 0)
                                 {{ __('messages.overdue_by', ['days' => abs($daysUntil)]) }}
                             @elseif($daysUntil === 0)
                                 {{ __('messages.due_today') }}
