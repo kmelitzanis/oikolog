@@ -135,7 +135,10 @@
             {{-- ── History: services and expenses, newest first ─────────── --}}
             <x-card x-data="{ adding: null }">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-                    <h2 class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.vehicle_section_history') }}</h2>
+                    <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span class="material-icons-round text-amber-500 text-[20px]">history</span>
+                        {{ __('messages.vehicle_section_history') }}
+                    </h2>
                     <div class="flex gap-2">
                         <x-btn type="button" size="sm" variant="ghost" icon="build"
                                x-on:click="adding = adding === 'service' ? null : 'service'">{{ __('messages.vehicle_add_service') }}</x-btn>
@@ -243,7 +246,10 @@
                 {{-- Reminders --}}
                 <x-card x-data="{ adding: false }">
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.vehicle_section_reminders') }}</h2>
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span class="material-icons-round text-amber-500 text-[20px]">notifications_active</span>
+                        {{ __('messages.vehicle_section_reminders') }}
+                    </h2>
                         <button type="button" @click="adding = !adding" title="{{ __('messages.add') }}"
                                 class="{{ $actionBtn }} hover:text-amber-600">
                             <span class="material-icons-round text-[20px]">add</span>
@@ -318,7 +324,10 @@
 
                 {{-- Where the money went --}}
                 <x-card>
-                    <h2 class="text-base font-bold text-gray-900 dark:text-white">{{ __('messages.vehicle_section_expenses') }}</h2>
+                    <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span class="material-icons-round text-amber-500 text-[20px]">pie_chart</span>
+                        {{ __('messages.vehicle_section_expenses') }}
+                    </h2>
                     <p class="text-[0.7rem] text-gray-400 dark:text-slate-500 mb-3">{{ __('messages.vehicle_costs_last_year') }}</p>
 
                     @forelse($breakdown as $category => $row)

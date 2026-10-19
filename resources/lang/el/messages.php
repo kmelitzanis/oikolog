@@ -699,6 +699,7 @@ return [
     'obd_r_ltft_pct' => 'Διόρθωση καυσίμου (μακροπρ.)',
     'obd_r_km_since_clear' => 'Χλμ από διαγραφή κωδικών',
     'obd_r_km_with_mil' => 'Χλμ με αναμμένη λυχνία',
+    'payment_settles_partial' => 'εξόφληση',
     'transfer_recorded' => 'Η μεταφορά καταγράφηκε.',
     'transfer_note_placeholder' => 'π.χ. Αποταμίευση διακοπών',
     'type_deposit' => 'Κατάθεση',

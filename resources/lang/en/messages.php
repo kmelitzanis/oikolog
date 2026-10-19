@@ -699,6 +699,7 @@ return [
     'obd_r_ltft_pct' => 'Fuel trim (long)',
     'obd_r_km_since_clear' => 'km since codes cleared',
     'obd_r_km_with_mil' => 'km with light on',
+    'payment_settles_partial' => 'final instalment',
     'transfer_recorded' => 'Transfer recorded.',
     'transfer_note_placeholder' => 'e.g. Holiday savings',
     'type_deposit' => 'Deposit',

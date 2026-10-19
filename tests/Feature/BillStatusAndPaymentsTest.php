@@ -79,7 +79,7 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->assertStringContainsString('69.44', $html);
         $this->assertStringContainsString('of 92.60', $html);
         // …and it is tinted rather than the usual white.
-        $this->assertStringContainsString('text-amber-600 dark:text-amber-400', $html);
+        $this->assertStringContainsString('text-lime-600 dark:text-lime-400', $html);
     }
 
     public function test_a_settled_bill_reads_as_paid_but_can_take_another_payment(): void
@@ -355,5 +355,26 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->actingAs($user)->get(route('dashboard'))->assertOk()
             ->assertDontSee(__('messages.in_days', ['days' => -10]))
             ->assertSee(__('messages.overdue_by', ['days' => 10]));
+    }
+
+    public function test_a_payment_closing_partial_ones_is_marked_as_the_final_instalment(): void
+    {
+        $user = User::factory()->create(['locale' => 'en']);
+        $bill = $this->makeBill($user);
+        $pay = fn($amount, $partial, $daysAgo) => Payment::create([
+            'bill_id' => $bill->id, 'paid_by' => $user->id, 'amount' => $amount, 'is_partial' => $partial,
+            'currency_code' => 'EUR', 'paid_at' => now()->subDays($daysAgo),
+        ]);
+
+        $pay(100, false, 60);  // full payment in one go: stays green, no badge
+        $pay(40, true, 20);
+        $pay(60, false, 10);   // settles the partial one above
+
+        $html = $this->actingAs($user)->get(route('bills.show', $bill))->assertOk()->getContent();
+
+        $this->assertSame(1, substr_count($html, __('messages.payment_settles_partial')));
+        $this->assertStringContainsString('task_alt', $html);
+        // The one-go payment keeps its green check.
+        $this->assertMatchesRegularExpression('/text-emerald-600[^"]*">\s*check\s*</', $html);
     }
 }

@@ -230,7 +230,7 @@
                     $groupDot = match ($currentGroup) {
                         'overdue' => 'bg-red-500',
                         'soon'    => 'bg-orange-500',
-                        'partial' => 'bg-amber-500',
+                        'partial' => 'bg-lime-500',
                         'paid'    => 'bg-emerald-500',
                         'upcoming'=> 'bg-blue-400',
                         default   => 'bg-gray-300 dark:bg-slate-600',
@@ -260,7 +260,7 @@
                 $railClass = match ($status) {
                     'overdue' => 'bg-red-500',
                     'soon'    => 'bg-orange-500',
-                    'partial' => 'bg-amber-500',
+                    'partial' => 'bg-lime-500',
                     'paid'    => 'bg-emerald-500',
                     'upcoming'=> 'bg-blue-400',
                     default   => 'bg-transparent',
@@ -375,10 +375,10 @@
                         @endunless
                     @else
                         {{-- On a part-paid bill this column shows what is still
-                             owed, tinted amber, with the full amount beneath —
+                             owed, tinted light green, with the full amount beneath —
                              the status chip used to carry the figure instead. --}}
                         @php $isPartial = $bill->status() === 'partial'; @endphp
-                        <div class="text-sm font-bold {{ $isPartial ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white' }}">
+                        <div class="text-sm font-bold {{ $isPartial ? 'text-lime-600 dark:text-lime-400' : 'text-gray-900 dark:text-white' }}">
                             {{ $bill->currency_code }}
                             {{ number_format($isPartial ? $bill->getEffectiveRemainingBalance() : $bill->amount, 2) }}
                         </div>

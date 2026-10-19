@@ -235,7 +235,7 @@
                 </button>
                 <button type="button" @click="paymentMode = 'partial'"
                         :class="paymentMode === 'partial'
-                            ? 'bg-amber-500/[0.16] border-amber-500/40 text-amber-700 dark:text-amber-300'
+                            ? 'bg-lime-500/[0.16] border-lime-500/40 text-lime-700 dark:text-lime-300'
                             : 'bg-transparent border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700'"
                         class="flex items-center justify-center gap-1.5 border rounded-2xl px-3 py-2.5 text-[0.82rem] font-semibold transition">
                     <span class="material-icons-round text-base">payments</span>{{ __('messages.pay_partial') }}
@@ -243,7 +243,7 @@
             </div>
 
             <p x-show="paymentMode === 'partial'" x-cloak
-               class="text-[0.72rem] text-amber-600 dark:text-amber-400 mb-3.5">
+               class="text-[0.72rem] text-lime-600 dark:text-lime-400 mb-3.5">
                 {{ __('messages.partial_hint') }}
             </p>
 

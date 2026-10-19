@@ -23,7 +23,7 @@
         [$heroBg, $heroBorder] = match ($status) {
             'overdue' => ['from-red-500/[0.16] to-red-500/[0.04]', 'border-red-500/30'],
             'soon'    => ['from-orange-500/[0.16] to-orange-500/[0.04]', 'border-orange-500/30'],
-            'partial' => ['from-amber-500/[0.18] to-amber-500/[0.05]', 'border-amber-500/30'],
+            'partial' => ['from-lime-500/[0.18] to-lime-500/[0.05]', 'border-lime-500/30'],
             'paid'    => ['from-emerald-500/[0.16] to-emerald-500/[0.04]', 'border-emerald-500/30'],
             default   => ['from-slate-500/[0.10] to-slate-500/[0.03]', 'border-gray-200 dark:border-slate-700'],
         };
@@ -260,20 +260,31 @@
                         'border-b border-gray-50 dark:border-slate-700' => !$loop->last,
                         '-mx-3 px-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 ring-1 ring-amber-300 dark:ring-amber-500/40' => $isLinked,
                      ])>
+                    @php
+                        // A full payment that closes out earlier partial ones
+                        // belongs to that series: light green like them, with its own
+                        // mark. A full payment made in one go stays green.
+                        $older       = $payments[$loop->index + 1] ?? null;
+                        $settlesPart = ! $payment->is_partial && $older && $older->is_partial;
+                        $partialish  = $payment->is_partial || $settlesPart;
+                        $tone        = $partialish ? 'text-lime-600 dark:text-lime-400' : 'text-emerald-600 dark:text-emerald-400';
+                    @endphp
                     <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0
-                                {{ $payment->is_partial ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30' }}">
-                        <span class="material-icons-round text-base {{ $payment->is_partial ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }}">
-                            {{ $payment->is_partial ? 'payments' : 'check' }}
+                                {{ $partialish ? 'bg-lime-100 dark:bg-lime-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30' }}">
+                        <span class="material-icons-round text-base {{ $tone }}">
+                            {{ $settlesPart ? 'task_alt' : ($payment->is_partial ? 'payments' : 'check') }}
                         </span>
                     </div>
 
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-sm font-semibold {{ $payment->is_partial ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                            <span class="text-sm font-semibold {{ $tone }}">
                                 {{ $payment->currency_code }} {{ number_format($payment->amount, 2) }}
                             </span>
                             @if($payment->is_partial)
                                 <x-badge tone="partial" class="text-[0.68rem] px-2 py-0.5">{{ __('messages.partial') }}</x-badge>
+                            @elseif($settlesPart)
+                                <x-badge tone="partial" class="text-[0.68rem] px-2 py-0.5">{{ __('messages.payment_settles_partial') }}</x-badge>
                             @endif
                             @if($loop->first)
                                 <x-badge tone="neutral" class="text-[0.68rem] px-2 py-0.5">{{ __('messages.latest') }}</x-badge>

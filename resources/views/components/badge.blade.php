@@ -13,14 +13,15 @@
     $callerSetsDisplay = (bool) preg_match('/(?:^|\s)(hidden|inline-flex|flex|block|inline-block|inline|grid)(?:\s|$)/', $incoming);
 
     $toneClass = match ($tone) {
-        // Brand is the solid amber chip; `partial` keeps the soft amber tint, so
+        // Brand is the solid amber chip; `partial` is a light green — money is
+        // already going in, just not all of it — kept apart from `paid`, so
         // the two stay distinguishable now that amber is the brand colour.
         'brand'    => 'bg-amber-500 text-slate-900',
         'overdue'  => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
         'soon'     => 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
         'upcoming' => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
         'paid'     => 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-        'partial'  => 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
+        'partial'  => 'bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300',
         default    => 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300',
     };
 @endphp
