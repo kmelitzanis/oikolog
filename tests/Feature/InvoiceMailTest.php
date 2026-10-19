@@ -17,13 +17,15 @@ class InvoiceMailTest extends TestCase
 
     private function provider(array $attrs = []): Provider
     {
-        return Provider::forceCreate(array_merge([
+        $provider = Provider::forceCreate(array_merge([
             'name'                  => 'ΔΕΗ',
-            'category_id'           => Category::create(['name' => 'Energy'])->id,
             'email_from_pattern'    => '@dei\.gr$',
             'email_subject_pattern' => 'λογαριασμ',
             'email_amount_pattern'  => 'πληρωμ\S*\s*:?\s*([\d.,]+)\s*€',
         ], $attrs));
+        $provider->categories()->attach(Category::create(['name' => 'Energy']));
+
+        return $provider;
     }
 
     private function bill(User $user, Provider $provider): Bill
