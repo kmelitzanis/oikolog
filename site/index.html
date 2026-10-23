@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="el">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Oikolog | Τα οικονομικά του σπιτιού</title>
-    <meta name="description" content="Oikolog: open-source, self-hosted εφαρμογή για λογαριασμούς, έσοδα, αποταμίευση, λίστες αγορών, συνταγές και οχήματα, για όλη την οικογένεια.">
-    <meta property="og:title" content="Oikolog | Τα οικονομικά του σπιτιού">
-    <meta property="og:description" content="Open-source, self-hosted: λογαριασμοί, έσοδα, αποταμίευση, αγορές, συνταγές και οχήματα σε ένα μέρος.">
+    <title>Oikolog | Household finances in one place</title>
+    <meta name="description" content="Oikolog: an open-source, self-hosted app for bills, income, savings, shopping lists, recipes and vehicles, for the whole family.">
+    <meta property="og:title" content="Oikolog | Household finances in one place">
+    <meta property="og:description" content="Open-source and self-hosted: bills, income, savings, shopping, recipes and vehicles in one place.">
     <meta property="og:type" content="website">
     <meta property="og:image" content="screenshots/dashboard.webp">
     <meta name="theme-color" content="#0f172a">
@@ -437,14 +437,13 @@
             <span>og</span>
         </a>
         <div class="nav-links">
-            <a href="#tour" data-i18n="nav_tour">Περιήγηση</a>
-            <a href="#features" data-i18n="nav_features">Δυνατότητες</a>
-            <a href="#showcase" data-i18n="nav_showcase">Οικογένεια & συνταγές</a>
-            <a href="#selfhost" data-i18n="nav_selfhost">Στον server σου</a>
-            <a href="#install" data-i18n="nav_install">Εγκατάσταση</a>
+            <a href="#tour">Tour</a>
+            <a href="#features">Features</a>
+            <a href="#showcase">Family &amp; recipes</a>
+            <a href="#selfhost">Self-hosted</a>
+            <a href="#install">Install</a>
         </div>
         <div class="nav-right">
-            <button class="chip-btn" id="lang" type="button" aria-label="Language">EN</button>
             <a class="chip-btn" href="https://github.com/kmelitzanis/oikolog" aria-label="GitHub" target="_blank" rel="noopener">
                 <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.780-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
                 <span class="gh-label">GitHub</span>
@@ -459,20 +458,20 @@
          page scrolls through it, and the scroll assembles the stage. -->
     <div class="hero-pin" id="hero-pin"><div class="hero-sticky wrap">
         <div class="hero-copy" id="hero-copy">
-            <span class="eyebrow"><b>GPL-3.0</b> <span data-i18n="eyebrow">Ανοιχτός κώδικας · Στον δικό σου server · Δωρεάν</span></span>
+            <span class="eyebrow"><b>GPL-3.0</b> <span>Open source · Self-hosted · Free</span></span>
             <h1>
-                <span class="line"><span style="--d:.1s" data-i18n="h1a">Τα οικονομικά του σπιτιού,</span></span>
-                <span class="line"><span style="--d:.25s"><em data-i18n="h1b">όλα σε ένα μέρος.</em></span></span>
+                <span class="line"><span style="--d:.1s">Your household finances,</span></span>
+                <span class="line"><span style="--d:.25s"><em>in one place.</em></span></span>
             </h1>
-            <p class="lead" data-i18n="lead">Λογαριασμοί που δεν ξεχνάς ποτέ να πληρώσεις, έσοδα, αποταμίευση, λίστες για το σούπερ μάρκετ, συνταγές και τα αυτοκίνητά σου. Για όλη την οικογένεια, στον δικό σου server.</p>
+            <p class="lead">Bills you never forget to pay, income, savings, grocery lists, recipes and your cars. For the whole family, on your own server.</p>
             <div class="cta">
-                <a class="btn btn-primary" href="#install"><span class="mi">rocket_launch</span><span data-i18n="cta_install">Εγκατάσταση με Docker</span></a>
-                <a class="btn btn-ghost" href="#tour"><span class="mi">play_circle</span><span data-i18n="cta_tour">Δες το σε λειτουργία</span></a>
+                <a class="btn btn-primary" href="#install"><span class="mi">rocket_launch</span><span>Install with Docker</span></a>
+                <a class="btn btn-ghost" href="#tour"><span class="mi">play_circle</span><span>See how it works</span></a>
             </div>
             <div class="hero-meta">
-                <span><span class="mi">check_circle</span><span data-i18n="meta1">Τα δεδομένα σου μένουν σε σένα</span></span>
-                <span><span class="mi">check_circle</span><span data-i18n="meta2">Ελληνικά και αγγλικά</span></span>
-                <span><span class="mi">check_circle</span><span data-i18n="meta3">Μπαίνει στο κινητό σαν εφαρμογή</span></span>
+                <span><span class="mi">check_circle</span><span>Your data stays yours</span></span>
+                <span><span class="mi">check_circle</span><span>Greek &amp; English</span></span>
+                <span><span class="mi">check_circle</span><span>Installs like an app</span></span>
             </div>
         </div>
 
@@ -482,30 +481,30 @@
                 <div class="browser">
                     <div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home</span></div>
                     <div class="shot">
-                        <img src="screenshots/dashboard.webp" alt="Ο πίνακας του Oikolog: καθαρό του μήνα, λογαριασμοί που χρειάζονται προσοχή, επόμενες λήξεις και έξοδα ανά κατηγορία" width="1440" height="900">
+                        <img src="screenshots/dashboard.webp" alt="The Oikolog dashboard: net this month, bills that need attention, upcoming due dates and spending by category" width="1440" height="900">
                     </div>
                 </div>
-                <div class="phone"><img src="screenshots/phone-dashboard.webp" alt="Ο πίνακας σε κινητό" width="390" height="844"></div>
+                <div class="phone"><img src="screenshots/phone-dashboard.webp" alt="The dashboard on a phone" width="390" height="844"></div>
                 <div class="float-chip chip-a"><div class="ic"><span class="mi">check</span></div>
-                    <div><span data-i18n="chip_a">Πληρώθηκε το ενοίκιο</span><small data-i18n="chip_a_sub">από τον Γιώργο, μόλις τώρα</small></div></div>
+                    <div><span>Rent paid</span><small>by George, just now</small></div></div>
                 <div class="float-chip chip-b"><div class="ic"><span class="mi">savings</span></div>
-                    <div><span data-i18n="chip_b">+240 € στην αποταμίευση</span><small data-i18n="chip_b_sub">ό,τι περίσσεψε από τον μήνα</small></div></div>
+                    <div><span>+€240 to savings</span><small>left over from the cycle</small></div></div>
 
                 <!-- Pieces of the interface that fly in and dock around the window. -->
                 <div class="shard s-attn" aria-hidden="true">
-                    <div class="shard-head"><span data-i18n="sh_attn">Θέλουν προσοχή</span><b>2</b></div>
-                    <div class="shard-row"><span class="dot" style="background:#ef4444"></span><span data-i18n="sh_attn_1">Ρεύμα</span><em>€98,40</em></div>
-                    <div class="shard-row"><span class="dot" style="background:#84cc16"></span><span data-i18n="sh_attn_2">Γυμναστήριο</span><em>€20,00</em></div>
+                    <div class="shard-head"><span>Needs attention</span><b>2</b></div>
+                    <div class="shard-row"><span class="dot" style="background:#ef4444"></span><span>Electricity</span><em>€98,40</em></div>
+                    <div class="shard-row"><span class="dot" style="background:#84cc16"></span><span>Gym</span><em>€20,00</em></div>
                 </div>
                 <div class="shard s-env" aria-hidden="true">
-                    <div class="shard-head"><span data-i18n="sh_env">Έξοδα σπιτιού</span><span class="mi" style="font-size:16px;color:#f59e0b">shopping_cart</span></div>
+                    <div class="shard-head"><span>Household</span><span class="mi" style="font-size:16px;color:#f59e0b">shopping_cart</span></div>
                     <div class="shard-big">€379,36</div>
                     <div class="shard-bar"><i></i></div>
-                    <small data-i18n="sh_env_sub">απομένουν από 1.200 € · νέος κύκλος στις 25/10</small>
+                    <small>left of €1,200 · new cycle 25/10</small>
                 </div>
                 <div class="shard s-obd" aria-hidden="true">
                     <span class="mi" style="color:#f97316">monitor_heart</span>
-                    <div><b>P0420</b><small data-i18n="sh_obd">Χαμηλή απόδοση καταλύτη</small></div>
+                    <div><b>P0420</b><small>Low catalyst efficiency</small></div>
                 </div>
             </div>
         </div>
@@ -513,18 +512,18 @@
 
     <div class="ticker" aria-hidden="true">
         <div class="ticker-track" id="ticker">
-            <span><span class="mi">bolt</span><span data-i18n="tk1">Ρεύμα</span></span>
-            <span><span class="mi">wifi</span><span data-i18n="tk2">Internet</span></span>
-            <span><span class="mi">water_drop</span><span data-i18n="tk3">Νερό</span></span>
-            <span><span class="mi">home</span><span data-i18n="tk4">Ενοίκιο</span></span>
-            <span><span class="mi">payments</span><span data-i18n="tk5">Μισθοδοσία</span></span>
-            <span><span class="mi">savings</span><span data-i18n="tk6">Αποταμίευση</span></span>
-            <span><span class="mi">directions_car</span><span data-i18n="tk7">Σέρβις αυτοκινήτου</span></span>
-            <span><span class="mi">shield</span><span data-i18n="tk8">Ασφάλειες</span></span>
-            <span><span class="mi">shopping_cart</span><span data-i18n="tk9">Σούπερ μάρκετ</span></span>
-            <span><span class="mi">restaurant</span><span data-i18n="tk10">Πρόγραμμα γευμάτων</span></span>
-            <span><span class="mi">subscriptions</span><span data-i18n="tk11">Συνδρομές</span></span>
-            <span><span class="mi">account_balance</span><span data-i18n="tk12">Δάνεια</span></span>
+            <span><span class="mi">bolt</span><span>Electricity</span></span>
+            <span><span class="mi">wifi</span><span>Internet</span></span>
+            <span><span class="mi">water_drop</span><span>Water</span></span>
+            <span><span class="mi">home</span><span>Rent</span></span>
+            <span><span class="mi">payments</span><span>Salary</span></span>
+            <span><span class="mi">savings</span><span>Savings</span></span>
+            <span><span class="mi">directions_car</span><span>Car service</span></span>
+            <span><span class="mi">shield</span><span>Insurance</span></span>
+            <span><span class="mi">shopping_cart</span><span>Groceries</span></span>
+            <span><span class="mi">restaurant</span><span>Meal plan</span></span>
+            <span><span class="mi">subscriptions</span><span>Subscriptions</span></span>
+            <span><span class="mi">account_balance</span><span>Loans</span></span>
         </div>
     </div>
 </header>
@@ -532,41 +531,41 @@
 <section id="tour">
     <div class="wrap">
         <div class="sec-head center reveal">
-            <div class="kicker" data-i18n="tour_kicker">Περιήγηση</div>
-            <h2 data-i18n="tour_h2">Ρίξε μια ματιά μέσα.</h2>
+            <div class="kicker">Tour</div>
+            <h2>A look inside the app.</h2>
         </div>
         <div class="tour reveal" style="--d:.1s">
             <div class="tabs" id="tabs" role="tablist">
                 <button class="tab on" type="button" role="tab" data-shot="0">
-                    <span class="tab-title"><span class="mi">receipt_long</span><span data-i18n="t1">Λογαριασμοί</span></span>
-                    <span class="tab-body"><div><p data-i18n="t1p">Ταξινομημένοι με βάση το τι πιέζει: ληξιπρόθεσμοι, μερικώς πληρωμένοι, όσοι λήγουν σύντομα και πληρωμένοι.</p></div></span>
+                    <span class="tab-title"><span class="mi">receipt_long</span><span>Bills</span></span>
+                    <span class="tab-body"><div><p>Grouped by urgency: overdue, partly paid, due soon, paid.</p></div></span>
                     <span class="tab-progress"><i></i></span></button>
                 <button class="tab" type="button" role="tab" data-shot="1">
-                    <span class="tab-title"><span class="mi">calendar_month</span><span data-i18n="t2">Ημερολόγιο</span></span>
-                    <span class="tab-body"><div><p data-i18n="t2p">Όλος ο μήνας με μια ματιά, με διαφορετικό χρώμα για κάθε κατάσταση.</p></div></span>
+                    <span class="tab-title"><span class="mi">calendar_month</span><span>Calendar</span></span>
+                    <span class="tab-body"><div><p>The whole month at a glance, coloured by status.</p></div></span>
                     <span class="tab-progress"><i></i></span></button>
                 <button class="tab" type="button" role="tab" data-shot="2">
-                    <span class="tab-title"><span class="mi">account_balance_wallet</span><span data-i18n="t3">Έσοδα και αποταμίευση</span></span>
-                    <span class="tab-body"><div><p data-i18n="t3p">Ο μισθός που επιβεβαιώνεις όταν μπει, φάκελοι εξόδων για κάθε μήνα και η αποταμίευσή σου.</p></div></span>
+                    <span class="tab-title"><span class="mi">account_balance_wallet</span><span>Income &amp; accounts</span></span>
+                    <span class="tab-body"><div><p>Salary you confirm, spending envelopes per pay cycle, and savings.</p></div></span>
                     <span class="tab-progress"><i></i></span></button>
                 <button class="tab" type="button" role="tab" data-shot="3">
-                    <span class="tab-title"><span class="mi">directions_car</span><span data-i18n="t4">Οχήματα</span></span>
-                    <span class="tab-body"><div><p data-i18n="t4p">Σέρβις, έξοδα, υπενθυμίσεις και οι κωδικοί βλάβης του OBD, εξηγημένοι στα ελληνικά.</p></div></span>
+                    <span class="tab-title"><span class="mi">directions_car</span><span>Vehicles</span></span>
+                    <span class="tab-body"><div><p>Service and expense history, reminders, and OBD trouble codes explained.</p></div></span>
                     <span class="tab-progress"><i></i></span></button>
                 <button class="tab" type="button" role="tab" data-shot="4">
-                    <span class="tab-title"><span class="mi">restaurant_menu</span><span data-i18n="t5">Πρόγραμμα γευμάτων</span></span>
-                    <span class="tab-body"><div><p data-i18n="t5p">Όλη η εβδομάδα σε έναν πίνακα. Τα υλικά πάνε στη λίστα αγορών με ένα κλικ.</p></div></span>
+                    <span class="tab-title"><span class="mi">restaurant_menu</span><span>Meal plan</span></span>
+                    <span class="tab-body"><div><p>The week as a grid; ingredients go to the shopping list in one click.</p></div></span>
                     <span class="tab-progress"><i></i></span></button>
             </div>
             <div class="tour-view">
                 <div class="browser">
                     <div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span><span id="tour-url">oikolog.home/bills</span></span></div>
                     <div class="shot" id="tour-shots">
-                        <img class="on" src="screenshots/bills.webp" alt="Η λίστα λογαριασμών ομαδοποιημένη κατά κατάσταση" width="1440" height="900" loading="lazy">
-                        <img src="screenshots/calendar.webp" alt="Το ημερολόγιο λογαριασμών του μήνα" width="1440" height="900" loading="lazy">
-                        <img src="screenshots/income.webp" alt="Έσοδα, συνολικό υπόλοιπο και λογαριασμοί χρημάτων" width="1440" height="900" loading="lazy">
-                        <img src="screenshots/vehicle.webp" alt="Η σελίδα ενός οχήματος με ιστορικό και υπενθυμίσεις" width="1440" height="900" loading="lazy">
-                        <img src="screenshots/meal-planner.webp" alt="Το εβδομαδιαίο πρόγραμμα γευμάτων" width="1440" height="900" loading="lazy">
+                        <img class="on" src="screenshots/bills.webp" alt="The bills list grouped by status" width="1440" height="900" loading="lazy">
+                        <img src="screenshots/calendar.webp" alt="The month's bill calendar" width="1440" height="900" loading="lazy">
+                        <img src="screenshots/income.webp" alt="Income, total balance and money accounts" width="1440" height="900" loading="lazy">
+                        <img src="screenshots/vehicle.webp" alt="A vehicle page with history and reminders" width="1440" height="900" loading="lazy">
+                        <img src="screenshots/meal-planner.webp" alt="The weekly meal plan" width="1440" height="900" loading="lazy">
                     </div>
                 </div>
             </div>
@@ -577,35 +576,35 @@
 <section id="features" style="padding-top:20px">
     <div class="wrap">
         <div class="sec-head reveal">
-            <div class="kicker" data-i18n="feat_kicker">Δυνατότητες</div>
-            <h2 data-i18n="feat_h2">Όλα όσα χρειάζεται ένα σπίτι, για να μη σου ξεφεύγει τίποτα.</h2>
-            <p data-i18n="feat_p">Από τον λογαριασμό της ΔΕΗ μέχρι το σέρβις του αυτοκινήτου: κάθε υποχρέωση με ημερομηνία, ποσό και ιστορικό.</p>
+            <div class="kicker">Features</div>
+            <h2>Everything a home needs so nothing slips through.</h2>
+            <p>From the power bill to the car service: every obligation with a date, an amount and a history.</p>
         </div>
         <div class="grid">
             <div class="card reveal" style="--d:0s"><div class="ic"><span class="mi">receipt_long</span></div>
-                <h3 data-i18n="f1_t">Λογαριασμοί και πληρωμές</h3>
-                <p data-i18n="f1_p">Μηνιαίοι, τριμηνιαίοι ή εφάπαξ, με την επόμενη λήξη να υπολογίζεται μόνη της. Μερικές πληρωμές, και δάνεια όπου βλέπεις πόσα μένουν να αποπληρωθούν.</p></div>
+                <h3>Bills &amp; payments</h3>
+                <p>Monthly, quarterly or one-off, with the next due date worked out for you. Partial payments, and loans where you see how much is left to repay.</p></div>
             <div class="card reveal" style="--d:.06s"><div class="ic"><span class="mi">savings</span></div>
-                <h3 data-i18n="f2_t">Φάκελοι και αποταμίευση</h3>
-                <p data-i18n="f2_p">Ορίζεις πόσα ξοδεύεις σε κάθε κύκλο μισθοδοσίας. Ό,τι περισσέψει, το στέλνεις στην αποταμίευση με ένα κλικ.</p></div>
+                <h3>Envelopes &amp; savings</h3>
+                <p>Set how much you spend each pay cycle. Whatever is left over goes to savings in one click.</p></div>
             <div class="card reveal" style="--d:.12s"><div class="ic"><span class="mi">payments</span></div>
-                <h3 data-i18n="f3_t">Έσοδα</h3>
-                <p data-i18n="f3_p">Ο μισθός και τα υπόλοιπα έσοδα σημειώνονται όταν μπουν πραγματικά, και βλέπεις πόσο νωρίτερα ή αργότερα ήρθαν.</p></div>
+                <h3>Income</h3>
+                <p>Salary and other income are marked when the money actually lands, so you see how early or late it came.</p></div>
             <div class="card reveal" style="--d:.18s"><div class="ic"><span class="mi">mark_email_read</span></div>
-                <h3><span data-i18n="f4_t">Τιμολόγια από το email</span> <span class="beta">Beta</span></h3>
-                <p data-i18n="f4_p">Συνδέεις το Gmail ή το Outlook και το Oikolog διαβάζει τα τιμολόγια των παρόχων για να σου προτείνει το ποσό. Δεν στέλνει και δεν σβήνει τίποτα.</p></div>
+                <h3><span>Invoices from email</span> <span class="beta">Beta</span></h3>
+                <p>Connect Gmail or Outlook and Oikolog reads providers’ invoices to suggest the amount. It never sends or deletes anything.</p></div>
             <div class="card reveal" style="--d:0s"><div class="ic"><span class="mi">family_restroom</span></div>
-                <h3 data-i18n="f5_t">Για όλη την οικογένεια</h3>
-                <p data-i18n="f5_p">Κοινοί λογαριασμοί, πρόσκληση με κωδικό και ειδοποίηση στο κινητό όταν κάποιος πληρώσει.</p></div>
+                <h3>For the whole family</h3>
+                <p>Shared bills, an invite code, and a push notification when someone pays.</p></div>
             <div class="card reveal" style="--d:.06s"><div class="ic"><span class="mi">qr_code_scanner</span></div>
-                <h3 data-i18n="f6_t">Λίστες αγορών</h3>
-                <p data-i18n="f6_p">Λίστες με ποσότητες, κατάλογος προϊόντων και σάρωση barcode με την κάμερα, μαζί με τη διατροφική αξία.</p></div>
+                <h3>Shopping lists</h3>
+                <p>Lists with quantities, a product catalogue and barcode scanning with your phone camera, with nutrition data.</p></div>
             <div class="card reveal" style="--d:.12s"><div class="ic"><span class="mi">restaurant_menu</span></div>
-                <h3 data-i18n="f7_t">Συνταγές και πρόγραμμα</h3>
-                <p data-i18n="f7_p">Φέρνεις συνταγές από οποιονδήποτε σύνδεσμο και φτιάχνεις το πρόγραμμα της εβδομάδας. Τα υλικά πάνε κατευθείαν στη λίστα αγορών.</p></div>
+                <h3>Recipes &amp; meal plan</h3>
+                <p>Import recipes from a URL and plan the week; the ingredients go straight to a shopping list.</p></div>
             <div class="card reveal" style="--d:.18s"><div class="ic"><span class="mi">directions_car</span></div>
-                <h3 data-i18n="f8_t">Οχήματα</h3>
-                <p data-i18n="f8_p">Χιλιόμετρα, υπενθυμίσεις για σέρβις, ιστορικό εργασιών, κόστος ανά χιλιόμετρο και διάγνωση OBD μέσω Bluetooth.</p></div>
+                <h3>Vehicles</h3>
+                <p>Mileage, service reminders, a work history, cost per kilometre and OBD diagnostics over Bluetooth.</p></div>
         </div>
     </div>
 </section>
@@ -616,94 +615,94 @@
 
         <div class="sc-row">
             <div class="sc-copy reveal">
-                <div class="kicker" data-i18n="sc1_k">Για όλη την οικογένεια</div>
-                <h2 data-i18n="sc1_h">Ένα σπίτι, κοινό για όλους.</h2>
-                <p data-i18n="sc1_p">Φτιάχνεις την οικογένεια και στέλνεις στους δικούς σου έναν κωδικό πρόσκλησης. Μόλις μπουν, βλέπετε όλοι μαζί τους λογαριασμούς του σπιτιού και ποιος πλήρωσε τι. Κανείς δεν χρειάζεται πια να ρωτάει «το πλήρωσες;».</p>
+                <div class="kicker">For the whole family</div>
+                <h2>One home, shared by everyone.</h2>
+                <p>Create your family and send your people an invite code. Once they join, you share the household bills, see who paid what, and nobody has to ask “did you pay it?” again.</p>
                 <ul class="checks">
-                    <li><span class="mi">group_add</span><span data-i18n="sc1_1">Προσκαλείς με έναν κωδικό, ορίζεις ποιος είναι ιδιοκτήτης και ποιος μέλος, και μπορείς να δώσεις την ιδιοκτησία σε άλλον</span></li>
-                    <li><span class="mi">sync_alt</span><span data-i18n="sc1_2">Μοιράζεστε λογαριασμούς, έσοδα, τραπεζικούς λογαριασμούς και οχήματα. Ό,τι δεν μοιράζεσαι το βλέπεις μόνο εσύ.</span></li>
-                    <li><span class="mi">notifications_active</span><span data-i18n="sc1_3">Σου έρχεται ειδοποίηση στο κινητό μόλις κάποιος πληρώσει, και φαίνεται πάντα ποιος πλήρωσε τι</span></li>
-                    <li><span class="mi">history</span><span data-i18n="sc1_4">Ιστορικό αλλαγών, για να βλέπεις ποιος πρόσθεσε ή άλλαξε κάτι</span></li>
+                    <li><span class="mi">group_add</span><span>Invite code, owner and member roles, ownership transfer</span></li>
+                    <li><span class="mi">sync_alt</span><span>Shared bills, income, bank accounts and vehicles. Whatever you don’t share stays yours alone.</span></li>
+                    <li><span class="mi">notifications_active</span><span>A phone notification when someone pays, and who paid what</span></li>
+                    <li><span class="mi">history</span><span>An activity feed: who added or changed what</span></li>
                 </ul>
             </div>
             <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/family</span></div>
-                <div class="shot"><img src="screenshots/family.webp" alt="Η σελίδα οικογένειας με μέλη, ρόλους, κωδικό πρόσκλησης και δραστηριότητα" width="1440" height="900" loading="lazy"></div></div></div>
+                <div class="shot"><img src="screenshots/family.webp" alt="The family page with members, roles, invite code and activity" width="1440" height="900" loading="lazy"></div></div></div>
         </div>
 
         <div class="sc-row flip">
             <div class="sc-copy reveal">
-                <div class="kicker" data-i18n="sc2_k">Συνταγές</div>
-                <h2 data-i18n="sc2_h">Βάζεις το link. Η συνταγή γράφεται μόνη της.</h2>
-                <p data-i18n="sc2_p">Δίνεις τον σύνδεσμο μιας συνταγής και το Oikolog παίρνει από τη σελίδα το όνομα, τη φωτογραφία, τις μερίδες, τους χρόνους, τα υλικά και τα βήματα, χωρισμένα όπως στο πρωτότυπο.</p>
+                <div class="kicker">Recipes</div>
+                <h2>Paste a link. The recipe writes itself.</h2>
+                <p>Give it a recipe link and Oikolog takes the name, photo, servings, times, ingredients and steps from the page, split into sections just like the original.</p>
                 <ul class="checks">
-                    <li><span class="mi">link</span><span data-i18n="sc2_1">Δουλεύει με τα περισσότερα μεγάλα sites συνταγών</span></li>
-                    <li><span class="mi">star</span><span data-i18n="sc2_2">Ειδική υποστήριξη για το akispetretzikis.com</span></li>
-                    <li><span class="mi">straighten</span><span data-i18n="sc2_3">Καταλαβαίνει τις ελληνικές μονάδες: κ.σ., κ.γ., φλ., γρ.</span></li>
-                    <li><span class="mi">calendar_view_week</span><span data-i18n="sc2_4">Εβδομαδιαίο πρόγραμμα γευμάτων, και τα υλικά της εβδομάδας στη λίστα αγορών με ένα κλικ</span></li>
+                    <li><span class="mi">link</span><span>Works with most big recipe sites</span></li>
+                    <li><span class="mi">star</span><span>Dedicated support for akispetretzikis.com</span></li>
+                    <li><span class="mi">straighten</span><span>Greek cooking units are recognised and normalised</span></li>
+                    <li><span class="mi">calendar_view_week</span><span>A weekly meal plan, with the week’s ingredients sent to the shopping list in one click</span></li>
                 </ul>
             </div>
             <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/recipes/create</span></div>
-                <div class="shot"><img src="screenshots/recipe-import.webp" alt="Νέα συνταγή με εισαγωγή από σύνδεσμο" width="1440" height="900" loading="lazy"></div></div></div>
+                <div class="shot"><img src="screenshots/recipe-import.webp" alt="A new recipe imported from a link" width="1440" height="900" loading="lazy"></div></div></div>
         </div>
 
         <div class="sc-row">
             <div class="sc-copy reveal">
-                <div class="kicker" data-i18n="sc3_k">Λίστες αγορών</div>
-                <h2 data-i18n="sc3_h">Η λίστα για το σούπερ μάρκετ, πάντα στην τσέπη σου.</h2>
-                <p data-i18n="sc3_p">Λίστες με ποσότητες και μονάδες, που τις τσεκάρεις καθώς ψωνίζεις, και ένας κατάλογος προϊόντων που μεγαλώνει όσο τον χρησιμοποιείς.</p>
+                <div class="kicker">Shopping lists</div>
+                <h2>The grocery list, in your pocket.</h2>
+                <p>Lists with quantities and units that you tick off as you shop, and a product catalogue that grows as you use it.</p>
                 <ul class="checks">
-                    <li><span class="mi">qr_code_scanner</span><span data-i18n="sc3_1">Σάρωση barcode με την κάμερα του κινητού</span></li>
-                    <li><span class="mi">eco</span><span data-i18n="sc3_2">Όνομα, διατροφική αξία και Nutri-Score από το Open Food Facts</span></li>
-                    <li><span class="mi">inventory_2</span><span data-i18n="sc3_3">Κατάλογος προϊόντων με το ιστορικό των αγορών σου</span></li>
-                    <li><span class="mi">restaurant</span><span data-i18n="sc3_4">Γεμίζει μόνη της από το πρόγραμμα γευμάτων</span></li>
+                    <li><span class="mi">qr_code_scanner</span><span>Barcode scanning with your phone camera</span></li>
+                    <li><span class="mi">eco</span><span>Name, nutrition facts and Nutri-Score from Open Food Facts</span></li>
+                    <li><span class="mi">inventory_2</span><span>A product catalogue with purchase history</span></li>
+                    <li><span class="mi">restaurant</span><span>Fills itself from the meal plan</span></li>
                 </ul>
             </div>
             <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/shopping-lists</span></div>
-                <div class="shot"><img src="screenshots/shopping-list.webp" alt="Λίστα αγορών με ποσότητες και τσεκαρισμένα προϊόντα" width="1440" height="900" loading="lazy"></div></div></div>
+                <div class="shot"><img src="screenshots/shopping-list.webp" alt="A shopping list with quantities and checked items" width="1440" height="900" loading="lazy"></div></div></div>
         </div>
 
         <div class="sc-row flip">
             <div class="sc-copy reveal">
-                <div class="kicker" data-i18n="sc4_k">Φτιαγμένο για την Ελλάδα</div>
-                <h2 data-i18n="sc4_h">Όλοι οι γνωστοί πάροχοι, έτοιμοι από την πρώτη μέρα.</h2>
-                <p data-i18n="sc4_p">Πάνω από 50 ελληνικοί και διεθνείς πάροχοι είναι ήδη μέσα, σε 16 κατηγορίες. Και μπορείς να τα αλλάξεις όλα.</p>
+                <div class="kicker">Made for Greece</div>
+                <h2>Every well-known provider, ready on day one.</h2>
+                <p>More than 50 Greek and international providers are already in, across 16 categories. And you can change all of it.</p>
                 <ul class="checks">
-                    <li><span class="mi">bolt</span><span data-i18n="sc4_1">Ρεύμα, νερό, φυσικό αέριο, τηλεφωνία, τράπεζες, ασφαλιστικές, σούπερ μάρκετ, συγκοινωνίες, streaming</span></li>
-                    <li><span class="mi">category</span><span data-i18n="sc4_2">Δικές σου κατηγορίες, με το εικονίδιο και το χρώμα που θέλεις</span></li>
-                    <li><span class="mi">add_business</span><span data-i18n="sc4_3">Προσθέτεις ή αλλάζεις παρόχους, και ο ίδιος πάροχος μπορεί να ανήκει σε πολλές κατηγορίες</span></li>
-                    <li><span class="mi">translate</span><span data-i18n="sc4_4">Ελληνικά και αγγλικά, και οι μεταφράσεις αλλάζουν μέσα από την εφαρμογή</span></li>
+                    <li><span class="mi">bolt</span><span>Electricity, water, gas, telecoms, banks, insurance, supermarkets, transport, streaming</span></li>
+                    <li><span class="mi">category</span><span>Your own categories, with an icon and a colour</span></li>
+                    <li><span class="mi">add_business</span><span>Add or edit providers, and one provider can belong to several categories</span></li>
+                    <li><span class="mi">translate</span><span>Greek and English, with translations you can edit in the app</span></li>
                 </ul>
             </div>
             <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/admin/providers</span></div>
-                <div class="shot"><img src="screenshots/providers.webp" alt="Η λίστα παρόχων με κατηγορίες" width="1440" height="900" loading="lazy"></div></div></div>
+                <div class="shot"><img src="screenshots/providers.webp" alt="The providers list with categories" width="1440" height="900" loading="lazy"></div></div></div>
         </div>
     </div>
 
     <!-- The providers themselves, as two drifting rows. -->
-    <div class="providers" aria-label="Πάροχοι">
+    <div class="providers" aria-label="Providers">
         <div class="prov-row"><div class="prov-track">
-            <span>ΔΕΗ</span><span>Heron</span><span>NRG</span><span>Protergia</span><span>Elpedison</span><span>Zenith</span><span>ΕΥΔΑΠ</span><span>ΕΥΑΘ</span><span>ΕΔΑ Αττικής</span><span>ΕΔΑ ΘΕΣΣ</span><span>Cosmote</span><span>Vodafone</span><span>Nova</span><span>Cyta</span><span>Netflix</span><span>Disney+</span><span>Spotify</span><span>YouTube Premium</span><span>Amazon Prime</span><span>Max</span><span>Apple TV+</span><span>PlayStation Plus</span><span>Xbox Game Pass</span><span>Steam</span>
+            <span>PPC</span><span>Heron</span><span>NRG</span><span>Protergia</span><span>Elpedison</span><span>Zenith</span><span>EYDAP</span><span>EYATH</span><span>EDA Attikis</span><span>EDA Thess</span><span>Cosmote</span><span>Vodafone</span><span>Nova</span><span>Cyta</span><span>Netflix</span><span>Disney+</span><span>Spotify</span><span>YouTube Premium</span><span>Amazon Prime</span><span>Max</span><span>Apple TV+</span><span>PlayStation Plus</span><span>Xbox Game Pass</span><span>Steam</span>
         </div></div>
         <div class="prov-row rev"><div class="prov-track">
-            <span>Alpha Bank</span><span>Eurobank</span><span>Τράπεζα Πειραιώς</span><span>Εθνική Τράπεζα</span><span>Attica Bank</span><span>Revolut</span><span>American Express</span><span>Interamerican</span><span>Εθνική Ασφαλιστική</span><span>Allianz</span><span>AXA</span><span>Eurolife FFH</span><span>Generali</span><span>ΑΒ Βασιλόπουλος</span><span>Σκλαβενίτης</span><span>Lidl</span><span>My Market</span><span>Μασούτης</span><span>ΟΑΣΑ</span><span>ΟΣΕ</span><span>Aegean</span><span>Ryanair</span><span>Holmes Place</span><span>Coursera</span>
+            <span>Alpha Bank</span><span>Eurobank</span><span>Piraeus Bank</span><span>National Bank of Greece</span><span>Attica Bank</span><span>Revolut</span><span>American Express</span><span>Interamerican</span><span>Ethniki Insurance</span><span>Allianz</span><span>AXA</span><span>Eurolife FFH</span><span>Generali</span><span>AB Vassilopoulos</span><span>Sklavenitis</span><span>Lidl</span><span>My Market</span><span>Masoutis</span><span>OASA</span><span>Hellenic Train</span><span>Aegean</span><span>Ryanair</span><span>Holmes Place</span><span>Coursera</span>
         </div></div>
     </div>
 </section>
 
 <section id="mobile" style="padding-top:20px">
     <div class="wrap mobile">
-        <div class="phones reveal-scale" role="button" tabindex="0" aria-label="Εναλλαγή οθόνης">
+        <div class="phones reveal-scale" role="button" tabindex="0" aria-label="Swap screens">
             <div class="phone p1 front"><img src="screenshots/phone-dashboard.webp" alt="" width="390" height="844" loading="lazy"></div>
             <div class="phone p2 back"><img src="screenshots/phone-income.webp" alt="" width="390" height="844" loading="lazy"></div>
         </div>
         <div class="reveal" style="--d:.1s">
-            <div class="kicker" data-i18n="mob_kicker">Στο κινητό · PWA</div>
-            <h2 data-i18n="mob_h2">Σαν κανονική εφαρμογή, χωρίς app store.</h2>
-            <p style="color:var(--ink-2);margin:0;font-size:1.06rem" data-i18n="mob_p">Το Oikolog είναι Progressive Web App (PWA): το προσθέτεις στην αρχική οθόνη κατευθείαν από τον browser και ανοίγει σε πλήρη οθόνη, σαν κανονική εφαρμογή, με ειδοποιήσεις και μπάρα πλοήγησης στο κάτω μέρος. Χωρίς app store και χωρίς ενημερώσεις να περιμένεις.</p>
+            <div class="kicker">On your phone · PWA</div>
+            <h2>Like an app, without an app store.</h2>
+            <p style="color:var(--ink-2);margin:0;font-size:1.06rem">Oikolog is a Progressive Web App (PWA): add it to your home screen straight from the browser and it opens full screen like a regular app, with notifications and a bottom navigation bar. No app store, and no updates to wait for.</p>
             <ul class="checks">
-                <li><span class="mi">check_circle</span><span data-i18n="mob_1">Ειδοποίηση όταν κάποιος από την οικογένεια πληρώσει</span></li>
-                <li><span class="mi">check_circle</span><span data-i18n="mob_2">Σάρωση barcode με την κάμερα, για τη λίστα αγορών</span></li>
-                <li><span class="mi">check_circle</span><span data-i18n="mob_3">Διάγνωση του αυτοκινήτου μέσω OBD και Bluetooth, κατευθείαν από τον browser</span></li>
+                <li><span class="mi">check_circle</span><span>A notification when someone in the family pays</span></li>
+                <li><span class="mi">check_circle</span><span>Barcode scanning with the camera for the shopping list</span></li>
+                <li><span class="mi">check_circle</span><span>OBD diagnostics for your car over Bluetooth, right from the browser</span></li>
             </ul>
         </div>
     </div>
@@ -712,23 +711,23 @@
 <section id="selfhost" style="padding-top:20px">
     <div class="wrap split">
         <div class="panel reveal">
-            <div class="kicker" data-i18n="sh_kicker">Στον δικό σου server</div>
-            <h2 data-i18n="sh_h2">Τα δεδομένα σου μένουν στο σπίτι σου.</h2>
-            <p style="color:var(--ink-2);margin:0" data-i18n="sh_p">Το Oikolog τρέχει στον δικό σου server, σε ένα NAS ή σε ένα VPS. Οι λογαριασμοί και οι πληρωμές σου δεν περνούν από κανέναν τρίτο.</p>
+            <div class="kicker">Self-hosted</div>
+            <h2>Your data, in your own home.</h2>
+            <p style="color:var(--ink-2);margin:0">Oikolog runs on your own server, NAS or VPS. Your bills and payments never pass through a third party.</p>
             <ul class="checks">
-                <li><span class="mi">check_circle</span><span data-i18n="sh_1">Ξεκινάει με ένα μόνο docker compose up</span></li>
-                <li><span class="mi">check_circle</span><span data-i18n="sh_2">Σύνδεση δύο βημάτων (TOTP)</span></li>
-                <li><span class="mi">check_circle</span><span data-i18n="sh_3">Οι κωδικοί του email αποθηκεύονται κρυπτογραφημένοι, και με σύνδεση Microsoft δεν χρειάζεται καν κωδικός</span></li>
+                <li><span class="mi">check_circle</span><span>One docker compose up and you are ready</span></li>
+                <li><span class="mi">check_circle</span><span>Two-factor authentication (TOTP)</span></li>
+                <li><span class="mi">check_circle</span><span>Mail passwords are stored encrypted, or not needed at all with Microsoft sign-in</span></li>
             </ul>
         </div>
         <div class="panel reveal" style="--d:.1s">
-            <div class="kicker" data-i18n="pl_kicker">Ανοιχτός κώδικας</div>
-            <h2 data-i18n="pl_h2">Δικό σου, να το αλλάξεις όπως θέλεις.</h2>
-            <p style="color:var(--ink-2);margin:0" data-i18n="pl_p">Laravel, Alpine και Tailwind, με άδεια GPL-3.0. Μπορείς να διαβάσεις τον κώδικα, να ανοίξεις ένα issue ή να στείλεις ένα pull request.</p>
+            <div class="kicker">Open source</div>
+            <h2>Yours to change.</h2>
+            <p style="color:var(--ink-2);margin:0">Laravel, Alpine and Tailwind, under GPL-3.0. Read the code, open an issue or send a pull request.</p>
             <ul class="checks">
-                <li><span class="mi">check_circle</span><span data-i18n="pl_1">Ελληνικά και αγγλικά, και οι μεταφράσεις αλλάζουν μέσα από την εφαρμογή</span></li>
-                <li><span class="mi">check_circle</span><span data-i18n="pl_2">Ο διαχειριστής ορίζει κατηγορίες, παρόχους και χρήστες</span></li>
-                <li><span class="mi">check_circle</span><span data-i18n="pl_3">Εγκαθίσταται σαν εφαρμογή σε κινητό και υπολογιστή</span></li>
+                <li><span class="mi">check_circle</span><span>Greek and English, with translations you can edit in the app</span></li>
+                <li><span class="mi">check_circle</span><span>Admin area for categories, providers and users</span></li>
+                <li><span class="mi">check_circle</span><span>Installs like an app on phone and desktop</span></li>
             </ul>
         </div>
     </div>
@@ -737,28 +736,28 @@
 <section id="install" style="padding-top:20px">
     <div class="wrap split" style="align-items:start">
         <div class="sec-head reveal" style="margin:0">
-            <div class="kicker" data-i18n="in_kicker">Εγκατάσταση</div>
-            <h2 data-i18n="in_h2">Έτοιμο σε λίγα λεπτά.</h2>
-            <p data-i18n="in_p">Χρειάζεσαι μόνο Docker. Η εφαρμογή έρχεται έτοιμη μέσα στο image και η βάση MySQL με το compose.</p>
-            <p class="note" data-i18n-html="in_note">Για NAS, HTTPS και ειδοποιήσεις, δες τον <a href="https://github.com/kmelitzanis/oikolog/blob/master/README.DOCKER.md" target="_blank" rel="noopener">οδηγό για το Docker</a>.</p>
+            <div class="kicker">Install</div>
+            <h2>Up and running in minutes.</h2>
+            <p>All you need is Docker. The app comes ready inside the image, and MySQL comes with the compose file.</p>
+            <p class="note">For a NAS, HTTPS and notifications, see the <a href="https://github.com/kmelitzanis/oikolog/blob/master/README.DOCKER.md" target="_blank" rel="noopener">Docker guide</a>.</p>
         </div>
         <div class="steps">
             <div class="step reveal"><div>
-                <h4 data-i18n="st1">Κατέβασε τον κώδικα</h4>
+                <h4>Get the project</h4>
                 <div class="code"><button class="copy" type="button" aria-label="Copy"><span class="mi">content_copy</span></button>git clone https://github.com/kmelitzanis/oikolog.git
 cd oikolog</div>
             </div></div>
             <div class="step reveal" style="--d:.08s"><div>
-                <h4 data-i18n="st2">Συμπλήρωσε τις ρυθμίσεις</h4>
+                <h4>Set your details</h4>
                 <div class="code"><button class="copy" type="button" aria-label="Copy"><span class="mi">content_copy</span></button>cp .env.example .env
 docker run --rm kostasmel/oikolog-app php artisan key:generate --show
-<span class="c" data-i18n="st2_c"># βάλε το κλειδί στο APP_KEY, μαζί με το APP_URL και τους κωδικούς της βάσης</span></div>
+<span class="c"># put the key in APP_KEY, along with APP_URL and database passwords</span></div>
             </div></div>
             <div class="step reveal" style="--d:.16s"><div>
-                <h4 data-i18n="st3">Ξεκίνα την εφαρμογή</h4>
+                <h4>Start it</h4>
                 <div class="code"><button class="copy" type="button" aria-label="Copy"><span class="mi">content_copy</span></button>docker compose up -d
 docker compose exec app php artisan make:user --admin</div>
-                <p class="note" data-i18n="st3_note">Άνοιξε το http://localhost:8000 και συνδέσου.</p>
+                <p class="note">Open http://localhost:8000 and sign in.</p>
             </div></div>
         </div>
     </div>
@@ -767,11 +766,11 @@ docker compose exec app php artisan make:user --admin</div>
 <section style="padding-top:20px">
     <div class="wrap">
         <div class="band reveal-scale">
-            <h2 data-i18n="band_h2">Δωρεάν. Για πάντα.</h2>
-            <p data-i18n="band_p">Το Oikolog είναι ανοιχτού κώδικα. Αν σου φανεί χρήσιμο, ένα αστέρι στο GitHub βοηθάει να το μάθουν κι άλλοι.</p>
+            <h2>Free. Forever.</h2>
+            <p>Oikolog is open source. If it is useful to you, a star on GitHub helps others find it.</p>
             <div class="cta">
-                <a class="btn btn-primary" href="https://github.com/kmelitzanis/oikolog" target="_blank" rel="noopener"><span class="mi">star</span><span data-i18n="band_star">Αστέρι στο GitHub</span></a>
-                <a class="btn btn-ghost" href="#install"><span class="mi">download</span><span data-i18n="band_install">Εγκατάσταση</span></a>
+                <a class="btn btn-primary" href="https://github.com/kmelitzanis/oikolog" target="_blank" rel="noopener"><span class="mi">star</span><span>Star on GitHub</span></a>
+                <a class="btn btn-ghost" href="#install"><span class="mi">download</span><span>Install</span></a>
             </div>
         </div>
     </div>
@@ -793,7 +792,7 @@ docker compose exec app php artisan make:user --admin</div>
         <div class="links">
             <a href="https://github.com/kmelitzanis/oikolog" target="_blank" rel="noopener">GitHub</a>
             <a href="https://github.com/kmelitzanis/oikolog/blob/master/README.md" target="_blank" rel="noopener">Docs</a>
-            <a href="https://github.com/kmelitzanis/oikolog/issues" data-i18n="ft_issues" target="_blank" rel="noopener">Αναφορά προβλήματος</a>
+            <a href="https://github.com/kmelitzanis/oikolog/issues" target="_blank" rel="noopener">Report an issue</a>
             <a class="bmc" href="https://buymeacoffee.com/kostasmel" target="_blank" rel="noopener">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1.4 12.3A2 2 0 0 1 14.6 21H9.4a2 2 0 0 1-2-1.7L6 7Z" fill="#fff" stroke="#0f172a" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.2 12.5h9.6l-.7 6.6a1 1 0 0 1-1 .9H8.9a1 1 0 0 1-1-.9l-.7-6.6Z" fill="#f59e0b" opacity=".9"/><path d="M5 5.2h14V7H5z" fill="#fff" stroke="#0f172a" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 3h8l1 2.2H7L8 3Z" fill="#fff" stroke="#0f172a" stroke-width="1.6" stroke-linejoin="round"/></svg>
                 <span>Buy me a coffee</span></a>
@@ -803,102 +802,6 @@ docker compose exec app php artisan make:user --admin</div>
 
 <script>
     var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // ── i18n: Greek is the page's source text; English is swapped in. ──
-    var EN = {
-        nav_tour: 'Tour', nav_features: 'Features', nav_showcase: 'Family & recipes', nav_selfhost: 'Self-hosted', nav_install: 'Install',
-        eyebrow: 'Open source · Self-hosted · Free',
-        h1a: 'Your household finances,', h1b: 'in one place.',
-        lead: 'Bills you never forget to pay, income, savings, grocery lists, recipes and your cars. For the whole family, on your own server.',
-        cta_install: 'Install with Docker', cta_tour: 'See how it works',
-        meta1: 'Your data stays yours', meta2: 'Greek & English', meta3: 'Installs like an app',
-        sh_attn: 'Needs attention', sh_attn_1: 'Electricity', sh_attn_2: 'Gym', sh_env: 'Household', sh_env_sub: 'left of €1,200 · new cycle 25/10', sh_obd: 'Low catalyst efficiency',
-        chip_a: 'Rent paid', chip_a_sub: 'by George, just now', chip_b: '+€240 to savings', chip_b_sub: 'left over from the cycle',
-        tk1: 'Electricity', tk2: 'Internet', tk3: 'Water', tk4: 'Rent', tk5: 'Salary', tk6: 'Savings', tk7: 'Car service',
-        tk8: 'Insurance', tk9: 'Groceries', tk10: 'Meal plan', tk11: 'Subscriptions', tk12: 'Loans',
-        tour_kicker: 'Tour', tour_h2: 'A look inside the app.',
-        t1: 'Bills', t1p: 'Grouped by urgency: overdue, partly paid, due soon, paid.',
-        t2: 'Calendar', t2p: 'The whole month at a glance, coloured by status.',
-        t3: 'Income & accounts', t3p: 'Salary you confirm, spending envelopes per pay cycle, and savings.',
-        t4: 'Vehicles', t4p: 'Service and expense history, reminders, and OBD trouble codes explained.',
-        t5: 'Meal plan', t5p: 'The week as a grid; ingredients go to the shopping list in one click.',
-        feat_kicker: 'Features', feat_h2: 'Everything a home needs so nothing slips through.',
-        feat_p: 'From the power bill to the car service: every obligation with a date, an amount and a history.',
-        f1_t: 'Bills & payments', f1_p: 'Monthly, quarterly or one-off, with the next due date worked out for you. Partial payments, and loans where you see how much is left to repay.',
-        f2_t: 'Envelopes & savings', f2_p: 'Set how much you spend each pay cycle. Whatever is left over goes to savings in one click.',
-        f3_t: 'Income', f3_p: 'Salary and other income are marked when the money actually lands, so you see how early or late it came.',
-        f4_t: 'Invoices from email', f4_p: 'Connect Gmail or Outlook and Oikolog reads providers’ invoices to suggest the amount. It never sends or deletes anything.',
-        f5_t: 'For the whole family', f5_p: 'Shared bills, an invite code, and a push notification when someone pays.',
-        f6_t: 'Shopping lists', f6_p: 'Lists with quantities, a product catalogue and barcode scanning with your phone camera, with nutrition data.',
-        f7_t: 'Recipes & meal plan', f7_p: 'Import recipes from a URL and plan the week; the ingredients go straight to a shopping list.',
-        f8_t: 'Vehicles', f8_p: 'Mileage, service reminders, a work history, cost per kilometre and OBD diagnostics over Bluetooth.',
-        sc1_k: 'For the whole family', sc1_h: 'One home, shared by everyone.',
-        sc1_p: 'Create your family and send your people an invite code. Once they join, you share the household bills, see who paid what, and nobody has to ask “did you pay it?” again.',
-        sc1_1: 'Invite code, owner and member roles, ownership transfer',
-        sc1_2: 'Shared bills, income, bank accounts and vehicles. Whatever you don’t share stays yours alone.',
-        sc1_3: 'A phone notification when someone pays, and who paid what',
-        sc1_4: 'An activity feed: who added or changed what',
-        sc2_k: 'Recipes', sc2_h: 'Paste a link. The recipe writes itself.',
-        sc2_p: 'Give it a recipe link and Oikolog takes the name, photo, servings, times, ingredients and steps from the page, split into sections just like the original.',
-        sc2_1: 'Works with most big recipe sites',
-        sc2_2: 'Dedicated support for akispetretzikis.com',
-        sc2_3: 'Greek units (κ.σ., κ.γ., φλ., γρ.) are recognised and normalised',
-        sc2_4: 'A weekly meal plan, with the week’s ingredients sent to the shopping list in one click',
-        sc3_k: 'Shopping lists', sc3_h: 'The grocery list, in your pocket.',
-        sc3_p: 'Lists with quantities and units that you tick off as you shop, and a product catalogue that grows as you use it.',
-        sc3_1: 'Barcode scanning with your phone camera', sc3_2: 'Name, nutrition facts and Nutri-Score from Open Food Facts',
-        sc3_3: 'A product catalogue with purchase history', sc3_4: 'Fills itself from the meal plan',
-        sc4_k: 'Made for Greece', sc4_h: 'Every well-known provider, ready on day one.',
-        sc4_p: 'More than 50 Greek and international providers are already in, across 16 categories. And you can change all of it.',
-        sc4_1: 'Electricity, water, gas, telecoms, banks, insurance, supermarkets, transport, streaming',
-        sc4_2: 'Your own categories, with an icon and a colour',
-        sc4_3: 'Add or edit providers, and one provider can belong to several categories',
-        sc4_4: 'Greek and English, with translations you can edit in the app',
-        mob_kicker: 'On your phone · PWA', mob_h2: 'Like an app, without an app store.',
-        mob_p: 'Oikolog is a Progressive Web App (PWA): add it to your home screen straight from the browser and it opens full screen like a regular app, with notifications and a bottom navigation bar. No app store, and no updates to wait for.',
-        mob_1: 'A notification when someone in the family pays', mob_2: 'Barcode scanning with the camera for the shopping list',
-        mob_3: 'OBD diagnostics for your car over Bluetooth, right from the browser',
-        sh_kicker: 'Self-hosted', sh_h2: 'Your data, in your own home.',
-        sh_p: 'Oikolog runs on your own server, NAS or VPS. Your bills and payments never pass through a third party.',
-        sh_1: 'One docker compose up and you are ready', sh_2: 'Two-factor authentication (TOTP)',
-        sh_3: 'Mail passwords are stored encrypted, or not needed at all with Microsoft sign-in',
-        pl_kicker: 'Open source', pl_h2: 'Yours to change.', pl_p: 'Laravel, Alpine and Tailwind, under GPL-3.0. Read the code, open an issue or send a pull request.',
-        pl_1: 'Greek and English, with translations you can edit in the app', pl_2: 'Admin area for categories, providers and users',
-        pl_3: 'Installs like an app on phone and desktop',
-        in_kicker: 'Install', in_h2: 'Up and running in minutes.',
-        in_p: 'All you need is Docker. The app comes ready inside the image, and MySQL comes with the compose file.',
-        in_note: 'For a NAS, HTTPS and notifications, see the <a href="https://github.com/kmelitzanis/oikolog/blob/master/README.DOCKER.md" target="_blank" rel="noopener">Docker guide</a>.',
-        st1: 'Get the project', st2: 'Set your details', st2_c: '# put the key in APP_KEY, along with APP_URL and database passwords',
-        st3: 'Start it', st3_note: 'Open http://localhost:8000 and sign in.',
-        band_h2: 'Free. Forever.', band_p: 'Oikolog is open source. If it is useful to you, a star on GitHub helps others find it.',
-        band_star: 'Star on GitHub', band_install: 'Install', ft_issues: 'Report an issue',
-        title: 'Oikolog | Household finances in one place'
-    };
-    var nodes = document.querySelectorAll('[data-i18n], [data-i18n-html]');
-    var EL = { title: document.title };
-    nodes.forEach(function (n) {
-        var k = n.dataset.i18n || n.dataset.i18nHtml;
-        EL[k] = n.dataset.i18nHtml ? n.innerHTML : n.textContent;
-    });
-    function setLang(lang) {
-        var dict = lang === 'en' ? EN : EL;
-        nodes.forEach(function (n) {
-            var k = n.dataset.i18n || n.dataset.i18nHtml;
-            if (dict[k] == null) return;
-            if (n.dataset.i18nHtml) n.innerHTML = dict[k]; else n.textContent = dict[k];
-        });
-        document.title = dict.title;
-        document.documentElement.lang = lang;
-        document.getElementById('lang').textContent = lang === 'en' ? 'EL' : 'EN';
-        document.querySelector('.phones').setAttribute('aria-label', lang === 'en' ? 'Swap screens' : 'Εναλλαγή οθόνης');
-        try { localStorage.setItem('oikolog-site-lang', lang); } catch (e) {}
-    }
-    var saved = null;
-    try { saved = localStorage.getItem('oikolog-site-lang'); } catch (e) {}
-    setLang(saved || ((navigator.language || '').toLowerCase().startsWith('el') ? 'el' : 'en'));
-    document.getElementById('lang').addEventListener('click', function () {
-        setLang(document.documentElement.lang === 'en' ? 'el' : 'en');
-    });
 
     // ── In-page links: glide to the section, keep the URL clean ──
     document.addEventListener('click', function (e) {
@@ -970,7 +873,6 @@ docker compose exec app php artisan make:user --admin</div>
     var track = document.getElementById('ticker');
     track.innerHTML += track.innerHTML;
     document.querySelectorAll('.prov-track').forEach(function (t) { t.innerHTML += t.innerHTML; });
-    nodes = document.querySelectorAll('[data-i18n], [data-i18n-html]');
 
     // ── Tour tabs, auto-advancing while visible ──
     var tabs = [].slice.call(document.querySelectorAll('#tabs .tab'));
@@ -1039,7 +941,6 @@ docker compose exec app php artisan make:user --admin</div>
         async function runIntro(done) {
             window.__oikIntro = true;
             root.classList.add('intro-running');
-            const el = (root.lang || '').startsWith('el');
 
             const ov = document.createElement('div');
             ov.className = 'intro';
@@ -1054,8 +955,8 @@ docker compose exec app php artisan make:user --admin</div>
                     <rect x="2" y="17.8" width="12" height="2.6" rx="1.3" fill="#f59e0b"/>
                 </svg>
                 <div class="intro-flash"></div>
-                <div class="intro-tag">${el ? 'λογαριασμοί · έσοδα · αποταμίευση · οχήματα' : 'bills · income · savings · vehicles'}</div>
-                <button class="intro-skip" type="button">${el ? 'Παράλειψη ›' : 'Skip ›'}</button>`;
+                <div class="intro-tag">bills · income · savings · vehicles</div>
+                <button class="intro-skip" type="button">Skip ›</button>`;
             document.body.appendChild(ov);
             root.classList.remove('intro-pending');
 
