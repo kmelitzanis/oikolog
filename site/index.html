@@ -328,8 +328,11 @@
         .mobile { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
         .phones { position: relative; height: 620px; }
         .phones .phone { position: absolute; width: 270px; min-width: 0; right: auto; bottom: auto; transform: none; }
-        .phones .p1 { left: 4%; top: 0; z-index: 2; }
-        .phones .p2 { left: 44%; top: 70px; animation-delay: -3s; opacity: .95; }
+        .phones { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .phones .front { left: 4%; top: 0; z-index: 2; }
+        .phones .back { left: 44%; top: 70px; z-index: 1; opacity: .95; }
+        .phones .p2 { animation-delay: -3s; }
+        .phones:focus-visible { outline: 2px solid var(--amber); outline-offset: 6px; border-radius: 20px; }
         .checks { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 14px; }
         .checks li { display: flex; gap: 12px; color: var(--ink-2); font-size: .97rem; }
         .checks .mi { color: var(--emerald); font-size: 21px; flex-shrink: 0; margin-top: 1px; }
@@ -351,7 +354,8 @@
         @keyframes step-pop { 50% { transform: scale(1.18); } }
         .step h4 { margin: 9px 0 9px; font-size: 1rem; }
         .code { position: relative; background: #0b1222; color: #e2e8f0; border: 1px solid rgba(148,163,184,.18); border-radius: 14px;
-                padding: 14px 52px 14px 16px; font: 500 .84rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-x: auto; white-space: pre; }
+                padding: 14px 52px 14px 16px; font: 500 .84rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .step > div { min-width: 0; }
         .code .c { color: #64748b; }
         .copy { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 9px; border: 1px solid rgba(148,163,184,.2);
                 background: #1e293b; color: #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform .2s ease; }
@@ -406,7 +410,7 @@
             .ticker { margin-top: 80px; }
             .phones { height: 470px; }
             .phones .phone { width: 210px; }
-            .phones .p2 { left: 36%; }
+            .phones .back { left: 36%; }
             .band { padding: 44px 22px; }
             footer .links { margin-left: 0; }
         }
@@ -614,12 +618,12 @@
             <div class="sc-copy reveal">
                 <div class="kicker" data-i18n="sc1_k">Για όλη την οικογένεια</div>
                 <h2 data-i18n="sc1_h">Ένα σπίτι, κοινό για όλους.</h2>
-                <p data-i18n="sc1_p">Δημιουργείς την οικογένεια και στέλνεις στους δικούς σου έναν κωδικό πρόσκλησης. Μόλις μπουν, μοιράζεστε τους λογαριασμούς του σπιτιού, βλέπετε ποιος πλήρωσε τι και κανείς δεν χρειάζεται να ρωτάει «το πλήρωσες;».</p>
+                <p data-i18n="sc1_p">Φτιάχνεις την οικογένεια και στέλνεις στους δικούς σου έναν κωδικό πρόσκλησης. Μόλις μπουν, βλέπετε όλοι μαζί τους λογαριασμούς του σπιτιού και ποιος πλήρωσε τι. Κανείς δεν χρειάζεται πια να ρωτάει «το πλήρωσες;».</p>
                 <ul class="checks">
-                    <li><span class="mi">group_add</span><span data-i18n="sc1_1">Πρόσκληση με κωδικό, ρόλοι ιδιοκτήτη και μέλους, μεταβίβαση της ιδιοκτησίας</span></li>
-                    <li><span class="mi">sync_alt</span><span data-i18n="sc1_2">Κοινοί λογαριασμοί, έσοδα, τραπεζικοί λογαριασμοί και οχήματα. Ό,τι δεν μοιράζεσαι, μένει μόνο δικό σου.</span></li>
-                    <li><span class="mi">notifications_active</span><span data-i18n="sc1_3">Ειδοποίηση στο κινητό όταν κάποιος πληρώσει, και πάντα φαίνεται ποιος πλήρωσε τι</span></li>
-                    <li><span class="mi">history</span><span data-i18n="sc1_4">Ιστορικό δραστηριότητας: ποιος πρόσθεσε ή άλλαξε τι</span></li>
+                    <li><span class="mi">group_add</span><span data-i18n="sc1_1">Προσκαλείς με έναν κωδικό, ορίζεις ποιος είναι ιδιοκτήτης και ποιος μέλος, και μπορείς να δώσεις την ιδιοκτησία σε άλλον</span></li>
+                    <li><span class="mi">sync_alt</span><span data-i18n="sc1_2">Μοιράζεστε λογαριασμούς, έσοδα, τραπεζικούς λογαριασμούς και οχήματα. Ό,τι δεν μοιράζεσαι το βλέπεις μόνο εσύ.</span></li>
+                    <li><span class="mi">notifications_active</span><span data-i18n="sc1_3">Σου έρχεται ειδοποίηση στο κινητό μόλις κάποιος πληρώσει, και φαίνεται πάντα ποιος πλήρωσε τι</span></li>
+                    <li><span class="mi">history</span><span data-i18n="sc1_4">Ιστορικό αλλαγών, για να βλέπεις ποιος πρόσθεσε ή άλλαξε κάτι</span></li>
                 </ul>
             </div>
             <div class="sc-shot reveal-scale"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i><span class="url"><span class="mi">lock</span>oikolog.home/family</span></div>
@@ -688,9 +692,9 @@
 
 <section id="mobile" style="padding-top:20px">
     <div class="wrap mobile">
-        <div class="phones reveal-scale" aria-hidden="true">
-            <div class="phone p1"><img src="screenshots/phone-dashboard.webp" alt="" width="390" height="844" loading="lazy"></div>
-            <div class="phone p2"><img src="screenshots/phone-income.webp" alt="" width="390" height="844" loading="lazy"></div>
+        <div class="phones reveal-scale" role="button" tabindex="0" aria-label="Εναλλαγή οθόνης">
+            <div class="phone p1 front"><img src="screenshots/phone-dashboard.webp" alt="" width="390" height="844" loading="lazy"></div>
+            <div class="phone p2 back"><img src="screenshots/phone-income.webp" alt="" width="390" height="844" loading="lazy"></div>
         </div>
         <div class="reveal" style="--d:.1s">
             <div class="kicker" data-i18n="mob_kicker">Στο κινητό · PWA</div>
@@ -710,17 +714,17 @@
         <div class="panel reveal">
             <div class="kicker" data-i18n="sh_kicker">Στον δικό σου server</div>
             <h2 data-i18n="sh_h2">Τα δεδομένα σου μένουν στο σπίτι σου.</h2>
-            <p style="color:var(--ink-2);margin:0" data-i18n="sh_p">Το Oikolog τρέχει στον δικό σου server, στο NAS σου ή σε ένα VPS. Οι λογαριασμοί και οι πληρωμές σου δεν περνούν από κανέναν τρίτο.</p>
+            <p style="color:var(--ink-2);margin:0" data-i18n="sh_p">Το Oikolog τρέχει στον δικό σου server, σε ένα NAS ή σε ένα VPS. Οι λογαριασμοί και οι πληρωμές σου δεν περνούν από κανέναν τρίτο.</p>
             <ul class="checks">
-                <li><span class="mi">check_circle</span><span data-i18n="sh_1">Ένα docker compose up και είσαι έτοιμος</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="sh_1">Ξεκινάει με ένα μόνο docker compose up</span></li>
                 <li><span class="mi">check_circle</span><span data-i18n="sh_2">Σύνδεση δύο βημάτων (TOTP)</span></li>
-                <li><span class="mi">check_circle</span><span data-i18n="sh_3">Οι κωδικοί του email αποθηκεύονται κρυπτογραφημένοι, ή δεν χρειάζονται καθόλου με τη σύνδεση Microsoft</span></li>
+                <li><span class="mi">check_circle</span><span data-i18n="sh_3">Οι κωδικοί του email αποθηκεύονται κρυπτογραφημένοι, και με σύνδεση Microsoft δεν χρειάζεται καν κωδικός</span></li>
             </ul>
         </div>
         <div class="panel reveal" style="--d:.1s">
             <div class="kicker" data-i18n="pl_kicker">Ανοιχτός κώδικας</div>
             <h2 data-i18n="pl_h2">Δικό σου, να το αλλάξεις όπως θέλεις.</h2>
-            <p style="color:var(--ink-2);margin:0" data-i18n="pl_p">Laravel, Alpine και Tailwind, με άδεια GPL-3.0. Διάβασε τον κώδικα, άνοιξε ένα issue ή στείλε ένα pull request.</p>
+            <p style="color:var(--ink-2);margin:0" data-i18n="pl_p">Laravel, Alpine και Tailwind, με άδεια GPL-3.0. Μπορείς να διαβάσεις τον κώδικα, να ανοίξεις ένα issue ή να στείλεις ένα pull request.</p>
             <ul class="checks">
                 <li><span class="mi">check_circle</span><span data-i18n="pl_1">Ελληνικά και αγγλικά, και οι μεταφράσεις αλλάζουν μέσα από την εφαρμογή</span></li>
                 <li><span class="mi">check_circle</span><span data-i18n="pl_2">Ο διαχειριστής ορίζει κατηγορίες, παρόχους και χρήστες</span></li>
@@ -886,6 +890,7 @@ docker compose exec app php artisan make:user --admin</div>
         document.title = dict.title;
         document.documentElement.lang = lang;
         document.getElementById('lang').textContent = lang === 'en' ? 'EL' : 'EN';
+        document.querySelector('.phones').setAttribute('aria-label', lang === 'en' ? 'Swap screens' : 'Εναλλαγή οθόνης');
         try { localStorage.setItem('oikolog-site-lang', lang); } catch (e) {}
     }
     var saved = null;
@@ -912,6 +917,42 @@ docker compose exec app php artisan make:user --admin</div>
                 setTimeout(function () { st.classList.add('flash'); }, 650 + i * 260);
             });
         }
+    });
+
+    // ── Mobile showcase: tap the phones to bring the back one forward ──
+    // Shuffled like cards: each phone swings out to its own side, they trade
+    // depth halfway, then settle in the other's place, so neither passes
+    // through the other.
+    var phones = document.querySelector('.phones'), swapping = false;
+    function swapPhones() {
+        if (swapping) return;
+        var front = phones.querySelector('.front'), back = phones.querySelector('.back');
+        var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function done() {
+            front.classList.replace('front', 'back'); back.classList.replace('back', 'front');
+            swapping = false;
+        }
+        if (reduce || !front.animate) return done();
+        swapping = true;
+        var f = front.getBoundingClientRect(), b = back.getBoundingClientRect();
+        var dx = b.left - f.left, dy = b.top - f.top, out = phones.clientWidth * .28;
+        var opts = { duration: 700, easing: 'cubic-bezier(.45,0,.2,1)' };
+        front.animate([
+            { transform: 'translate(0,0)', scale: 1, zIndex: 2 },
+            { transform: 'translate(' + (-out) + 'px,' + dy / 2 + 'px)', scale: .94, zIndex: 2, offset: .49 },
+            { transform: 'translate(' + (-out) + 'px,' + dy / 2 + 'px)', scale: .94, zIndex: 1, offset: .5 },
+            { transform: 'translate(' + dx + 'px,' + dy + 'px)', scale: 1, zIndex: 1 }
+        ], opts);
+        back.animate([
+            { transform: 'translate(0,0)', scale: 1, zIndex: 1 },
+            { transform: 'translate(' + out + 'px,' + (-dy / 2) + 'px)', scale: 1.04, zIndex: 1, offset: .49 },
+            { transform: 'translate(' + out + 'px,' + (-dy / 2) + 'px)', scale: 1.04, zIndex: 3, offset: .5 },
+            { transform: 'translate(' + (-dx) + 'px,' + (-dy) + 'px)', scale: 1, zIndex: 3 }
+        ], opts).onfinish = done;
+    }
+    phones.addEventListener('click', swapPhones);
+    phones.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); swapPhones(); }
     });
 
     // ── Nav gets a backdrop once the page scrolls ──
