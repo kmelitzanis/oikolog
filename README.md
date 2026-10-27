@@ -5,7 +5,7 @@
 <h1 align="center">Oikolog</h1>
 
 <p align="center">
-  Household bills, income, shopping and meal planning — for the whole family, in one place.
+  Household bills, income, shopping and meal planning for the whole family, in one place.
 </p>
 
 <p align="center">
@@ -13,6 +13,12 @@
   <img src="https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white" alt="Laravel 12">
   <img src="https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind 4">
   <img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0">
+</p>
+
+<p align="center">
+  <a href="https://buymeacoffee.com/kostasmel">
+    <img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=kostasmel&button_colour=FFDD00&font_colour=0f172a&font_family=Cookie&outline_colour=0f172a&coffee_colour=ffffff" height="42" alt="Buy me a coffee">
+  </a>
 </p>
 
 ---
@@ -26,20 +32,20 @@ ingredients straight into a list.
 
 **Money**
 
-- Recurring and one-off bills — weekly through yearly, with automatic next-due-date calculation
+- Recurring and one-off bills, weekly through yearly, with automatic next-due-date calculation
 - Full and **partial** payments, with per-payment history and one-click undo
-- Bills with a variable amount ("cost varies") — enter the real figure at payment time
+- Bills with a variable amount ("cost varies"): enter the real figure at payment time
 - **Debt tracking** for loans and credit cards: a bill carries the total still owed, each payment draws it
   down, the last instalment is capped at whatever is left, and the bill retires itself once cleared
 - Accounts you define yourself, with transfers between them and balances derived from a ledger rather than
   stored, so they cannot drift out of step with the history
 - Income sources with expected dates, and a month-to-date "received" view
 - Dashboard: net for the month, what needs attention now, six-month trend and spend by category
-- Month overview — the month as a countdown line, showing what is left to pay
+- Month overview: the month as a countdown line, showing what is left to pay
 - Calendar with per-day status indicators (overdue / due soon / paid / upcoming)
 - Receipts and attachments on any bill (photos or PDFs), stored privately and shown only to people who can see the bill
 - Optional mailbox scanning (configured under `/settings`) that reads provider invoices over IMAP and proposes an
-  amount for you to accept — read-only, and never writes a figure to a bill on its own
+  amount for you to accept. It is read-only and never writes a figure to a bill on its own
 
 **Household**
 
@@ -89,7 +95,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-For local development SQLite is the quickest path — set this in `.env`:
+For local development SQLite is the quickest path. Set this in `.env`:
 
 ```
 DB_CONNECTION=sqlite
@@ -117,7 +123,7 @@ php artisan serve
 
 `SANCTUM_STATEFUL_DOMAINS` in `.env` lists the hosts allowed to authenticate with the session cookie. If you serve
 the app on a port that is not in that list, every `/api/*` request returns **401** and the API-backed pages
-(shopping lists, recipes, meal planner) silently render empty — with no error in the UI.
+(shopping lists, recipes, meal planner) silently render empty, with no error in the UI.
 
 Either serve on the configured port, or add the one you use:
 
@@ -128,7 +134,7 @@ SANCTUM_STATEFUL_DOMAINS=localhost:8000,127.0.0.1:8000
 ### ⚠️ The camera needs HTTPS
 
 Browsers only hand out a camera to a secure context. Barcode scanning therefore works on `localhost` and over
-HTTPS, but **not** over plain HTTP on a LAN address — the button appears and the permission prompt never comes. If
+HTTPS, but **not** over plain HTTP on a LAN address: the button appears and the permission prompt never comes. If
 you run Oikolog on a NAS at `http://192.168.x.x:8000`, put it behind a reverse proxy with a certificate before
 expecting the scanner to work. Typing a barcode by hand works everywhere.
 
@@ -162,7 +168,7 @@ php artisan test       # Pest + PHPUnit
 
 Pages take their CSS from the Vite dev server while `pnpm run dev` runs, and from `public/build` otherwise. Tailwind
 only emits the classes it finds at build time, so after pulling changes without the dev server running, rebuild
-(`pnpm install && pnpm run build`) — a stale build renders new markup half-styled.
+(`pnpm install && pnpm run build`); a stale build renders new markup half-styled.
 
 Useful commands:
 
@@ -170,7 +176,7 @@ Useful commands:
 |------------------------------------|---------------------------------------------------------------------------------|
 | `php artisan make:user`            | Create a user (`--admin` for an owner account)                                  |
 | `php artisan admin:reset-password` | Reset the admin password (prints a generated one unless `--password` is given)  |
-| `php artisan bills:realign`        | Snap drifted `next_due_date`s back onto their schedule (`--dry-run` to preview) — run it once after upgrading if bills due on the 29th–31st had slipped to the start of the next month |
+| `php artisan bills:realign`        | Snap drifted `next_due_date`s back onto their schedule (`--dry-run` to preview). Run it once after upgrading if bills due on the 29th–31st had slipped to the start of the next month |
 | `php artisan bills:scan-mail`      | Read configured mailboxes and queue amount suggestions                          |
 | `php artisan push:vapid`           | Generate the VAPID keypair for web push                                         |
 | `php artisan products:prune`       | Drop catalogue entries nothing references (`--dry-run` to preview)              |
@@ -179,7 +185,7 @@ Useful commands:
 ### Scheduled work
 
 Invoice scanning and the two pruning jobs are registered in `routes/console.php` and only run if Laravel's
-scheduler is running. Without this cron entry the app works fine — mailboxes simply go unscanned and orphaned
+scheduler is running. Without this cron entry the app works fine: mailboxes simply go unscanned and orphaned
 files accumulate:
 
 ```
@@ -219,13 +225,13 @@ php artisan push:vapid
 ### Translations
 
 Translations live in `resources/lang/{en,el}/messages.php`, and database entries override the files at runtime.
-Admins can edit them at `/translations` — useful for fixing wording without a deploy. The admin account is the one
+Admins can edit them at `/translations`, which is useful for fixing wording without a deploy. The admin account is the one
 whose email matches `ADMIN_EMAIL` in `.env`.
 
 ### Visual design
 
 The UI runs on **amber-500 `#f59e0b` on slate**, with the status colours mapped 1:1 to bill state. Anything on an
-amber surface takes slate-900 ink — amber is far too light to carry white text.
+amber surface takes slate-900 ink, because amber is far too light to carry white text.
 
 The logo is the "beam stack": there is no separate icon mark, the wordmark *is* the logo, and the `l` of *log* is
 redrawn as four ledger beams of unequal length. It lives in `resources/views/components/logo.blade.php`, sized in
@@ -251,9 +257,3 @@ resources/js/pages/          Per-page Alpine components
 ## License
 
 Released under the **GNU GPL v3.0**. See [LICENSE](LICENSE).
-
----
-
-<p align="center">
-  If Oikolog is useful to you, <a href="https://buymeacoffee.com/kostasmel">buy me a beer</a> 🍺
-</p>

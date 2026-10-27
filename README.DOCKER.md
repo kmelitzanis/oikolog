@@ -28,7 +28,7 @@ Notes:
 - The `app` service runs PHP-FPM. Its entrypoint waits for the database, runs migrations when `FORCE_MIGRATE=1`
   (the default) and, when `APP_ENV=production`, caches config, routes and views.
 - MySQL defaults: database `oikolog`, user `oikolog` / `secret`, root password `rootsecret`. Override them with
-  `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` and `DB_ROOT_PASSWORD` in the compose `.env` — and do, before the
+  `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` and `DB_ROOT_PASSWORD` in the compose `.env`, and do so before the
   first start. The database port is published on `127.0.0.1` only, so it is reachable from the NAS itself but not
   from the rest of the network.
 - The stack starts with `APP_ENV=production` and `APP_DEBUG=false` unless the compose `.env` says otherwise. Debug
@@ -39,7 +39,7 @@ Notes:
 - Uploads up to 10 MB per file are accepted (nginx `client_max_body_size`, PHP `upload_max_filesize` and
   `post_max_size` in `docker/php/oikolog.ini`).
 - The application code is **baked into the image**, not mounted. Only `storage`, `bootstrap/cache` and `public` are
-  named volumes. Editing files on the host does nothing until you rebuild the image — and there is no Laravel `.env`
+  named volumes. Editing files on the host does nothing until you rebuild the image, and there is no Laravel `.env`
   inside the container: configuration comes from the `environment:` block (frozen with `config:cache` on start when
   `APP_ENV=production`).
 
@@ -55,7 +55,7 @@ docker compose up -d --force-recreate app
 
 Web Push notifications:
 
-- Generate a VAPID key pair once (anywhere — the keys are not tied to a machine):
+- Generate a VAPID key pair once (anywhere: the keys are not tied to a machine):
 
 ```bash
 docker compose exec app php artisan push:vapid
@@ -65,7 +65,7 @@ docker compose exec app php artisan push:vapid
   `VAPID_PRIVATE_KEY`, then recreate the `app` container. Without them, the notification toggle in Settings stays
   disabled. Changing them later invalidates every existing browser subscription.
 - Push and service workers need a secure context. `localhost` is exempt, but reaching the NAS over plain
-  `http://192.168.x.x` is **not** — notifications and PWA install will silently fail for anyone on the LAN until the
+  `http://192.168.x.x` is **not**: notifications and PWA install will silently fail for anyone on the LAN until the
   app is served over HTTPS.
 
 Troubleshooting:
