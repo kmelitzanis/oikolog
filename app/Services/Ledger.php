@@ -82,12 +82,6 @@ class Ledger
         });
     }
 
-    /** Drop the movement a payment created, if it had one. */
-    public function reversePayment(Payment $payment): void
-    {
-        AccountTransaction::where('payment_id', $payment->id)->delete();
-    }
-
     private function record(
         Account $account,
         string $type,
