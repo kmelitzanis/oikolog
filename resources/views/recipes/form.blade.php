@@ -122,7 +122,7 @@
                 <div class="flex flex-col sm:flex-row gap-4">
                     {{-- Photo --}}
                     <div class="shrink-0">
-                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 sm:sr-only">{{ __('messages.recipe_photo') }}</label>
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 sm:sr-only" for="recipe_photo">{{ __('messages.recipe_photo') }}</label>
                         <div class="relative w-full sm:w-32 h-32 rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/60 group">
                             <template x-if="imageUrl">
                                 <img :src="imageUrl" alt="" class="w-full h-full object-cover">
@@ -134,7 +134,7 @@
                                 <span class="material-icons-round text-2xl animate-spin" x-show="uploading" x-cloak>refresh</span>
                                 <span class="text-[0.62rem] font-semibold mt-1 px-2 text-center"
                                       x-text="imageUrl ? '{{ __('messages.change_photo') }}' : '{{ __('messages.add_photo') }}'"></span>
-                                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                                <input id="recipe_photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif"
                                        class="hidden" @change="pickImage($event)">
                             </label>
 
@@ -146,11 +146,11 @@
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.recipe_name') }} *</label>
-                        <input type="text" x-model="form.name" required
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5" for="recipe_name">{{ __('messages.recipe_name') }} *</label>
+                        <input id="recipe_name" type="text" x-model="form.name" required
                                class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30 transition">
-                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 mt-3">{{ __('messages.description') }}</label>
-                        <textarea x-model="form.description" rows="2"
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5 mt-3" for="recipe_description">{{ __('messages.description') }}</label>
+                        <textarea id="recipe_description" x-model="form.description" rows="2"
                                   class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500 resize-none transition"></textarea>
 
                         {{-- Attribution for an imported recipe, and the user's way
@@ -172,23 +172,23 @@
                 {{-- Meta grid --}}
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.servings') }}</label>
-                        <input type="number" min="1" max="50" x-model="form.servings"
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5" for="recipe_servings">{{ __('messages.servings') }}</label>
+                        <input id="recipe_servings" type="number" min="1" max="50" x-model="form.servings"
                                class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.prep_time') }} ({{ __('messages.min_short') }})</label>
-                        <input type="number" min="0" x-model="form.prep_minutes"
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5" for="recipe_prep">{{ __('messages.prep_time') }} ({{ __('messages.min_short') }})</label>
+                        <input id="recipe_prep" type="number" min="0" x-model="form.prep_minutes"
                                class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.cook_time') }} ({{ __('messages.min_short') }})</label>
-                        <input type="number" min="0" x-model="form.cook_minutes"
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5" for="recipe_cook">{{ __('messages.cook_time') }} ({{ __('messages.min_short') }})</label>
+                        <input id="recipe_cook" type="number" min="0" x-model="form.cook_minutes"
                                class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">{{ __('messages.difficulty') }}</label>
-                        <select x-model="form.difficulty"
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5" for="recipe_difficulty">{{ __('messages.difficulty') }}</label>
+                        <select id="recipe_difficulty" x-model="form.difficulty"
                                 class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                             <option value="easy">{{ __('messages.easy') }}</option>
                             <option value="medium">{{ __('messages.medium') }}</option>
@@ -234,13 +234,13 @@
                             <template x-for="(ing, idx) in rowsIn(form.ingredients, section)" :key="'ing-' + si + '-' + idx">
                                 <div class="flex items-center gap-2">
                                     <span class="w-7 h-7 shrink-0 rounded-lg bg-amber-50 dark:bg-amber-500/15 text-amber-500 dark:text-amber-400 text-xs font-bold flex items-center justify-center" x-text="idx + 1"></span>
-                                    <input type="text" x-model="ing.name" data-ing-name placeholder="{{ __('messages.ingredient') }}"
+                                    <input type="text" x-model="ing.name" data-ing-name placeholder="{{ __('messages.ingredient') }}" aria-label="{{ __('messages.ingredient') }}"
                                            class="flex-1 min-w-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
-                                    <input type="number" step="0.01" min="0" x-model="ing.quantity"
+                                    <input type="number" step="0.01" min="0" x-model="ing.quantity" aria-label="{{ __('messages.quantity') }}"
                                            class="w-16 shrink-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-2 py-2.5 text-sm text-center outline-none focus:border-amber-500 transition">
                                     {{-- A fixed vocabulary, shown translated: the option value is the
                                          canonical key, the label is what the user reads. --}}
-                                    <select x-model="ing.unit"
+                                    <select x-model="ing.unit" aria-label="{{ __('messages.unit') }}"
                                             class="w-24 shrink-0 bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-2 py-2.5 text-sm outline-none focus:border-amber-500 transition">
                                         @foreach($unitOptions as $key => $label)
                                             <option value="{{ $key }}">{{ $label }}</option>
