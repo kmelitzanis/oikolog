@@ -193,20 +193,58 @@ class BillStatusAndPaymentsTest extends TestCase
 
     public function test_undo_rolls_the_due_date_back_to_the_settled_cycle(): void
     {
+        // Paid early: the undo has to bring back the cycle's own due date,
+        // not the day the payment happened to be made.
+        \Carbon\Carbon::setTestNow('2026-10-10 12:00');
+
         $user = User::factory()->create();
-        $bill = $this->makeBill($user);
+        $bill = $this->makeBill($user, ['start_date' => '2026-07-30', 'next_due_date' => '2026-10-30']);
 
         $this->actingAs($user)->post(route('bills.pay', $bill))->assertRedirect();
 
         $bill->refresh();
         $this->assertSame('paid', $bill->status());
+        $this->assertSame('2026-11-30', $bill->next_due_date->toDateString());
 
         $this->actingAs($user)->delete(route('bills.unpay', $bill))->assertRedirect();
 
         $bill->refresh();
         $this->assertSame(0, $bill->payments()->count());
         $this->assertNull($bill->last_paid_date);
-        $this->assertSame(now()->toDateString(), $bill->next_due_date->toDateString());
+        $this->assertSame('2026-10-30', $bill->next_due_date->toDateString());
+
+        \Carbon\Carbon::setTestNow();
+    }
+
+    public function test_undoing_a_one_off_payment_keeps_its_due_date(): void
+    {
+        $user = User::factory()->create();
+        $due = now()->addDays(5)->toDateString();
+        $bill = $this->makeBill($user, ['frequency' => 'once', 'start_date' => $due, 'next_due_date' => $due]);
+
+        $this->actingAs($user)->post(route('bills.pay', $bill))->assertRedirect();
+        $this->actingAs($user)->delete(route('bills.unpay', $bill))->assertRedirect();
+
+        $this->assertSame($due, $bill->fresh()->next_due_date->toDateString());
+    }
+
+    public function test_undoing_the_payment_that_closed_a_part_paid_cycle_leaves_the_rest_owed(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user);
+
+        $this->actingAs($user)->post(route('bills.pay', $bill), [
+            'payment_mode' => 'partial', 'partial_amount' => 30,
+            'paid_at' => now()->subDay()->toDateString(),
+        ])->assertRedirect();
+        $this->actingAs($user)->post(route('bills.pay', $bill))->assertRedirect();
+        $this->assertSame('paid', $bill->fresh()->status());
+
+        $this->actingAs($user)->delete(route('bills.unpay', $bill))->assertRedirect();
+
+        $bill->refresh();
+        $this->assertSame('partial', $bill->status());
+        $this->assertSame(70.0, (float) $bill->remaining_balance);
     }
 
     public function test_monthly_equivalent_divides_by_the_interval_and_skips_one_offs(): void
@@ -253,8 +291,10 @@ class BillStatusAndPaymentsTest extends TestCase
 
     public function test_deleting_the_latest_payment_from_history_rolls_the_schedule_back(): void
     {
+        \Carbon\Carbon::setTestNow('2026-10-10 12:00');
+
         $user = User::factory()->create();
-        $bill = $this->makeBill($user);
+        $bill = $this->makeBill($user, ['start_date' => '2026-07-30', 'next_due_date' => '2026-10-30']);
 
         $this->actingAs($user)->post(route('bills.pay', $bill))->assertRedirect();
         $bill->refresh();
@@ -265,7 +305,9 @@ class BillStatusAndPaymentsTest extends TestCase
             ->assertRedirect();
 
         $bill->refresh();
-        $this->assertSame(now()->toDateString(), $bill->next_due_date->toDateString());
+        $this->assertSame('2026-10-30', $bill->next_due_date->toDateString());
+
+        \Carbon\Carbon::setTestNow();
     }
 
     public function test_a_payment_cannot_be_deleted_through_another_bill(): void

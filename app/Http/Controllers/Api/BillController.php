@@ -3,13 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\SendPaymentPushNotification;
 use App\Models\Bill;
 use App\Models\Income;
-use App\Models\Payment;
+use App\Services\BillPayments;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class BillController extends Controller
 {
@@ -98,7 +96,7 @@ class BillController extends Controller
             'assigned_to'        => ['nullable', 'string', $this->householdMember($request)],
             'amount'             => ['sometimes', 'numeric', 'min:0.01'],
             'frequency'          => ['sometimes', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
-            'frequency_interval' => ['nullable', 'integer', 'min:1'],
+            'frequency_interval' => ['sometimes', 'integer', 'min:1', 'max:99'],
             'start_date'         => ['sometimes', 'date'],
             'end_date'           => ['nullable', 'date'],
             'next_due_date'      => ['sometimes', 'date'],
@@ -138,48 +136,41 @@ class BillController extends Controller
         return response()->json(['message' => 'Bill deleted.']);
     }
 
-    public function markPaid(Request $request, Bill $bill): JsonResponse
+    /**
+     * Pay the bill's current cycle. Same fields and the same rules as the web
+     * pay modal (account, payer, partial payments, loan draw-down), plus
+     * `amount` for older clients: on a varying bill it is this cycle's
+     * figure, otherwise an amount short of what is due pays part of it.
+     */
+    public function markPaid(Request $request, Bill $bill, BillPayments $payments): JsonResponse
     {
         $this->authorizeView($request, $bill);
 
+        // A client that names no account pays from the bill's own default.
+        if (! $request->filled('account_id') && $bill->default_account_id) {
+            $request->merge(['account_id' => $bill->default_account_id]);
+        }
+
         $data = $request->validate([
-            'amount'        => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],
-            'currency_code' => ['nullable', 'string', 'regex:/^[A-Z]{3}$/'],
-            'paid_at'       => ['nullable', 'date', 'before_or_equal:today'],
-            'notes'         => ['nullable', 'string', 'max:1000'],
+            ...$payments->rules($request->user()),
+            'amount' => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],
         ]);
 
-        $paidAt = isset($data['paid_at']) ? \Carbon\Carbon::parse($data['paid_at'])->setTimeFrom(now()) : now();
+        if (isset($data['amount']) && ! isset($data['payment_mode'])) {
+            if ($bill->cost_varies && $bill->remaining_balance === null) {
+                $data['custom_amount'] ??= $data['amount'];
+            } elseif ((float) $data['amount'] < $bill->amountDueNow()) {
+                $data['payment_mode'] = 'partial';
+                $data['partial_amount'] = $data['amount'];
+            }
+        }
 
-        $payment = DB::transaction(function () use ($bill, $request, $data, $paidAt) {
-            // Locked so a retried request cannot settle the same cycle twice.
-            $bill = Bill::whereKey($bill->getKey())->lockForUpdate()->firstOrFail();
-
-            $payment = Payment::create([
-                'bill_id'       => $bill->id,
-                'paid_by'       => $request->user()->id,
-                'amount'        => $data['amount'] ?? $bill->getEffectiveRemainingBalance(),
-                'currency_code' => $data['currency_code'] ?? $bill->currency_code,
-                'paid_at'       => $paidAt,
-                'notes'         => $data['notes'] ?? null,
-            ]);
-
-            // A one-off bill has no next cycle: its due date stays put.
-            $bill->update([
-                'remaining_balance' => null,
-                'current_amount'    => null,
-                'last_paid_date'    => $paidAt->toDateString(),
-                'next_due_date'     => $bill->calculateNextDueDate()?->toDateString() ?? $bill->next_due_date,
-            ]);
-
-            return $payment;
-        });
-
-        SendPaymentPushNotification::dispatch($payment->id)->afterResponse();
+        [, $isPartial] = $payments->pay($bill, $request->user(), $data);
 
         return response()->json([
             'data'    => $this->billResource($bill->fresh()->load('category')),
-            'message' => 'Payment recorded.',
+            'status'  => $isPartial ? 'partial' : 'paid',
+            'message' => $isPartial ? 'Partial payment recorded.' : 'Payment recorded.',
         ]);
     }
 
@@ -208,8 +199,10 @@ class BillController extends Controller
             'yearly_income' => round($monthlyIncome * 12, 2),
             'monthly_net' => round($monthlyIncome - $monthlySpend, 2),
             'active_count' => $bills->count(),
-            'overdue_count' => $bills->filter(fn($b) => $b->isOverdue())->count(),
-            'due_this_week' => $bills->filter(fn($b) => $b->daysUntilDue() >= 0 && $b->daysUntilDue() <= 7)->count(),
+            // status(), as on the dashboard: the raw dates kept counting bills
+            // that were already paid.
+            'overdue_count' => $bills->filter(fn($b) => $b->status() === 'overdue')->count(),
+            'due_this_week' => $bills->filter(fn($b) => $b->status() === 'soon')->count(),
             'currency_code' => $user->currency_code,
             'by_category' => $byCategory,
             'upcoming' => $upcoming,
