@@ -1,13 +1,14 @@
-FROM php:8.3-fpm-trixie AS php-base
+FROM php:8.5-fpm-trixie AS php-base
 # Refresh security updates even when the upstream PHP image predates them.
 # Keep only shared libraries needed by PHP after compiling the extensions.
+# OPcache is part of PHP itself since 8.5, so it is not in the list below.
 RUN set -eux; \
     apt-get update; \
     apt-get upgrade -y; \
     apt-get install -y --no-install-recommends \
         libicu-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev; \
     docker-php-ext-configure gd --with-freetype --with-jpeg; \
-    docker-php-ext-install -j"$(nproc)" pdo_mysql zip exif pcntl bcmath intl gd opcache; \
+    docker-php-ext-install -j"$(nproc)" pdo_mysql zip exif pcntl bcmath intl gd; \
     apt-mark auto '.*' > /dev/null; \
     apt-mark manual ca-certificates; \
     find /usr/local -type f -executable -exec ldd '{}' ';' \

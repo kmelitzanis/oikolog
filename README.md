@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/PHP-%5E8.2-777BB4?logo=php&logoColor=white" alt="PHP ^8.2">
+  <img src="https://img.shields.io/badge/PHP-%5E8.3-777BB4?logo=php&logoColor=white" alt="PHP ^8.3">
   <img src="https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white" alt="Laravel 12">
   <img src="https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind 4">
   <img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0">
@@ -69,7 +69,7 @@ ingredients straight into a list.
 
 | Layer    | Choice                                                    |
 |----------|-----------------------------------------------------------|
-| Backend  | Laravel 12, PHP 8.2+                                      |
+| Backend  | Laravel 12, PHP 8.3+ (8.5 in Docker)                      |
 | Frontend | Blade, Alpine.js, Tailwind CSS 4, Vite                    |
 | Database | MySQL 8 (Docker default) or SQLite (local dev)            |
 | Auth     | Laravel Sanctum, `pragmarx/google2fa` for TOTP            |
@@ -83,7 +83,7 @@ ingredients straight into a list.
 
 ## Getting started
 
-Requires PHP 8.2+, Composer, and Node 22.12+ with pnpm (`corepack enable` provides the version pinned in
+Requires PHP 8.3+ (8.5 recommended), Composer, and Node 22.12+ with pnpm (`corepack enable` provides the version pinned in
 `package.json`).
 
 ```bash

@@ -79,9 +79,10 @@ Security rebuilds:
 
 - The multi-stage Dockerfile builds assets and installs Composer dependencies separately.
   Node, pnpm, Composer and extension compilation tools are excluded from the runtime image.
-- PHP stays on the 8.3 Debian trixie line. OS packages are upgraded during each fresh build;
+- The image runs PHP 8.5 on Debian trixie. OS packages are upgraded during each fresh build;
   CI uses `pull: true` and `no-cache: true` so cached layers do not retain old security updates.
-- Composer resolves dependencies for PHP 8.3 even when a developer uses a newer local PHP.
+- Composer resolves dependencies for PHP 8.3, the oldest supported version, so the lock file
+  installs on 8.3, 8.4 and 8.5 alike.
 - After dependency changes, run `composer audit --locked`, `pnpm audit`, `php artisan test`,
   and `pnpm run build`. Build and scan the actual runtime image as well:
 
