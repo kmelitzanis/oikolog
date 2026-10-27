@@ -56,6 +56,8 @@ family. Around that sits the day-to-day: shopping lists, and recipes whose ingre
 - Recipe nutrition worked out from the ingredients that match a catalogue product by weight
 - **SparkyFitness integration**: your recipes show up in SparkyFitness for food logging
 - Vehicles with service reminders (by date or mileage), running costs and maintenance history
+- **Fuel log** per vehicle: fill-ups with litres and price, consumption in L/100km from full tank to full tank,
+  and fuel cost per km
 
 **Platform**
 
