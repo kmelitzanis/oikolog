@@ -17,7 +17,7 @@
 
     @php
         $currency    = auth()->user()->currency_code;
-        $netPositive = $stats['monthly_net'] >= 0;
+        $netPositive = $stats['month_net'] >= 0;
         // 700 · .62rem · .09em tracking — the mockup's section label.
         $sectionLabel = 'text-[0.62rem] font-bold uppercase tracking-[0.09em] text-gray-400 dark:text-slate-500';
         $panel = 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[24px]';
@@ -59,14 +59,16 @@
             {{-- Type scale switches between the two mockups: the phone (2a)
                  uses 2.5rem / .9rem tiles, the desktop (3a) 3rem / 1.05rem. --}}
             <div class="text-[2.5rem] sm:text-[3rem] leading-[1.05] font-extrabold tracking-[-0.03em] text-slate-900 mt-1.5">
-                {{ $netPositive ? '+' : '' }}{{ $currency }} {{ number_format($stats['monthly_net'], 2) }}
+                {{ $netPositive ? '+' : '' }}{{ $currency }} {{ number_format($stats['month_net'], 2) }}
             </div>
 
             <div class="flex gap-2 sm:gap-2.5 mt-4 sm:mt-5">
                 @foreach([
-                    [__('messages.income_singular'), $stats['monthly_income']],
-                    [__('messages.expenses'), $stats['monthly_total']],
-                    [__('messages.yearly'),   $stats['yearly_total']],
+                    [__('messages.income_singular'), $stats['month_income']],
+                    [__('messages.expenses'), $stats['month_expenses']],
+                    {{-- The one figure here that is not this month: a year of
+                         recurring bills at their average rate, named as such. --}}
+                    [__('messages.expenses_per_year'), $stats['yearly_total']],
                 ] as [$tileLabel, $tileValue])
                     <div class="flex-1 min-w-0 bg-slate-900/10 rounded-[14px] sm:rounded-2xl px-[11px] py-[9px] sm:px-3.5 sm:py-3">
                         <div class="text-[0.66rem] sm:text-[0.7rem] text-slate-900/70 truncate">{{ $tileLabel }}</div>

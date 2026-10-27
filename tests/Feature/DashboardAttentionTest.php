@@ -140,4 +140,32 @@ class DashboardAttentionTest extends TestCase
 
         $this->assertTrue($bill->fresh()->needsAttention());
     }
+
+    public function test_the_hero_shows_this_month_and_agrees_with_its_progress_bar(): void
+    {
+        \Carbon\Carbon::setTestNow('2026-10-10 12:00');
+
+        $user = User::factory()->create(['currency_code' => 'EUR']);
+        // Due this month, and a yearly bill not due until spring: the old hero
+        // counted a twelfth of the yearly one as this month's spending.
+        $this->bill($user, ['amount' => 100, 'frequency' => 'monthly', 'start_date' => '2026-01-20', 'next_due_date' => '2026-10-20']);
+        $this->bill($user, ['amount' => 1200, 'frequency' => 'yearly', 'start_date' => '2026-03-01', 'next_due_date' => '2027-03-01']);
+        // Weekly: due on the 12th, 19th and 26th of October.
+        $this->bill($user, ['amount' => 10, 'frequency' => 'weekly', 'start_date' => '2026-10-05', 'next_due_date' => '2026-10-12']);
+
+        \App\Models\Income::create([
+            'name' => 'Μισθός', 'amount' => 2000, 'currency_code' => 'EUR', 'frequency' => 'monthly',
+            'start_date' => '2026-01-01', 'next_date' => '2026-10-01', 'is_active' => true, 'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()
+            ->assertViewHas('stats', function ($stats) {
+                return $stats['month_expenses'] === 130.0
+                    && $stats['month_outstanding'] === 130.0
+                    && $stats['month_income'] === 2000.0
+                    && $stats['month_net'] === 1870.0;
+            });
+
+        \Carbon\Carbon::setTestNow();
+    }
 }

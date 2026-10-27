@@ -34,6 +34,7 @@ return [
     'upcoming_income' => 'Upcoming Income',
     'net_this_month' => 'Net this month',
     'expenses' => 'Expenses',
+    'expenses_per_year' => 'Expenses per year',
     'yearly' => 'Yearly',
     'month_paid' => ':percent% of the month paid',
     'left_to_pay' => ':amount left',

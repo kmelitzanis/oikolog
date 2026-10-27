@@ -53,23 +53,21 @@ class DashboardController extends Controller
         // payment records. Outstanding is this month's unpaid bills *plus*
         // anything already overdue — an overdue bill is still owed, and leaving
         // it out let the hero read "100% paid" while bills sat overdue.
-        $billIds = $bills->pluck('id');
-        $monthPaid = (float) \App\Models\Payment::whereIn('bill_id', $billIds)
-            ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])
-            ->sum('amount');
-        // Settled bills are excluded, and what remains is counted at its
-        // *remaining* balance: a part-paid bill already has its paid slice in
-        // $monthPaid, so summing the full amount counted that money twice.
-        $monthOutstanding = (float) $bills
-            ->reject(fn($b) => $b->isSettled())
-            ->filter(fn($b) => $b->status() === 'overdue'
-                || ($b->next_due_date && $b->next_due_date->isSameMonth(now())))
-            ->sum(fn($b) => $b->getEffectiveRemainingBalance());
+        [$monthPaid, $monthOutstanding] = $this->monthLoad($user, $bills);
         $monthLoad = $monthPaid + $monthOutstanding;
 
         $stats['month_paid']        = round($monthPaid, 2);
         $stats['month_outstanding'] = round($monthOutstanding, 2);
         $stats['month_paid_pct']    = $monthLoad > 0 ? (int) round($monthPaid / $monthLoad * 100) : 100;
+
+        // The hero is headed "this month", so it shows this month: the income
+        // expected in it and the same bill load the progress bar is drawn
+        // from. It used to show monthly averages over every bill, which
+        // never matched the bar beneath it or the accounts page.
+        $monthIncome = $incomes->sum(fn ($i) => count($i->occurrencesBetween(now()->startOfMonth(), now()->endOfMonth())) * (float) $i->amount);
+        $stats['month_income']   = round($monthIncome, 2);
+        $stats['month_expenses'] = round($monthLoad, 2);
+        $stats['month_net']      = round($monthIncome - $monthLoad, 2);
 
         // Bills that need action now — overdue first, then due within a week.
         // Drawn from every active bill rather than from `$upcoming`: that list
@@ -127,6 +125,42 @@ class DashboardController extends Controller
     }
 
     /**
+     * This month's bill load as [paid, still owed].
+     *
+     * Paid is every payment dated this month, on any of the user's bills: the
+     * last instalment of a loan retires its bill, and that money still left
+     * this month. Still owed is each unsettled bill due this month or overdue
+     * at its remaining balance (a part-paid bill already has its paid slice in
+     * the first figure), plus any further cycles before the month ends: a
+     * weekly bill is owed four or five times, and an overdue monthly one is
+     * owed this month's cycle as well as the missed one.
+     *
+     * @return array{0: float, 1: float}
+     */
+    private function monthLoad(User $user, $bills): array
+    {
+        $start = now()->startOfMonth();
+        $end   = now()->endOfMonth();
+
+        $paid = (float) \App\Models\Payment::whereIn('bill_id', Bill::forUser($user)->select('id'))
+            ->whereBetween('paid_at', [$start, $end])
+            ->sum('amount');
+
+        $outstanding = (float) $bills
+            ->reject(fn ($b) => $b->isSettled())
+            // By date rather than by status: a part-paid bill from last month
+            // reads "partial", not "overdue", and was left out.
+            ->filter(fn ($b) => $b->next_due_date && $b->next_due_date->lte($end))
+            ->sum(function ($b) use ($end) {
+                $later = count($b->occurrencesBetween($b->next_due_date->copy()->addDay(), $end));
+
+                return $b->getEffectiveRemainingBalance() + $later * $b->periodAmount();
+            });
+
+        return [$paid, $outstanding];
+    }
+
+    /**
      * Month overview (mockup 2b) — the month as a countdown line.
      * Reached by tapping the dashboard hero.
      */
@@ -135,15 +169,7 @@ class DashboardController extends Controller
         $user  = Auth::user();
         $bills = Bill::forUser($user)->active()->with('category')->orderBy('next_due_date')->get();
 
-        $billIds  = $bills->pluck('id');
-        $paid     = (float) \App\Models\Payment::whereIn('bill_id', $billIds)
-            ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])
-            ->sum('amount');
-        $outstanding = (float) $bills
-            ->reject(fn($b) => $b->isSettled())
-            ->filter(fn($b) => $b->status() === 'overdue'
-                || ($b->next_due_date && $b->next_due_date->isSameMonth(now())))
-            ->sum(fn($b) => $b->getEffectiveRemainingBalance());
+        [$paid, $outstanding] = $this->monthLoad($user, $bills);
         $load = $paid + $outstanding;
 
         $attention = $bills

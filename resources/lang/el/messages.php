@@ -34,6 +34,7 @@ return [
     'upcoming_income' => 'Επερχόμενα Εισοδήματα',
     'net_this_month' => 'Καθαρό αυτόν τον μήνα',
     'expenses' => 'Έξοδα',
+    'expenses_per_year' => 'Έξοδα ανά έτος',
     'yearly' => 'Ετησίως',
     'month_paid' => ':percent% του μήνα πληρωμένο',
     'left_to_pay' => ':amount μένουν',
