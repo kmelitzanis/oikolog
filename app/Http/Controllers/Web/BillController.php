@@ -21,9 +21,9 @@ class BillController extends Controller
     public function index(Request $request)
     {
         $user  = $request->user();
-        $query = Bill::with(['category', 'provider', 'payments' => function ($q) {
-            $q->latest('paid_at')->with(['paidBy', 'account']);
-        }])
+        // Only the latest payment is shown per row; loading every bill's whole
+        // history for it grew with every month the app was used.
+        $query = Bill::with(['category', 'provider', 'latestPayment.account'])
             ->forUser($user)
             ->orderBy('next_due_date');
 
@@ -125,8 +125,10 @@ class BillController extends Controller
     public function show(Bill $bill)
     {
         $this->authorizeView($bill);
-        $bill->load(['category', 'provider', 'payments.paidBy', 'payments.account']);
+        $bill->load(['category', 'provider']);
         $payments = $bill->payments()->with(['paidBy', 'account'])->orderByDesc('paid_at')->get();
+        // One query for both the history and the pay modal's last amount.
+        $bill->setRelation('payments', $payments);
 
         return view('bills.show', compact('bill', 'payments'));
     }

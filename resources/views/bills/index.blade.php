@@ -250,7 +250,7 @@
                 // green tint and the Pay button contradict each other.
                 $status      = $bill->status();
                 $daysUntil   = $bill->daysUntilDue();
-                $lastPayment = $bill->payments->first();
+                $lastPayment = $bill->latestPayment;
                 $cyclePaid   = $bill->isCurrentCyclePaid();
                 $color       = $bill->category?->color_hex ?? '#f59e0b';
 

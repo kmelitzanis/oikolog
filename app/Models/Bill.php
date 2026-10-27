@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -83,6 +84,12 @@ class Bill extends Model implements HasMedia
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /** The most recent payment, for lists that show only that one. */
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany('paid_at');
     }
 
     /** Amounts parsed out of provider mail, awaiting review. */
@@ -632,9 +639,11 @@ class Bill extends Model implements HasMedia
      */
     public function payModalPayload(): array
     {
-        $lastPayment = $this->relationLoaded('payments')
-            ? $this->payments->sortByDesc('paid_at')->first()
-            : $this->payments()->latest('paid_at')->first();
+        $lastPayment = match (true) {
+            $this->relationLoaded('latestPayment') => $this->latestPayment,
+            $this->relationLoaded('payments')      => $this->payments->sortByDesc('paid_at')->first(),
+            default                                => $this->payments()->latest('paid_at')->first(),
+        };
 
         $amount = $this->tracksDebt()
             ? min($this->periodAmount(), max(0.0, (float) $this->debt_remaining))
