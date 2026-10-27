@@ -38,10 +38,52 @@ Notes:
   prints a generated password when you do not pass `--password`.
 - Uploads up to 10 MB per file are accepted (nginx `client_max_body_size`, PHP `upload_max_filesize` and
   `post_max_size` in `docker/php/oikolog.ini`).
-- The application code is **baked into the image**, not mounted. Only `storage`, `bootstrap/cache` and `public` are
-  named volumes. Editing files on the host does nothing until you rebuild the image, and there is no Laravel `.env`
-  inside the container: configuration comes from the `environment:` block (frozen with `config:cache` on start when
+- The application code is **baked into the image**, not mounted. Only `storage` and `public` are named volumes.
+  Editing files on the host does nothing until you rebuild the image, and there is no Laravel `.env` inside the
+  container: configuration comes from the `environment:` block (frozen with `config:cache` on start when
   `APP_ENV=production`).
+- Do **not** put `bootstrap/cache` on a volume. Docker fills a named volume from the image only while the volume is
+  empty, so it would keep the first image's package manifest (`packages.php`, `services.php`) through every later
+  upgrade. Once a release adds or drops a package, the app boots against the old list and can fail to start. The
+  `public` volume does not have this problem because the entrypoint copies the new assets into it on every start.
+
+Upgrading from an older compose file:
+
+Early versions of `docker-compose.yml` differed from the current one in ways that are worth fixing when you upgrade.
+Compare yours against the one in the repository and look for these:
+
+- An `app-cache` volume on `/var/www/html/bootstrap/cache`, in the `app` and `webserver` services. Remove both
+  mounts and the `app-cache:` entry under `volumes:`, start the stack, then delete the old volume. Its name starts
+  with the compose project, which is the folder name by default:
+
+```bash
+docker volume ls | grep app-cache
+```
+
+```bash
+docker volume rm oikolog_app-cache
+```
+
+- `APP_ENV=${APP_ENV:-local}` and `APP_DEBUG=${APP_DEBUG:-true}`. Use `production` and `false`, and check that the
+  compose `.env` does not set them back. Debug mode shows stack traces and settings to anyone who triggers an error,
+  and outside `production` the entrypoint skips the config and route caches.
+- A database port published as `"${MYSQL_PORT:-3306}:3306"`. Prefix it with `127.0.0.1:` so the database is not
+  reachable from the rest of the network.
+- No `ADMIN_EMAIL`, `VAPID_*`, `MICROSOFT_*` or `SESSION_*` entries. A variable missing from the `environment:`
+  block never reaches the container, even when the compose `.env` sets it, so push notifications, the Microsoft
+  mailbox sign-in and the admin commands stay off.
+
+Take a database backup before changing anything:
+
+```bash
+docker compose exec db sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' > oikolog-backup.sql
+```
+
+Then pull and recreate:
+
+```bash
+docker compose pull && docker compose up -d
+```
 
 Configuration:
 
