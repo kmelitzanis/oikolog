@@ -103,7 +103,7 @@ class ProductCatalog
             return null;
         }
 
-        $product = Product::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first()
+        $product = Product::named($name)->first()
             ?? $this->createFromItem($item, $user);
 
         if ($item->product_id !== $product->id) {

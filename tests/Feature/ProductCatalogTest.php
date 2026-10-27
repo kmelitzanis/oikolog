@@ -196,6 +196,20 @@ class ProductCatalogTest extends TestCase
         $this->assertSame(3, $list->items()->whereNotNull('product_id')->count());
     }
 
+    public function test_greek_names_match_whatever_the_case_or_accents(): void
+    {
+        // SQLite's LOWER() leaves Greek alone, so these were three products.
+        $user = User::factory()->create();
+        $list = $this->makeList($user);
+
+        foreach (['Φακές', 'φακές', 'ΦΑΚΕΣ', 'φακες'] as $name) {
+            $this->actingAs($user)->postJson("/api/shopping-lists/{$list->id}/items", ['name' => $name]);
+        }
+
+        $this->assertSame(1, Product::count());
+        $this->assertSame('Φακές', Product::first()->name);
+    }
+
     public function test_typed_items_therefore_build_purchase_history(): void
     {
         $user = User::factory()->create();

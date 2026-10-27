@@ -41,6 +41,38 @@ class Product extends Model
         'last_synced_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $product) {
+            if ($product->isDirty('name') || $product->name_key === null) {
+                $product->name_key = self::nameKey((string) $product->name);
+            }
+        });
+    }
+
+    /**
+     * The form of a name that matching compares: trimmed, single-spaced,
+     * lowercased and without accents, so "Φακές", "ΦΑΚΕΣ" and "φακες" are
+     * one product. Worked out here rather than in SQL because SQLite's
+     * LOWER() leaves Greek untouched.
+     */
+    public static function nameKey(string $name): string
+    {
+        $key = mb_strtolower(preg_replace('/\s+/u', ' ', trim($name)));
+
+        if (class_exists(\Normalizer::class)) {
+            $key = preg_replace('/\p{Mn}+/u', '', \Normalizer::normalize($key, \Normalizer::FORM_D));
+        }
+
+        return $key;
+    }
+
+    /** The product whose name matches, as nameKey() compares them. */
+    public function scopeNamed($query, string $name)
+    {
+        return $query->where('name_key', self::nameKey($name));
+    }
+
     // ── Relations ──────────────────────────────────────────────────────────────
     public function purchases(): HasMany
     {
