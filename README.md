@@ -5,7 +5,7 @@
 <h1 align="center">Oikolog</h1>
 
 <p align="center">
-  Household bills, income, shopping and meal planning for the whole family, in one place.
+  Household bills, income, shopping and recipes for the whole family, in one place.
 </p>
 
 <p align="center">
@@ -25,8 +25,7 @@
 
 Oikolog keeps track of what a household actually spends and owes. Recurring bills know when they are next due,
 payments (including partial ones) are recorded against them, and everything can be shared with the rest of the
-family. Around that sits the day-to-day: shopping lists, recipes and a weekly meal plan that can push its
-ingredients straight into a list.
+family. Around that sits the day-to-day: shopping lists, and recipes whose ingredients go straight into a list.
 
 ## Features
 
@@ -53,8 +52,9 @@ ingredients straight into a list.
 - Shared bills visible to every member, with a recent-activity feed
 - Shopping lists with quantities and a shared product catalogue
 - **Barcode scanning with the phone camera**, plus lookup against Open Food Facts for names and nutrition
-- Recipes with ingredients, steps and timings, importable from a URL
-- Weekly meal planner that can send a week's ingredients to a shopping list
+- Recipes with ingredients, steps, timings and nutrition per serving, importable from a URL
+- Recipe nutrition worked out from the ingredients that match a catalogue product by weight
+- **SparkyFitness integration**: your recipes show up in SparkyFitness for food logging
 - Vehicles with service reminders (by date or mileage), running costs and maintenance history
 
 **Platform**
@@ -123,7 +123,7 @@ php artisan serve
 
 `SANCTUM_STATEFUL_DOMAINS` in `.env` lists the hosts allowed to authenticate with the session cookie. If you serve
 the app on a port that is not in that list, every `/api/*` request returns **401** and the API-backed pages
-(shopping lists, recipes, meal planner) silently render empty, with no error in the UI.
+(shopping lists, recipes) silently render empty, with no error in the UI.
 
 Either serve on the configured port, or add the one you use:
 
@@ -212,6 +212,32 @@ MICROSOFT_CLIENT_SECRET=<secret value>
 ```
 
 Gmail does not need this: use an app password (2-Step Verification → App passwords) in the regular form.
+
+### SparkyFitness
+
+[SparkyFitness](https://github.com/CodeWithCJ/SparkyFitness) can read recipes from Mealie, and Oikolog answers
+the same API, so it connects as a Mealie data provider. Recipes are not copied ahead of time: SparkyFitness
+searches Oikolog when you look for a food, and imports the recipe you pick with its nutrition per serving.
+
+1. In Oikolog, open **Settings → SparkyFitness** and create an API key. It is shown once; copy it. The key can
+   read your own recipes and nothing else, and creating a new one revokes the old.
+2. In SparkyFitness's settings, under **Add New Data Provider**, pick **Mealie** as the provider type,
+   put Oikolog's address in **Base URL** (the one shown in Oikolog's settings) and the key in **API key**.
+3. If Oikolog runs on your local network, an admin has to turn on **Allow Private / LAN Recipe Providers** in
+   SparkyFitness first, or it refuses to reach a private address.
+
+What reaches SparkyFitness is each recipe's name, photo, servings and the **Nutrition per serving** block on the
+recipe form. That block fills itself in on import when the recipe page publishes nutrition, can be typed in by hand,
+or worked out with **Calculate from ingredients**: ingredients in grams, kilos, ml or litres whose name matches a
+product in the catalogue with nutrition (scan its barcode once) are counted, and the form says how many were.
+
+Endpoints, for anything else that speaks Mealie:
+
+| Endpoint                                         | Auth          |
+|--------------------------------------------------|---------------|
+| `GET /api/recipes?queryFilter=name LIKE "%…%"`   | Bearer key    |
+| `GET /api/recipes/{slug}`                        | Bearer key    |
+| `GET /api/media/recipes/{id}/images/original.webp` | none, as in Mealie |
 
 ### Push notifications
 

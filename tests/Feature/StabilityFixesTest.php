@@ -189,11 +189,6 @@ class StabilityFixesTest extends TestCase
         $this->actingAs($this->user())->get(route('translations.index'))->assertForbidden();
     }
 
-    public function test_a_garbled_week_in_the_meal_planner_falls_back_to_this_week(): void
-    {
-        $this->actingAs($this->user())->get(route('meal-plans.index', ['week' => 'garbage']))->assertOk();
-    }
-
     public function test_reset_admin_password_never_uses_a_default(): void
     {
         config(['app.admin_email' => 'boss@example.com']);

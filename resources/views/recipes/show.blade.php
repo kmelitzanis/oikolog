@@ -192,6 +192,25 @@
                         <span class="material-icons-round text-lg">add_shopping_cart</span>{{ __('messages.add_to_list') }}
                     </button>
                 </x-card>
+
+                {{-- Per serving, so it does not follow the stepper above. --}}
+                @php($facts = $recipe->nutritionFacts())
+                @if($facts)
+                    <x-card>
+                        <h3 class="font-bold text-gray-900 dark:text-white mb-3">{{ __('messages.nutrition_per_serving') }}</h3>
+                        <dl class="space-y-1">
+                            @foreach($facts as $key => $value)
+                                <div class="flex items-center justify-between gap-3 py-1.5 border-b border-gray-50 dark:border-slate-700/60 last:border-0 text-sm">
+                                    <dt class="text-gray-600 dark:text-slate-300">{{ __('messages.nutrient_' . $key) }}</dt>
+                                    <dd class="font-semibold text-gray-900 dark:text-white tabular-nums">
+                                        {{ rtrim(rtrim(number_format($value, 1), '0'), '.') }}
+                                        <span class="text-gray-400 dark:text-slate-500 font-normal">{{ match ($key) { 'calories' => 'kcal', 'sodium' => 'mg', default => 'g' } }}</span>
+                                    </dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    </x-card>
+                @endif
             </aside>
 
             {{-- Instructions --}}

@@ -18,7 +18,6 @@ import './pages/file-previews';
 import './pages/calendar';
 import './pages/recipe-form';
 import './pages/recipes';
-import './pages/meal-planner';
 import './pages/push';
 import './pages/editable-amount';
 import './pages/obd-scanner';

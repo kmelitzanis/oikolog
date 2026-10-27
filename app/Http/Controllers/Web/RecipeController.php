@@ -7,6 +7,7 @@ use App\Models\Recipe;
 use App\Models\ShoppingList;
 use App\Services\RecipeImageStore;
 use App\Services\RecipeImporter;
+use App\Services\RecipeNutrition;
 use App\Support\Units;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -159,7 +160,7 @@ class RecipeController extends Controller
         });
 
         return response()->json([
-            'message' => __('messages.meal_added_to_list', ['count' => $recipe->ingredients->count()]),
+            'message' => __('messages.recipe_added_to_list', ['count' => $recipe->ingredients->count()]),
             'url'     => route('shopping-list.show', $list),
         ]);
     }
@@ -235,6 +236,35 @@ class RecipeController extends Controller
         return response()->json(['data' => $recipe]);
     }
 
+    /**
+     * Work out nutrition per serving from the ingredients as they stand in
+     * the form, saved or not, and say which ones could not be counted. The
+     * form decides whether to use the figures; nothing is stored here.
+     */
+    public function estimateNutrition(Request $request, RecipeNutrition $nutrition)
+    {
+        $data = $request->validate([
+            'servings'                 => ['nullable', 'integer', 'min:1', 'max:50'],
+            'ingredients'              => ['required', 'array', 'max:200'],
+            'ingredients.*.name'       => ['nullable', 'string', 'max:255'],
+            'ingredients.*.quantity'   => ['nullable', 'numeric', 'min:0', 'max:99999'],
+            'ingredients.*.unit'       => ['nullable', 'string', 'max:50'],
+            'ingredients.*.product_id' => ['nullable', 'integer'],
+        ]);
+
+        $result = $nutrition->estimate($data['ingredients'], (int) ($data['servings'] ?? 1));
+
+        return response()->json([
+            ...$result,
+            'message' => $result['counted'] === []
+                ? __('messages.nutrition_estimate_none')
+                : __('messages.nutrition_estimate_done', [
+                    'counted' => count($result['counted']),
+                    'total'   => count($result['counted']) + count($result['skipped']),
+                ]),
+        ]);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function validateRecipe(Request $request): array
@@ -263,7 +293,22 @@ class RecipeController extends Controller
             'ingredients.*.quantity'   => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'ingredients.*.unit'       => ['nullable', 'string', 'max:50'],
             'ingredients.*.product_id' => ['nullable', 'exists:products,id'],
+            'nutrition'                => ['nullable', 'array'],
+            ...collect(Recipe::NUTRIENTS)->mapWithKeys(fn ($key) => [
+                "nutrition.$key" => ['nullable', 'numeric', 'min:0', 'max:99999'],
+            ])->all(),
         ]);
+    }
+
+    /** Only the figures that were filled in; an untouched block stores nothing. */
+    private function nutritionAttribute(array $v): ?array
+    {
+        $values = array_filter(
+            array_intersect_key($v['nutrition'] ?? [], array_flip(Recipe::NUTRIENTS)),
+            fn ($value) => $value !== null && $value !== '',
+        );
+
+        return $values === [] ? null : array_map(fn ($value) => round((float) $value, 1), $values);
     }
 
     private function recipeAttributes(array $v): array
@@ -277,6 +322,7 @@ class RecipeController extends Controller
             'difficulty'   => $v['difficulty'] ?? null,
             'image_path'   => $v['image_path'] ?? null,
             'source_url'   => $v['source_url'] ?? null,
+            'nutrition'    => $this->nutritionAttribute($v),
         ];
     }
 

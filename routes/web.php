@@ -164,6 +164,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Web\DashboardController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Web\DashboardController::class, 'updateSettings'])->name('settings.update');
 
+    // The API key SparkyFitness reads recipes with.
+    Route::post('/settings/sparkyfitness', [\App\Http\Controllers\Web\SparkyFitnessController::class, 'store'])->name('settings.sparky.store');
+    Route::delete('/settings/sparkyfitness', [\App\Http\Controllers\Web\SparkyFitnessController::class, 'destroy'])->name('settings.sparky.destroy');
+
     // Web Push subscriptions — one row per browser that granted permission.
     Route::controller(\App\Http\Controllers\Web\PushSubscriptionController::class)
         ->prefix('push')
@@ -245,19 +249,8 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:20,1')
         ->name('recipes.image.upload');
     Route::delete('/recipes/{recipe}/image', [App\Http\Controllers\Web\RecipeController::class, 'destroyImage'])->name('recipes.image.destroy');
+    Route::post('/recipes/nutrition/estimate', [App\Http\Controllers\Web\RecipeController::class, 'estimateNutrition'])->name('recipes.nutrition.estimate');
     Route::post('/recipes/{recipe}/favorite', [App\Http\Controllers\Web\RecipeController::class, 'toggleFavorite'])->name('recipes.favorite');
     Route::post('/recipes/{recipe}/to-shopping-list', [App\Http\Controllers\Web\RecipeController::class, 'toShoppingList'])->name('recipes.to-shopping-list');
     Route::resource('recipes', App\Http\Controllers\Web\RecipeController::class);
-
-    // Meal planner
-    Route::controller(App\Http\Controllers\Web\MealPlanController::class)
-        ->prefix('meal-planner')
-        ->name('meal-plans.')
-        ->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::put('/{mealPlan}', 'update')->name('update');
-            Route::delete('/{mealPlan}', 'destroy')->name('destroy');
-            Route::post('/to-shopping-list', 'toShoppingList')->name('to-shopping-list');
-        });
 });

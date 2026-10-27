@@ -20,7 +20,20 @@
         'steps' => $recipe->steps->sortBy('sort_order')->map(fn($st) => [
             'section' => $st->section ?? '', 'text' => $st->text,
         ])->values(),
+        'nutrition' => (object) $recipe->nutritionFacts(),
     ] : [];
+
+    // Per serving, in the units the recipe stores them in.
+    $nutrientFields = [
+        'calories'      => [__('messages.nutrient_calories'), 'kcal'],
+        'protein'       => [__('messages.nutrient_protein'), 'g'],
+        'carbs'         => [__('messages.nutrient_carbs'), 'g'],
+        'sugar'         => [__('messages.nutrient_sugar'), 'g'],
+        'fat'           => [__('messages.nutrient_fat'), 'g'],
+        'saturated_fat' => [__('messages.nutrient_saturated_fat'), 'g'],
+        'fiber'         => [__('messages.nutrient_fiber'), 'g'],
+        'sodium'        => [__('messages.nutrient_sodium'), 'mg'],
+    ];
 
     // Canonical unit keys with localised labels — the picker must never show a
     // raw key, and what's stored must never be a translated label.
@@ -32,8 +45,9 @@
     // is handed to it from here rather than hardcoded in the JS.
     $config = [
         'routes' => [
-            'upload' => route('recipes.image.upload'),
-            'import' => route('recipes.import'),
+            'upload'   => route('recipes.image.upload'),
+            'import'   => route('recipes.import'),
+            'estimate' => route('recipes.nutrition.estimate'),
         ],
         'i18n' => [
             'name_required'       => __('messages.recipe_name_required'),
@@ -44,6 +58,7 @@
             'import_review'       => __('messages.import_review'),
             'import_partial'      => __('messages.import_partial'),
             'section_default'     => __('messages.section_default'),
+            'estimate_failed'     => __('messages.nutrition_estimate_failed'),
         ],
     ];
 @endphp
@@ -245,6 +260,41 @@
                         </button>
                     </div>
                 </template>
+            </x-card>
+
+            {{-- ── Nutrition per serving ───────────────────────────────────
+                 What SparkyFitness logs when someone eats this. Filled by hand,
+                 by the import when the page publishes it, or worked out from
+                 the ingredients that match a catalogue product by weight. --}}
+            <x-card class="sm:p-6">
+                <div class="flex items-center justify-between mb-1 gap-3 flex-wrap">
+                    <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span class="material-icons-round text-amber-500 text-xl">monitor_heart</span>{{ __('messages.nutrition_per_serving') }}
+                    </h3>
+                    <button type="button" @click="runEstimate()" :disabled="estimating"
+                            class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 text-xs font-semibold hover:text-amber-600 disabled:opacity-50 transition">
+                        <span class="material-icons-round text-base" :class="estimating ? 'animate-spin' : ''"
+                              x-text="estimating ? 'refresh' : 'calculate'"></span>{{ __('messages.nutrition_estimate') }}
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-slate-500 mb-4">{{ __('messages.nutrition_hint') }}</p>
+
+                <div x-show="nutritionNotice" x-cloak
+                     class="mb-4 flex items-start gap-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 rounded-xl px-3 py-2.5 text-xs">
+                    <span class="material-icons-round text-base shrink-0">info</span><span x-text="nutritionNotice"></span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    @foreach($nutrientFields as $key => [$nutrientLabel, $nutrientUnit])
+                        <div>
+                            <label for="nutrition_{{ $key }}" class="block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1.5">
+                                {{ $nutrientLabel }} <span class="font-normal">({{ $nutrientUnit }})</span>
+                            </label>
+                            <input id="nutrition_{{ $key }}" type="number" step="0.1" min="0" x-model="form.nutrition.{{ $key }}"
+                                   class="w-full bg-gray-50 dark:bg-slate-700/60 dark:text-white border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-amber-500 transition">
+                        </div>
+                    @endforeach
+                </div>
             </x-card>
 
             {{-- ── Method ──────────────────────────────────────────────────

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Recipe extends Model
 {
@@ -16,8 +17,15 @@ class Recipe extends Model
         'image_path', 'source_url',
         // `instructions` is deliberately absent: the method lives in recipe_steps
         // now. The column is kept, unwritten, as a rollback copy of the old data.
-        'prep_minutes', 'cook_minutes', 'difficulty', 'is_favorite',
+        'prep_minutes', 'cook_minutes', 'difficulty', 'is_favorite', 'nutrition',
     ];
+
+    /**
+     * Nutrition is per serving: calories in kcal, sodium in mg, the rest in
+     * grams. The same keys as a product's per-100 g figures, so the two can
+     * be added up without a translation table.
+     */
+    public const NUTRIENTS = ['calories', 'protein', 'carbs', 'sugar', 'fat', 'saturated_fat', 'fiber', 'sodium'];
 
     protected function casts(): array
     {
@@ -26,7 +34,31 @@ class Recipe extends Model
             'prep_minutes' => 'integer',
             'cook_minutes' => 'integer',
             'is_favorite'  => 'boolean',
+            'nutrition'    => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // The id outside apps are given; see the migration that added it.
+        static::creating(function (self $recipe) {
+            $recipe->uuid ??= (string) Str::uuid();
+        });
+    }
+
+    /** The filled-in nutrition values per serving, in display order. */
+    public function nutritionFacts(): array
+    {
+        $values = $this->nutrition ?? [];
+        $facts = [];
+
+        foreach (self::NUTRIENTS as $key) {
+            if (isset($values[$key]) && $values[$key] !== '') {
+                $facts[$key] = (float) $values[$key];
+            }
+        }
+
+        return $facts;
     }
 
     /** Public URL for the recipe photo, or null when it has none. */
@@ -45,11 +77,6 @@ class Recipe extends Model
     public function steps(): HasMany
     {
         return $this->hasMany(RecipeStep::class)->orderBy('sort_order');
-    }
-
-    public function mealPlans(): HasMany
-    {
-        return $this->hasMany(MealPlan::class);
     }
 
     /**

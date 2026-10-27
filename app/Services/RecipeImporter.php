@@ -36,8 +36,8 @@ class RecipeImporter
     /**
      * @return array{
      *     name: ?string, description: ?string, servings: ?int, prep_minutes: ?int,
-     *     cook_minutes: ?int, steps: array, ingredients: array, image_path: ?string,
-     *     source_url: string, matched: bool
+     *     cook_minutes: ?int, steps: array, ingredients: array, nutrition?: array,
+     *     image_path: ?string, source_url: string, matched: bool
      * }
      */
     public function import(string $url): array
@@ -168,6 +168,7 @@ class RecipeImporter
             'steps'        => $this->parseInstructions($r['recipeInstructions'] ?? null),
             'ingredients'  => $this->parseIngredients($r['recipeIngredient'] ?? $r['ingredients'] ?? []),
             'image_url'    => $this->parseImage($r['image'] ?? null),
+            'nutrition'    => $this->parseNutrition($r['nutrition'] ?? null),
         ];
     }
 
@@ -231,6 +232,57 @@ class RecipeImporter
         }
 
         return null;
+    }
+
+    /**
+     * schema.org NutritionInformation, which is per serving, as the recipe's
+     * nutrition: "320 kcal", "12 g", "540 mg" become plain numbers in the
+     * recipe's units (kcal, grams, sodium in mg). Energy given in kJ is
+     * converted; a sodium figure with no unit is taken as mg, the way labels
+     * print it.
+     *
+     * @return array<string, float>
+     */
+    private function parseNutrition(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $fields = [
+            'calories'      => 'calories',
+            'protein'       => 'proteinContent',
+            'carbs'         => 'carbohydrateContent',
+            'sugar'         => 'sugarContent',
+            'fat'           => 'fatContent',
+            'saturated_fat' => 'saturatedFatContent',
+            'fiber'         => 'fiberContent',
+            'sodium'        => 'sodiumContent',
+        ];
+
+        $out = [];
+        foreach ($fields as $key => $property) {
+            $text = $this->text($value[$property] ?? null);
+            if ($text === null || ! preg_match('/(\d+(?:[.,]\d+)?)\s*([a-zμ]*)/iu', $text, $m)) {
+                continue;
+            }
+
+            $number = (float) str_replace(',', '.', $m[1]);
+            $unit = mb_strtolower($m[2]);
+
+            $number = match (true) {
+                $key === 'calories' && $unit === 'kj'          => $number / 4.184,
+                $key === 'sodium' && in_array($unit, ['g', 'gr'], true) => $number * 1000,
+                $key !== 'sodium' && $key !== 'calories' && $unit === 'mg' => $number / 1000,
+                default                                        => $number,
+            };
+
+            if ($number >= 0 && $number < 100000) {
+                $out[$key] = round($number, 1);
+            }
+        }
+
+        return $out;
     }
 
     /** ISO 8601 duration ("PT1H30M") → whole minutes. */

@@ -14,7 +14,11 @@ window.recipeForm = function (initial, config) {
         importUrl: '',
         importNotice: null,
 
-        routes: config.routes,          // {upload, import}
+        // nutrition estimate state
+        estimating: false,
+        nutritionNotice: null,
+
+        routes: config.routes,          // {upload, import, estimate}
         t: config.i18n,                 // user-facing strings live on the server
 
         form: {
@@ -34,6 +38,8 @@ window.recipeForm = function (initial, config) {
         init() {
             // `image_url` is display-only; it must not be posted back as a field.
             delete this.form.image_url;
+            // An object the inputs can bind into; an empty PHP array arrives as [].
+            this.form.nutrition = { ...(Array.isArray(this.form.nutrition) ? {} : this.form.nutrition) };
             this.ensureOneIngredient();
             this.ensureOneStep();
         },
@@ -200,6 +206,10 @@ window.recipeForm = function (initial, config) {
             this.ensureOneIngredient();
             this.ensureOneStep();
 
+            if (data.nutrition && !Array.isArray(data.nutrition)) {
+                this.form.nutrition = { ...this.form.nutrition, ...data.nutrition };
+            }
+
             if (data.image_path) {
                 this.form.image_path = data.image_path;
                 this.imageUrl = data.image_url;
@@ -208,6 +218,40 @@ window.recipeForm = function (initial, config) {
             // Say plainly when the page had no structured recipe, so a thin result
             // reads as "this page didn't offer much", not "the importer is broken".
             this.importNotice = data.matched ? this.t.import_review : this.t.import_partial;
+        },
+
+        // ── Nutrition ──────────────────────────────────────────────────────
+        /**
+         * Work the figures out from the ingredients as they stand, saved or
+         * not. Only the values the server could count are written, so a
+         * figure typed by hand for something it could not count survives.
+         */
+        async runEstimate() {
+            this.estimating = true;
+            this.nutritionNotice = null;
+
+            try {
+                const res = await fetch(this.routes.estimate, {
+                    method: 'POST',
+                    headers: this.headers(),
+                    body: JSON.stringify({
+                        servings: this.form.servings || 1,
+                        ingredients: this.form.ingredients.filter(i => i.name && i.name.trim()),
+                    }),
+                });
+                const payload = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    this.nutritionNotice = payload.message || this.t.estimate_failed;
+                } else {
+                    this.form.nutrition = { ...this.form.nutrition, ...(Array.isArray(payload.nutrition) ? {} : payload.nutrition) };
+                    this.nutritionNotice = payload.message;
+                }
+            } catch (e) {
+                this.nutritionNotice = this.t.estimate_failed;
+            }
+
+            this.estimating = false;
         },
 
         // ── Ingredients ────────────────────────────────────────────────────

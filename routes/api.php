@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\IncomeController;
+use App\Http\Controllers\Api\MealieRecipeController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ShoppingListController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,19 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/health', fn() => response()->json(['status' => 'ok', 'version' => '1.0']));
+
+// ── Mealie-compatible recipes ─────────────────────────────────────────────────
+// For SparkyFitness and anything else that reads recipes from Mealie: add
+// Oikolog there as a Mealie provider, with a token from Settings that may read
+// recipes and nothing else. See MealieRecipeController.
+Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
+    Route::get('/recipes', [MealieRecipeController::class, 'index']);
+    Route::get('/recipes/{slug}', [MealieRecipeController::class, 'show']);
+});
+// Unauthenticated, as Mealie's media paths are; the uuid is the key.
+Route::get('/media/recipes/{uuid}/images/{file}', [MealieRecipeController::class, 'image'])
+    ->middleware('throttle:120,1')
+    ->whereUuid('uuid');
 
 // ── Authenticated ─────────────────────────────────────────────────────────────
 Route::middleware(['auth:sanctum,web'])->group(function () {

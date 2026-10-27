@@ -189,6 +189,54 @@
                     </div>
                 </x-card>
 
+                {{-- SparkyFitness reads recipes through the Mealie-compatible
+                     API. The key is shown once, right after it is made. --}}
+                <x-card flush class="p-6">
+                    <div class="{{ $cardTitle }}">SparkyFitness</div>
+                    <p class="text-xs text-gray-400 dark:text-slate-400 -mt-2 mb-4">{{ __('messages.sparky_hint') }}</p>
+
+                    <dl class="space-y-3 text-sm">
+                        <div>
+                            <dt class="text-xs font-medium text-gray-500 dark:text-slate-400">{{ __('messages.sparky_provider_type') }}</dt>
+                            <dd class="font-semibold text-gray-900 dark:text-white">Mealie</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium text-gray-500 dark:text-slate-400">{{ __('messages.sparky_base_url') }}</dt>
+                            <dd class="font-mono text-[0.8rem] text-gray-900 dark:text-white break-all select-all">{{ url('/') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium text-gray-500 dark:text-slate-400">{{ __('messages.sparky_api_key') }}</dt>
+                            @if(session('sparky_token'))
+                                <dd class="mt-1 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 p-3">
+                                    <code class="block font-mono text-[0.8rem] text-gray-900 dark:text-white break-all select-all">{{ session('sparky_token') }}</code>
+                                    <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-1.5">{{ __('messages.sparky_token_once') }}</p>
+                                </dd>
+                            @elseif($sparkyToken)
+                                <dd class="text-gray-700 dark:text-slate-300">
+                                    {{ __('messages.sparky_token_exists', ['date' => $sparkyToken->created_at->translatedFormat('j M Y')]) }}
+                                    @if($sparkyToken->last_used_at)
+                                        · {{ __('messages.sparky_token_last_used', ['when' => $sparkyToken->last_used_at->diffForHumans()]) }}
+                                    @endif
+                                </dd>
+                            @else
+                                <dd class="text-gray-400 dark:text-slate-500">{{ __('messages.sparky_token_none') }}</dd>
+                            @endif
+                        </div>
+                    </dl>
+
+                    {{-- form= attribute: this card sits inside the settings form. --}}
+                    <div class="grid {{ $sparkyToken ? 'grid-cols-2' : 'grid-cols-1' }} gap-2 mt-4">
+                        <x-btn form="sparky-create-form" type="submit" variant="outline" icon="key">
+                            {{ $sparkyToken ? __('messages.sparky_token_renew') : __('messages.sparky_token_create') }}
+                        </x-btn>
+                        @if($sparkyToken)
+                            <x-btn form="sparky-revoke-form" type="submit" variant="ghost" icon="link_off">
+                                {{ __('messages.sparky_token_revoke') }}
+                            </x-btn>
+                        @endif
+                    </div>
+                </x-card>
+
                 {{-- Invoice mail. A separate form: it carries a password and
                      must not ride along with the profile save.
 
@@ -339,6 +387,10 @@
 
     {{-- Targets for the form="" attributes above. A form cannot be nested
          inside another, and the profile form wraps the whole grid. --}}
+    <form id="sparky-create-form" method="POST" action="{{ route('settings.sparky.store') }}" class="hidden"
+          @if($sparkyToken) onsubmit="return confirm({{ Illuminate\Support\Js::from(__('messages.sparky_token_renew_confirm')) }})" @endif>@csrf</form>
+    <form id="sparky-revoke-form" method="POST" action="{{ route('settings.sparky.destroy') }}" class="hidden"
+          onsubmit="return confirm({{ Illuminate\Support\Js::from(__('messages.sparky_token_revoke') . '?') }})">@csrf @method('DELETE')</form>
     <form id="mailbox-form" method="POST" action="{{ route('mailbox.update') }}" class="hidden">@csrf</form>
     <form id="mailbox-test-form" method="POST" action="{{ route('mailbox.test') }}" class="hidden">@csrf</form>
     <form id="mailbox-scan-form" method="POST" action="{{ route('mailbox.scan') }}" class="hidden">@csrf</form>

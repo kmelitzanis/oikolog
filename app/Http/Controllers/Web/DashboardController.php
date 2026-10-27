@@ -267,7 +267,9 @@ class DashboardController extends Controller
 
         $accounts = \App\Models\Account::forUser($user)->active()->orderBy('name')->get();
 
-        return view('settings.index', compact('user', 'avatar', 'mailbox', 'mailboxReady', 'accounts'));
+        $sparkyToken = $user->tokens()->where('name', SparkyFitnessController::TOKEN_NAME)->latest()->first();
+
+        return view('settings.index', compact('user', 'avatar', 'mailbox', 'mailboxReady', 'accounts', 'sparkyToken'));
     }
 
     // Update settings
