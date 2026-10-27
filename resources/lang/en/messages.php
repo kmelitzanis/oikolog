@@ -498,6 +498,9 @@ return [
     'debt_paid_off' => 'Paid off',
     'debt_progress' => ':paid of :total paid off',
     'debt_left' => ':amount left',
+    'debt_update' => 'Update balance',
+    'debt_update_hint' => 'For example after a raised limit or a new drawdown. What you have already paid stays as it is.',
+    'debt_updated' => 'Balance updated.',
     // ── Meal planner redesign ────────────────────────────────────────────
     'meal_pick_recipe_or_title' => 'Pick a recipe or type a meal.',
     'meal_save_failed' => 'Could not save the meal.',

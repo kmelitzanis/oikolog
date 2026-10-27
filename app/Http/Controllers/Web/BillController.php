@@ -292,13 +292,11 @@ class BillController extends Controller
         $data['is_shared']      = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
         $data['notify_enabled'] = (bool) ($data['notify_enabled'] ?? false);
 
-        // Raising the outstanding total (a new drawdown, a bigger card balance)
-        // raises the starting figure with it, so the progress reading stays
-        // honest. Paying it down never touches the original.
-        $data['debt_remaining'] = $data['debt_remaining'] ?? null;
-        $data['debt_initial'] = $data['debt_remaining'] === null
-            ? null
-            : max((float) $data['debt_remaining'], (float) ($bill->debt_initial ?? 0));
+        // The balance goes through setDebtRemaining(), which keeps what was
+        // already paid off. Untouched, it is left alone so that saving the
+        // form does not recompute anything.
+        $debt = isset($data['debt_remaining']) ? round((float) $data['debt_remaining'], 2) : null;
+        unset($data['debt_remaining']);
 
         $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
 
@@ -308,16 +306,37 @@ class BillController extends Controller
         $scheduleChanged = $bill->frequency !== $data['frequency']
             || optional($bill->start_date)->toDateString() !== \Carbon\Carbon::parse($data['start_date'])->toDateString();
 
-        $bill->update($data);
-
+        $bill->fill($data);
+        if ($debt !== ($bill->debt_remaining === null ? null : (float) $bill->debt_remaining)) {
+            $bill->setDebtRemaining($debt);
+        }
         if ($scheduleChanged) {
             $bill->realignNextDueDate();
-            $bill->save();
         }
+        $bill->save();
 
         $this->storeReceipts($request, $bill);
 
         return redirect()->route('bills.show', $bill)->with('success', __('messages.bill_updated'));
+    }
+
+    /**
+     * Change what is still owed on a loan or a card, from the bill page:
+     * the limit went up, there was a new drawdown, the statement says
+     * otherwise. Payments made so far keep counting as paid.
+     */
+    public function updateDebt(Request $request, Bill $bill)
+    {
+        $this->authorizeEdit($bill);
+
+        $data = $request->validate([
+            'debt_remaining' => ['required', 'numeric', 'min:0', 'max:99999999'],
+        ]);
+
+        $bill->setDebtRemaining((float) $data['debt_remaining']);
+        $bill->save();
+
+        return back()->with('success', __('messages.debt_updated'));
     }
 
     public function destroy(Bill $bill)

@@ -542,6 +542,40 @@ class Bill extends Model implements HasMedia
         return $this->debt_remaining !== null;
     }
 
+    /**
+     * Set what is still owed, by hand: a raised card limit, a new drawdown,
+     * a statement that disagrees with the app. Not saved.
+     *
+     * What has been paid off so far stays paid off; the total becomes that
+     * plus the new balance, so the progress bar reads "paid X of the new
+     * total" instead of pretending the extra debt was always there or that
+     * payments vanished. A balance of zero retires the bill, as the last
+     * instalment does, and a balance on a retired bill brings it back.
+     */
+    public function setDebtRemaining(?float $remaining): void
+    {
+        if ($remaining === null) {
+            $this->debt_remaining = null;
+            $this->debt_initial = null;
+
+            return;
+        }
+
+        $remaining = round(max(0.0, $remaining), 2);
+        $paidOff = $this->tracksDebt() && $this->debt_initial !== null
+            ? max(0.0, (float) $this->debt_initial - (float) $this->debt_remaining)
+            : 0.0;
+
+        if ($remaining > 0 && $this->isPaidOff()) {
+            $this->is_active = true;
+        } elseif ($remaining <= 0 && ! $this->isPaidOff()) {
+            $this->is_active = false;
+        }
+
+        $this->debt_remaining = $remaining;
+        $this->debt_initial = round($remaining + $paidOff, 2);
+    }
+
     /** Whether the debt is cleared, so the schedule has run its course. */
     public function isPaidOff(): bool
     {
