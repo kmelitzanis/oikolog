@@ -139,7 +139,9 @@
                         <span class="material-icons-round text-amber-500 text-[20px]">history</span>
                         {{ __('messages.vehicle_section_history') }}
                     </h2>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
+                        <x-btn type="button" size="sm" variant="ghost" icon="local_gas_station"
+                               x-on:click="adding = adding === 'fuel' ? null : 'fuel'">{{ __('messages.vehicle_add_fuel') }}</x-btn>
                         <x-btn type="button" size="sm" variant="ghost" icon="build"
                                x-on:click="adding = adding === 'service' ? null : 'service'">{{ __('messages.vehicle_add_service') }}</x-btn>
                         <x-btn type="button" size="sm" variant="ghost" icon="add"
@@ -149,6 +151,9 @@
 
                 <div x-show="adding === 'service'" x-cloak class="mb-4">
                     @include('vehicles.partials.service-form', ['action' => route('vehicles.services.store', $vehicle), 'onCancel' => 'adding = null'])
+                </div>
+                <div x-show="adding === 'fuel'" x-cloak class="mb-4">
+                    @include('vehicles.partials.fuel-form', ['action' => route('vehicles.expenses.store', $vehicle), 'onCancel' => 'adding = null'])
                 </div>
                 <div x-show="adding === 'expense'" x-cloak class="mb-4">
                     @include('vehicles.partials.expense-form', ['action' => route('vehicles.expenses.store', $vehicle), 'onCancel' => 'adding = null'])
@@ -166,6 +171,8 @@
                         // Lines without a price are a checklist of what was done;
                         // printing "€0.00" against each one was noise.
                         $lines = $isService ? collect($item->lines ?? []) : collect();
+                        $isFuel = ! $isService && $item->isFuel();
+                        $consumption = $isFuel ? $fuel->consumptionFor($item) : null;
                     @endphp
                     <div x-data="{ editing: false, open: false }"
                          class="py-3.5 border-t border-gray-100 dark:border-slate-700/70 first-of-type:border-t-0">
@@ -185,8 +192,17 @@
                                     {{ $row['date']?->translatedFormat('j M Y') }}
                                     @if($item->odometer_km) · {{ $kmFmt($item->odometer_km) }} {{ __('messages.vehicle_odometer_short') }} @endif
                                     @if(! $isService && $item->litres) · {{ rtrim(rtrim(number_format((float) $item->litres, 2, ',', '.'), '0'), ',') }} L @endif
+                                    @if($isFuel && $item->pricePerLitre()) · {{ $symbol }}{{ number_format($item->pricePerLitre(), 3) }}/L @endif
+                                    @if($isFuel && ! $item->is_full_tank) · {{ __('messages.vehicle_fuel_partial') }} @endif
+                                    @if($isFuel && $item->station) · {{ $item->station }} @endif
                                     @if(! $isService && $item->note) · {{ $item->note }} @endif
                                 </div>
+                                @if($consumption !== null)
+                                    <div class="mt-1 inline-flex items-center gap-1 text-[0.7rem] font-semibold text-emerald-700 dark:text-emerald-400">
+                                        <span class="material-icons-round text-sm">eco</span>
+                                        {{ number_format($consumption, 1, ',', '.') }} L/100km
+                                    </div>
+                                @endif
 
                                 @if($lines->isNotEmpty())
                                     <button type="button" @click="open = !open"
@@ -225,6 +241,8 @@
                         <div x-show="editing" x-cloak>
                             @if($isService)
                                 @include('vehicles.partials.service-form', ['action' => $updateRoute, 'service' => $item, 'onCancel' => 'editing = false'])
+                            @elseif($isFuel)
+                                @include('vehicles.partials.fuel-form', ['action' => $updateRoute, 'expense' => $item, 'onCancel' => 'editing = false'])
                             @else
                                 @include('vehicles.partials.expense-form', ['action' => $updateRoute, 'expense' => $item, 'onCancel' => 'editing = false'])
                             @endif
@@ -321,6 +339,39 @@
                         <p class="text-sm text-gray-400 dark:text-slate-500">{{ __('messages.vehicle_no_reminders') }}</p>
                     @endforelse
                 </x-card>
+
+                {{-- Fuel: what the car drinks and what that costs --}}
+                @if($fuel->hasFills())
+                    @php
+                        $fuelYear = $fuel->since(\Carbon\Carbon::today()->subYear());
+                        $avgConsumption = $fuel->averageConsumption();
+                        $fuelPerKm = $fuel->costPerKm();
+                        $avgPrice = $fuel->averagePricePerLitre();
+                    @endphp
+                    <x-card>
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                            <span class="material-icons-round text-amber-500 text-[20px]">local_gas_station</span>
+                            {{ __('messages.vehicle_section_fuel') }}
+                        </h2>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            @foreach([
+                                [$avgConsumption === null ? '—' : number_format($avgConsumption, 1, ',', '.') . ' L', __('messages.vehicle_fuel_avg_consumption')],
+                                [$fuelPerKm === null ? '—' : $symbol . number_format($fuelPerKm, 3), __('messages.vehicle_fuel_cost_per_km')],
+                                [$avgPrice === null ? '—' : $symbol . number_format($avgPrice, 3), __('messages.vehicle_fuel_avg_price')],
+                                [$money($fuelYear['amount']), __('messages.vehicle_fuel_last_year', ['litres' => number_format($fuelYear['litres'], 0, ',', '.')])],
+                            ] as [$value, $label])
+                                <div class="rounded-2xl bg-gray-50 dark:bg-slate-900/60 px-3.5 py-3">
+                                    <div class="text-base font-extrabold text-gray-900 dark:text-white tabular-nums">{{ $value }}</div>
+                                    <div class="text-[0.66rem] text-gray-400 dark:text-slate-500 mt-0.5">{{ $label }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                        {{-- Consumption needs two full fills with an odometer reading. --}}
+                        @if($avgConsumption === null)
+                            <p class="text-[0.7rem] text-gray-400 dark:text-slate-500 mt-3">{{ __('messages.vehicle_fuel_needs_two_full') }}</p>
+                        @endif
+                    </x-card>
+                @endif
 
                 {{-- Where the money went --}}
                 <x-card>

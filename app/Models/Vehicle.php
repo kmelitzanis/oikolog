@@ -200,6 +200,14 @@ class Vehicle extends Model
         return $km > 0 ? round($this->totalSpent() / $km, 3) : null;
     }
 
+    /** Consumption and fuel cost from the fill-ups; reads the loaded expenses when they are. */
+    public function fuelLog(): \App\Support\FuelLog
+    {
+        return new \App\Support\FuelLog(
+            $this->relationLoaded('expenses') ? $this->expenses : $this->expenses()->where('category', 'fuel')->get()
+        );
+    }
+
     /** Spend split into the buckets the summary card lists, biggest first. */
     public function expenseBreakdown(?Carbon $since = null): array
     {

@@ -56,6 +56,7 @@ class VehicleController extends Controller
                 ->each->setRelation('vehicle', $vehicle),
             'history'   => $history,
             'breakdown' => $vehicle->expenseBreakdown(Carbon::today()->subYear()),
+            'fuel'      => $vehicle->fuelLog(),
             'scans'     => $vehicle->scans,
         ]);
     }
@@ -307,7 +308,7 @@ class VehicleController extends Controller
         $vehicle->expenses()->create($data + ['created_by' => $request->user()->id]);
         $this->advanceOdometer($vehicle, $data['odometer_km'] ?? null, $data['spent_at']);
 
-        return back()->with('success', __('messages.vehicle_expense_added'));
+        return back()->with('success', __($data['category'] === 'fuel' ? 'messages.vehicle_fuel_added' : 'messages.vehicle_expense_added'));
     }
 
     public function updateExpense(Request $request, Vehicle $vehicle, VehicleExpense $expense)
@@ -324,14 +325,42 @@ class VehicleController extends Controller
 
     private function validatedExpense(Request $request): array
     {
-        return $request->validate([
-            'category'    => ['required', Rule::in(VehicleExpense::CATEGORIES)],
-            'amount'      => ['required', 'numeric', 'min:0', 'max:999999'],
-            'spent_at'    => ['required', 'date'],
-            'odometer_km' => ['nullable', 'integer', 'min:0', 'max:9999999'],
-            'litres'      => ['nullable', 'numeric', 'min:0', 'max:9999'],
-            'note'        => ['nullable', 'string', 'max:255'],
+        $data = $request->validate([
+            'category'        => ['required', Rule::in(VehicleExpense::CATEGORIES)],
+            'amount'          => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'spent_at'        => ['required', 'date'],
+            'odometer_km'     => ['nullable', 'integer', 'min:0', 'max:9999999'],
+            'litres'          => ['nullable', 'numeric', 'min:0', 'max:9999'],
+            'note'            => ['nullable', 'string', 'max:255'],
+            // The fuel log's own fields. The price per litre is not stored:
+            // it is the amount over the litres, and only saves typing here.
+            'price_per_litre' => ['nullable', 'numeric', 'min:0', 'max:99'],
+            'is_full_tank'    => ['nullable', 'boolean'],
+            'fuel_type'       => ['nullable', Rule::in(VehicleExpense::FUEL_TYPES)],
+            'station'         => ['nullable', 'string', 'max:120'],
         ]);
+
+        $isFuel = $data['category'] === 'fuel';
+
+        // At the pump people read litres and the price off the display; the
+        // total follows from them.
+        if (! isset($data['amount']) && $isFuel && ! empty($data['litres']) && ! empty($data['price_per_litre'])) {
+            $data['amount'] = round((float) $data['litres'] * (float) $data['price_per_litre'], 2);
+        }
+
+        if (! isset($data['amount'])) {
+            throw ValidationException::withMessages(['amount' => __('validation.required', ['attribute' => __('messages.amount')])]);
+        }
+
+        unset($data['price_per_litre']);
+
+        // A form without the checkbox (the plain expense form) means a full
+        // tank, which is what the fuel log assumes of rows it cannot ask about.
+        $data['is_full_tank'] = $isFuel && $request->has('is_full_tank') ? $request->boolean('is_full_tank') : true;
+        $data['fuel_type'] = $isFuel ? ($data['fuel_type'] ?? null) : null;
+        $data['station'] = $isFuel ? ($data['station'] ?? null) : null;
+
+        return $data;
     }
 
     public function destroyExpense(Request $request, Vehicle $vehicle, VehicleExpense $expense)
