@@ -24,7 +24,7 @@ class Bill extends Model implements HasMedia
         'remaining_balance', 'debt_remaining', 'debt_initial', 'currency_code', 'default_account_id',
         'frequency', 'frequency_interval', 'start_date', 'end_date', 'next_due_date',
         'last_paid_date', 'is_active', 'is_shared', 'notify_enabled', 'notify_days_before',
-        'url', 'notes', 'created_by', 'family_id', 'created_at', 'updated_at', 'created_by'
+        'url', 'notes', 'created_by', 'family_id', 'created_at', 'updated_at',
     ];
 
     protected function casts(): array
@@ -78,11 +78,6 @@ class Bill extends Model implements HasMedia
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
-    }
-
-    public function defaultIncome(): BelongsTo
-    {
-        return $this->belongsTo(Income::class, 'default_account_id');
     }
 
     public function payments(): HasMany
@@ -160,21 +155,33 @@ class Bill extends Model implements HasMedia
     }
 
     // Helpers
+
+    /**
+     * What the bill costs per month on average.
+     *
+     * The interval stretches the cycle ("every 2 months"), so it divides the
+     * rate. A one-off has no rate at all and counts as nothing: a paid ticket
+     * stays active, and counting it here added its full price to every
+     * month's total for good.
+     */
     public function monthlyEquivalent(): float
     {
-        $amount = $this->periodAmount();
-        $freq = $this->frequency ?? 'monthly';
-        $interval = (int) ($this->frequency_interval ?? 1);
+        return self::monthlyRate($this->periodAmount(), $this->frequency, $this->frequency_interval);
+    }
 
-        return match ($freq) {
-            'once' => $amount,
-            'daily' => $amount * 30 * $interval,
-            'weekly' => $amount * 4.345 * $interval,
-            'biweekly' => $amount * 2.1725 * $interval,
-            'monthly' => $amount * $interval,
-            'quarterly' => ($amount * $interval) / 3,
-            'yearly' => ($amount * $interval) / 12,
-            default => $amount,
+    /** Shared with Income, which recurs on the same vocabulary. */
+    public static function monthlyRate(float $amount, ?string $frequency, $interval): float
+    {
+        $interval = max(1, (int) ($interval ?? 1));
+
+        return match ($frequency ?? 'monthly') {
+            'once'      => 0.0,
+            'daily'     => $amount * 30 / $interval,
+            'weekly'    => $amount * 4.345 / $interval,
+            'biweekly'  => $amount * 2.1725 / $interval,
+            'quarterly' => $amount / (3 * $interval),
+            'yearly'    => $amount / (12 * $interval),
+            default     => $amount / $interval,
         };
     }
 
@@ -334,19 +341,23 @@ class Bill extends Model implements HasMedia
         return $target->day(min($day, $target->daysInMonth));
     }
 
-    /** The inverse of advanceDate(): the due date one cycle earlier. */
-    private function retreatDate(Carbon $date): ?Carbon
+    /**
+     * The inverse of advanceDate(): the due date one cycle earlier, on the
+     * schedule's own day (a bill set up for the 31st steps back from 28
+     * February to 31 January, not to the 28th).
+     */
+    public function retreatDate(Carbon $date): ?Carbon
     {
-        $interval = (int)($this->frequency_interval ?? 1);
+        $interval = max(1, (int) ($this->frequency_interval ?? 1));
 
         return match ($this->frequency ?? 'monthly') {
             'once' => null,
             'daily' => $date->copy()->subDays($interval),
             'weekly' => $date->copy()->subWeeks($interval),
             'biweekly' => $date->copy()->subWeeks(2 * $interval),
-            'quarterly' => $date->copy()->subMonthsNoOverflow(3 * $interval),
-            'yearly' => $date->copy()->subYearsNoOverflow($interval),
-            default => $date->copy()->subMonthsNoOverflow($interval),
+            'quarterly' => self::addMonthsOnDay($date, -3 * $interval, $this->anchorDay($date)),
+            'yearly' => self::addMonthsOnDay($date, -12 * $interval, $this->anchorDay($date)),
+            default => self::addMonthsOnDay($date, -$interval, $this->anchorDay($date)),
         };
     }
 

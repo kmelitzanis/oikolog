@@ -209,6 +209,15 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->assertSame(now()->toDateString(), $bill->next_due_date->toDateString());
     }
 
+    public function test_monthly_equivalent_divides_by_the_interval_and_skips_one_offs(): void
+    {
+        $user = User::factory()->create();
+
+        $this->assertSame(50.0, $this->makeBill($user, ['frequency_interval' => 2])->monthlyEquivalent());
+        $this->assertSame(10.0, round($this->makeBill($user, ['amount' => 240, 'frequency' => 'yearly', 'frequency_interval' => 2])->monthlyEquivalent(), 2));
+        $this->assertSame(0.0, $this->makeBill($user, ['frequency' => 'once'])->monthlyEquivalent());
+    }
+
     public function test_deleting_an_older_payment_leaves_the_schedule_alone(): void
     {
         $user = User::factory()->create();

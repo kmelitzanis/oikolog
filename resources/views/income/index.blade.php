@@ -189,7 +189,7 @@
                         <div class="text-[0.68rem] text-gray-400 dark:text-slate-500 truncate">
                             @if($income->account)
                                 → {{ $income->account->name }}
-                            @else
+                            @elseif($income->frequency !== 'once')
                                 {{ number_format($income->monthlyEquivalent(), 2) }}{{ __('messages.per_month_short') }}
                             @endif
                         </div>

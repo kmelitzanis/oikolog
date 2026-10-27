@@ -229,7 +229,15 @@ class IncomeController extends Controller
         $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
         $data['frequency_interval'] = $data['frequency_interval'] ?? 1;
 
-        $income->update($data);
+        $scheduleChanged = $income->frequency !== $data['frequency']
+            || (int) $income->frequency_interval !== (int) $data['frequency_interval']
+            || optional($income->start_date)->toDateString() !== Carbon::parse($data['start_date'])->toDateString();
+
+        $income->fill($data);
+        if ($scheduleChanged) {
+            $income->realignNextDate();
+        }
+        $income->save();
 
         // A one-off's deposit is derived from the income, so an edit has to
         // carry through to it. Without this the ledger kept the figure from

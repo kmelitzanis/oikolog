@@ -68,21 +68,10 @@ class Income extends Model
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
+    /** Average per month; see Bill::monthlyEquivalent(). */
     public function monthlyEquivalent(): float
     {
-        $amount = (float)$this->amount;
-        $freq = $this->frequency ?? 'monthly';
-        $interval = (int)($this->frequency_interval ?? 1);
-        return match ($freq) {
-            'once' => $amount,
-            'daily' => $amount * 30 * $interval,
-            'weekly' => $amount * 4.345 * $interval,
-            'biweekly' => $amount * 2.1725 * $interval,
-            'monthly' => $amount * $interval,
-            'quarterly' => ($amount * $interval) / 3,
-            'yearly' => ($amount * $interval) / 12,
-            default => $amount,
-        };
+        return Bill::monthlyRate((float) $this->amount, $this->frequency, $this->frequency_interval);
     }
 
     public function calculateNextDate(): ?Carbon
@@ -90,6 +79,33 @@ class Income extends Model
         if (!$this->next_date) return null;
 
         return $this->advanceDate(Carbon::parse($this->next_date));
+    }
+
+    /**
+     * Put next_date back on the schedule anchored at start_date, after the
+     * schedule itself was edited. Without it a source moved from the 1st to
+     * the 25th, or from monthly to quarterly, kept expecting money on the old
+     * date. The first occurrence after the cycle last received is the next
+     * one, or start_date when nothing has been received yet.
+     */
+    public function realignNextDate(): void
+    {
+        if (! $this->start_date) return;
+
+        $occurrence = Carbon::parse($this->start_date)->startOfDay();
+        $settled = $this->last_expected_date ?? $this->last_received_date;
+
+        if ($settled && $this->frequency !== 'once') {
+            $settled = Carbon::parse($settled)->startOfDay();
+
+            while ($occurrence->lte($settled)) {
+                $next = $this->advanceDate($occurrence);
+                if (! $next || $next->lte($occurrence)) break;
+                $occurrence = $next;
+            }
+        }
+
+        $this->next_date = $occurrence->toDateString();
     }
 
     /** @return Carbon[] */

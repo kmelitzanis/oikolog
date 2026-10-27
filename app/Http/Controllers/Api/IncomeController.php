@@ -72,7 +72,7 @@ class IncomeController extends Controller
             'source' => ['nullable', 'string', 'max:80'],
             'amount' => ['sometimes', 'numeric', 'min:0.01'],
             'frequency' => ['sometimes', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
-            'frequency_interval' => ['nullable', 'integer', 'min:1'],
+            'frequency_interval' => ['sometimes', 'integer', 'min:1', 'max:99'],
             'start_date' => ['sometimes', 'date'],
             'end_date' => ['nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
@@ -85,7 +85,11 @@ class IncomeController extends Controller
             $data['family_id'] = $data['is_shared'] ? $request->user()->family_id : null;
         }
 
-        $income->update($data);
+        $income->fill($data);
+        if ($income->isDirty(['frequency', 'frequency_interval', 'start_date'])) {
+            $income->realignNextDate();
+        }
+        $income->save();
 
         return response()->json(['data' => $this->resource($income->fresh())]);
     }

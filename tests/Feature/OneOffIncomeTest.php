@@ -181,6 +181,23 @@ class OneOffIncomeTest extends TestCase
         $this->assertSame(600.00, $account->fresh()->balance());
     }
 
+    public function test_moving_a_recurring_sources_day_moves_its_expected_date(): void
+    {
+        \Carbon\Carbon::setTestNow('2026-10-10 12:00');
+        $user = User::factory()->create(['currency_code' => 'EUR']);
+
+        $this->submit($user, ['frequency' => 'monthly', 'start_date' => '2026-10-01']);
+        $income = Income::firstWhere('name', 'ΑΠΟΤΑΜΙΕΥΣΗ ΝΙΚΟΛΑΣ');
+        $this->actingAs($user)->post(route('income.receive', $income))->assertRedirect();
+        $this->assertSame('2026-11-01', $income->fresh()->next_date->toDateString());
+
+        // Paid on the 25th from now on: the 1 October cycle is settled, so the next one on the new day is 25 October.
+        $this->edit($user, $income->fresh(), ['start_date' => '2026-09-25'])->assertRedirect();
+
+        $this->assertSame('2026-10-25', $income->fresh()->next_date->toDateString());
+        \Carbon\Carbon::setTestNow();
+    }
+
     public function test_a_recurring_sources_confirmed_receipts_are_never_rewritten(): void
     {
         $user = User::factory()->create(['currency_code' => 'EUR']);
