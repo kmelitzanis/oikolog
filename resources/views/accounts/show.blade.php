@@ -220,10 +220,17 @@
                 </x-field>
             </div>
 
-            <button type="submit"
-                    class="h-11 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-bold transition">
-                {{ __('messages.record_movement') }}
-            </button>
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="submit"
+                        class="h-11 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-bold transition">
+                    {{ __('messages.record_movement') }}
+                </button>
+                {{-- Purchases have a page of their own; this form is for money
+                     in and cash taken out. --}}
+                <a href="{{ route('expenses.create') }}" class="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline">
+                    {{ __('messages.movement_purchase_hint') }}
+                </a>
+            </div>
         </form>
 
         {{-- Ledger --}}
@@ -236,7 +243,7 @@
                 @php
                     $incoming = $t->isIncoming();
                     $label = $t->description
-                        ?: ($t->income?->name ?? $t->payment?->bill?->name ?? __('messages.type_' . $t->type));
+                        ?: ($t->income?->name ?? $t->payment?->bill?->name ?? $t->expense?->name ?? __('messages.type_' . $t->type));
                 @endphp
                 <div class="flex items-center gap-3 px-5 py-3.5 {{ !$loop->first ? 'border-t border-gray-100 dark:border-slate-700/60' : '' }}">
                     <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0
@@ -244,6 +251,7 @@
                         <span class="material-icons-round text-lg">
                             @if($t->transfer_group) swap_horiz
                             @elseif($t->payment_id) receipt_long
+                            @elseif($t->expense_id) shopping_bag
                             @elseif($t->income_id) trending_up
                             @else {{ $incoming ? 'arrow_downward' : 'arrow_upward' }}
                             @endif
@@ -259,7 +267,11 @@
                     <div class="text-sm font-bold shrink-0 {{ $incoming ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400' }}">
                         {{ $incoming ? '+' : '−' }}{{ $symbol }}{{ number_format((float) $t->amount, 2) }}
                     </div>
-                    @unless($t->payment_id)
+                    @if($t->expense_id)
+                        {{-- Changed from the purchase, which owns this row. --}}
+                        <x-icon-btn :href="route('expenses.edit', $t->expense_id)" icon="edit" title="{{ __('messages.edit') }}" />
+                    @endif
+                    @unless($t->belongsToRecord())
                         <form method="POST" action="{{ route('accounts.movements.destroy', [$account, $t]) }}"
                               onsubmit="return confirm('{{ addslashes(__('messages.confirm_delete_movement')) }}')">
                             @csrf @method('DELETE')

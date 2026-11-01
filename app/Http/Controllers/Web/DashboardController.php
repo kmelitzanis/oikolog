@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
+use App\Models\Expense;
 use App\Models\Income;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -60,14 +61,22 @@ class DashboardController extends Controller
         $stats['month_outstanding'] = round($monthOutstanding, 2);
         $stats['month_paid_pct']    = $monthLoad > 0 ? (int) round($monthPaid / $monthLoad * 100) : 100;
 
-        // The hero is headed "this month", so it shows this month: the income
-        // expected in it and the same bill load the progress bar is drawn
-        // from. It used to show monthly averages over every bill, which
-        // never matched the bar beneath it or the accounts page.
-        $monthIncome = $incomes->sum(fn ($i) => count($i->occurrencesBetween(now()->startOfMonth(), now()->endOfMonth())) * (float) $i->amount);
-        $stats['month_income']   = round($monthIncome, 2);
-        $stats['month_expenses'] = round($monthLoad, 2);
-        $stats['month_net']      = round($monthIncome - $monthLoad, 2);
+        // ── Month summary ─────────────────────────────────────────────────────
+        // What has happened this month, in figures that can each be checked
+        // against a page of their own: bills paid and still owed, purchases,
+        // income that has come in against what is expected. It used to lead
+        // with a "net this month" worked out from monthly averages, which
+        // matched nothing else in the app.
+        $purchases = Expense::forUser($user)->inMonth(now())->get(['amount']);
+        $stats['month_purchases']       = round((float) $purchases->sum('amount'), 2);
+        $stats['month_purchases_count'] = $purchases->count();
+        $stats['month_spent']           = round($monthPaid + $stats['month_purchases'], 2);
+
+        // Received is counted the way the income page counts it, so the two agree.
+        $stats['month_income_expected'] = round($incomes->sum(
+            fn ($i) => count($i->occurrencesBetween(now()->startOfMonth(), now()->endOfMonth())) * (float) $i->amount
+        ), 2);
+        $stats['month_income_received'] = round((float) $incomes->filter(fn ($i) => $i->receivedForMonth())->sum('amount'), 2);
 
         // Bills that need action now — overdue first, then due within a week.
         // Drawn from every active bill rather than from `$upcoming`: that list
@@ -98,6 +107,13 @@ class DashboardController extends Controller
             ->groupBy(fn($p) => $p->paid_at->format('Y-m'))
             ->map(fn($group) => (float) $group->sum('amount'));
 
+        // Purchases are spending too; without them the chart showed bills only.
+        $purchases12 = Expense::forUser($user)
+            ->where('spent_at', '>=', now()->subMonths(11)->startOfMonth())
+            ->get(['spent_at', 'amount'])
+            ->groupBy(fn($e) => $e->spent_at->format('Y-m'))
+            ->map(fn($group) => (float) $group->sum('amount'));
+
         // Build income per month using monthly equivalents (projected flat)
         $allIncomes = Income::forUser($user)->active()->get();
         $monthlyIncomeAmt = round($allIncomes->sum(fn($i) => $i->monthlyEquivalent()), 2);
@@ -109,7 +125,7 @@ class DashboardController extends Controller
             $month = now()->startOfMonth()->subMonths($i);
             $ym = $month->format('Y-m');
             $chartMonths[] = $month->translatedFormat('M y');
-            $chartSpending[] = (float)($payments12[$ym] ?? 0);
+            $chartSpending[] = round((float)($payments12[$ym] ?? 0) + (float)($purchases12[$ym] ?? 0), 2);
             $chartIncome[] = $monthlyIncomeAmt;
         }
 

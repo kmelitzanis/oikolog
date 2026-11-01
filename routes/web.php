@@ -129,6 +129,9 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{vehicle}/expenses/{expense}', 'destroyExpense')->name('expenses.destroy');
         });
 
+    // Everyday purchases: money spent once, with no bill behind it.
+    Route::resource('expenses', App\Http\Controllers\Web\ExpenseController::class)->except('show');
+
     // Income
     Route::controller(IncomeController::class)
         ->prefix('income')

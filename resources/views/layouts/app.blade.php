@@ -55,6 +55,7 @@
                     ['route' => 'dashboard',         'icon' => 'dashboard',    'label' => __('messages.dashboard'),    'match' => 'dashboard'],
                     ['route' => 'bills.index',       'icon' => 'receipt_long', 'label' => __('messages.bills'),        'match' => 'bills.*', 'count' => $overdueBillCount ?? 0],
                     ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => ['income.*', 'accounts.*']],
+                    ['route' => 'expenses.index',    'icon' => 'shopping_bag', 'label' => __('messages.expenses_menu'), 'match' => 'expenses.*'],
                     ['route' => 'vehicles.index',    'icon' => 'directions_car', 'label' => __('messages.vehicles'),   'match' => 'vehicles.*'],
                     ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
                     ['route' => 'shopping-list.index', 'icon' => 'shopping_cart', 'label' => __('messages.shopping_lists'), 'match' => ['shopping-list.*', 'products.*']],

@@ -50,7 +50,7 @@ class AccountController extends Controller
         $this->authorizeAccess($account);
 
         $transactions = $account->transactions()
-            ->with(['income:id,name', 'payment.bill:id,name', 'creator:id,name'])
+            ->with(['income:id,name', 'payment.bill:id,name', 'expense:id,name', 'creator:id,name'])
             ->orderByDesc('occurred_at')
             ->orderByDesc('created_at')
             ->paginate(50);
@@ -219,9 +219,10 @@ class AccountController extends Controller
         $this->authorizeAccess($account);
         abort_unless($transaction->account_id === $account->id, 404);
 
-        // A bill payment's movement belongs to the payment; deleting it here
-        // would leave the two disagreeing. Undo the payment instead.
+        // A bill payment's or a purchase's movement belongs to it; deleting
+        // it here would leave the two disagreeing. Change that instead.
         abort_if($transaction->payment_id !== null, 422, __('messages.movement_belongs_to_payment'));
+        abort_if($transaction->expense_id !== null, 422, __('messages.movement_belongs_to_expense'));
 
         $transaction->transfer_group
             ? $this->ledger->reverseTransfer($transaction)

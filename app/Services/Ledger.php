@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\AccountTransaction;
+use App\Models\Expense;
 use App\Models\Income;
 use App\Models\Payment;
 use Carbon\Carbon;
@@ -42,6 +43,14 @@ class Ledger
     ): AccountTransaction {
         return $this->record($account, 'withdrawal', $amount, -1, $occurredAt, $userId, $description, [
             'payment_id' => $payment?->id,
+        ]);
+    }
+
+    /** Money leaving an account for a purchase, linked to it. */
+    public function spend(Account $account, Expense $expense, string $userId): AccountTransaction
+    {
+        return $this->record($account, 'withdrawal', (float) $expense->amount, -1, $expense->spent_at, $userId, $expense->name, [
+            'expense_id' => $expense->id,
         ]);
     }
 

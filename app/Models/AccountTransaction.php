@@ -21,7 +21,7 @@ class AccountTransaction extends Model
 
     protected $fillable = [
         'account_id', 'type', 'amount', 'direction', 'currency_code',
-        'occurred_at', 'description', 'income_id', 'payment_id',
+        'occurred_at', 'description', 'income_id', 'payment_id', 'expense_id',
         'transfer_group', 'created_by',
     ];
 
@@ -47,6 +47,22 @@ class AccountTransaction extends Model
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
+    }
+
+    /** The purchase this withdrawal pays for, if it is one. */
+    public function expense(): BelongsTo
+    {
+        return $this->belongsTo(Expense::class);
+    }
+
+    /**
+     * Whether the row is owned by something else that must be changed in its
+     * place: a bill payment or a purchase. Deleting it here would leave the
+     * two disagreeing.
+     */
+    public function belongsToRecord(): bool
+    {
+        return $this->payment_id !== null || $this->expense_id !== null;
     }
 
     public function creator(): BelongsTo

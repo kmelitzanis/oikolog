@@ -17,7 +17,6 @@
 
     @php
         $currency    = auth()->user()->currency_code;
-        $netPositive = $stats['month_net'] >= 0;
         // 700 · .62rem · .09em tracking — the mockup's section label.
         $sectionLabel = 'text-[0.62rem] font-bold uppercase tracking-[0.09em] text-gray-400 dark:text-slate-500';
         $panel = 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[24px]';
@@ -50,33 +49,36 @@
     {{-- ── Hero + attention queue (1.15fr / 1fr) ──────────────────────── --}}
     <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-[18px] mb-[18px]">
 
-        {{-- Hero — tapping it opens the month overview (mockup 2b) --}}
+        {{-- Hero: the month so far. Tapping it opens the month overview. --}}
         <a href="{{ route('dashboard.month') }}"
            class="block rounded-[24px] bg-amber-500 px-[26px] pt-6 pb-[22px] shadow-[0_14px_34px_rgba(245,158,11,0.26)] transition hover:brightness-[1.03]">
             <div class="text-[0.68rem] font-semibold uppercase tracking-[0.09em] text-slate-900/70">
-                {{ __('messages.net_this_month') }}
+                {{ __('messages.month_summary', ['month' => now()->translatedFormat('F Y')]) }}
             </div>
-            {{-- Type scale switches between the two mockups: the phone (2a)
-                 uses 2.5rem / .9rem tiles, the desktop (3a) 3rem / 1.05rem. --}}
+            {{-- What has left the household this month: bills paid and
+                 purchases. Each half is a tile below. --}}
             <div class="text-[2.5rem] sm:text-[3rem] leading-[1.05] font-extrabold tracking-[-0.03em] text-slate-900 mt-1.5">
-                {{ $netPositive ? '+' : '' }}{{ $currency }} {{ number_format($stats['month_net'], 2) }}
+                {{ $currency }} {{ number_format($stats['month_spent'], 2) }}
             </div>
+            <div class="text-[0.78rem] font-semibold text-slate-900/70 mt-1">{{ __('messages.month_spent_so_far') }}</div>
 
-            <div class="flex gap-2 sm:gap-2.5 mt-4 sm:mt-5">
+            <div class="grid grid-cols-3 gap-2 sm:gap-2.5 mt-4 sm:mt-5">
                 @foreach([
-                    [__('messages.income_singular'), $stats['month_income']],
-                    [__('messages.expenses'), $stats['month_expenses']],
-                    {{-- The one figure here that is not this month: a year of
-                         recurring bills at their average rate, named as such. --}}
-                    [__('messages.expenses_per_year'), $stats['yearly_total']],
-                ] as [$tileLabel, $tileValue])
-                    <div class="flex-1 min-w-0 bg-slate-900/10 rounded-[14px] sm:rounded-2xl px-[11px] py-[9px] sm:px-3.5 sm:py-3">
+                    [__('messages.hero_bills'), $stats['month_paid'],
+                        __('messages.hero_bills_paid')],
+                    [__('messages.expenses_menu'), $stats['month_purchases'],
+                        trans_choice('messages.expenses_count', $stats['month_purchases_count'], ['count' => $stats['month_purchases_count']])],
+                    [__('messages.hero_income'), $stats['month_income_received'],
+                        __('messages.hero_income_of', ['amount' => $currency . ' ' . number_format($stats['month_income_expected'], 2)])],
+                ] as [$tileLabel, $tileValue, $tileNote])
+                    <div class="min-w-0 bg-slate-900/10 rounded-[14px] sm:rounded-2xl px-[11px] py-[9px] sm:px-3.5 sm:py-3">
                         <div class="text-[0.66rem] sm:text-[0.7rem] text-slate-900/70 truncate">{{ $tileLabel }}</div>
                         {{-- no `truncate` here: a clipped "EUR 1…" is useless,
                              so a long amount wraps instead. --}}
                         <div class="text-[0.9rem] sm:text-[1.05rem] font-bold text-slate-900 mt-0.5 sm:mt-[3px] leading-tight">
                             {{ $currency }} {{ number_format($tileValue, 2) }}
                         </div>
+                        <div class="text-[0.62rem] sm:text-[0.66rem] text-slate-900/60 mt-0.5 leading-tight">{{ $tileNote }}</div>
                     </div>
                 @endforeach
             </div>

@@ -141,30 +141,43 @@ class DashboardAttentionTest extends TestCase
         $this->assertTrue($bill->fresh()->needsAttention());
     }
 
-    public function test_the_hero_shows_this_month_and_agrees_with_its_progress_bar(): void
+    public function test_the_hero_sums_up_the_month(): void
     {
         \Carbon\Carbon::setTestNow('2026-10-10 12:00');
 
         $user = User::factory()->create(['currency_code' => 'EUR']);
-        // Due this month, and a yearly bill not due until spring: the old hero
-        // counted a twelfth of the yearly one as this month's spending.
+        // Due this month, and a yearly bill not due until spring: an average
+        // would have counted a twelfth of the yearly one as this month's.
         $this->bill($user, ['amount' => 100, 'frequency' => 'monthly', 'start_date' => '2026-01-20', 'next_due_date' => '2026-10-20']);
         $this->bill($user, ['amount' => 1200, 'frequency' => 'yearly', 'start_date' => '2026-03-01', 'next_due_date' => '2027-03-01']);
         // Weekly: due on the 12th, 19th and 26th of October.
         $this->bill($user, ['amount' => 10, 'frequency' => 'weekly', 'start_date' => '2026-10-05', 'next_due_date' => '2026-10-12']);
+        $paid = $this->bill($user, ['amount' => 45, 'frequency' => 'monthly', 'start_date' => '2026-01-05', 'next_due_date' => '2026-10-05']);
+        $this->actingAs($user)->post(route('bills.pay', $paid))->assertRedirect();
 
         \App\Models\Income::create([
             'name' => 'Μισθός', 'amount' => 2000, 'currency_code' => 'EUR', 'frequency' => 'monthly',
             'start_date' => '2026-01-01', 'next_date' => '2026-10-01', 'is_active' => true, 'created_by' => $user->id,
         ]);
 
+        foreach ([['Σκλαβενίτης', 62.40, '2026-10-03'], ['Δώρο', 30, '2026-10-08'], ['Παλιά αγορά', 99, '2026-09-28']] as [$name, $amount, $date]) {
+            \App\Models\Expense::create([
+                'name' => $name, 'category' => 'other', 'amount' => $amount, 'currency_code' => 'EUR',
+                'spent_at' => $date, 'created_by' => $user->id,
+            ]);
+        }
+
         $this->actingAs($user)->get(route('dashboard'))->assertOk()
             ->assertViewHas('stats', function ($stats) {
-                return $stats['month_expenses'] === 130.0
+                return $stats['month_paid'] === 45.0
                     && $stats['month_outstanding'] === 130.0
-                    && $stats['month_income'] === 2000.0
-                    && $stats['month_net'] === 1870.0;
-            });
+                    && $stats['month_purchases'] === 92.4
+                    && $stats['month_purchases_count'] === 2
+                    && $stats['month_spent'] === 137.4
+                    && $stats['month_income_expected'] === 2000.0
+                    && $stats['month_income_received'] === 0.0;
+            })
+            ->assertDontSee(__('messages.net_this_month'));
 
         \Carbon\Carbon::setTestNow();
     }

@@ -39,7 +39,10 @@ family. Around that sits the day-to-day: shopping lists, and recipes whose ingre
 - Accounts you define yourself, with transfers between them and balances derived from a ledger rather than
   stored, so they cannot drift out of step with the history
 - Income sources with expected dates, and a month-to-date "received" view
-- Dashboard: net for the month, what needs attention now, six-month trend and spend by category
+- **Purchases** for everyday spending with no bill behind it (groceries, clothes, presents), by category and month,
+  each withdrawn from the account it was paid from
+- Dashboard: a summary of the month (spent so far, bills paid and left, purchases, income received), what needs
+  attention now, six-month trend and spend by category
 - Month overview: the month as a countdown line, showing what is left to pay
 - Calendar with per-day status indicators (overdue / due soon / paid / upcoming)
 - Receipts and attachments on any bill (photos or PDFs), stored privately and shown only to people who can see the bill
