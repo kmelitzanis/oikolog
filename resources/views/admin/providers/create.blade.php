@@ -89,7 +89,7 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.sender_pattern') }}</label>
-                    <input type="text" name="email_from_pattern" value="{{ old('email_from_pattern', (object)['email_from_pattern'=>null,'email_subject_pattern'=>null,'email_amount_pattern'=>null]->email_from_pattern) }}"
+                    <input type="text" name="email_from_pattern" value="{{ old('email_from_pattern') }}"
                            placeholder="@dei\.gr$"
                            class="w-full font-mono bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 transition">
                     @error('email_from_pattern')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
@@ -98,14 +98,14 @@
                     <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">
                         {{ __('messages.subject_pattern') }} <span class="text-gray-400 dark:text-slate-500">({{ __('messages.optional') }})</span>
                     </label>
-                    <input type="text" name="email_subject_pattern" value="{{ old('email_subject_pattern', (object)['email_from_pattern'=>null,'email_subject_pattern'=>null,'email_amount_pattern'=>null]->email_subject_pattern) }}"
+                    <input type="text" name="email_subject_pattern" value="{{ old('email_subject_pattern') }}"
                            placeholder="λογαριασμ"
                            class="w-full font-mono bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 transition">
                     @error('email_subject_pattern')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1.5">{{ __('messages.amount_pattern') }}</label>
-                    <input type="text" name="email_amount_pattern" value="{{ old('email_amount_pattern', (object)['email_from_pattern'=>null,'email_subject_pattern'=>null,'email_amount_pattern'=>null]->email_amount_pattern) }}"
+                    <input type="text" name="email_amount_pattern" value="{{ old('email_amount_pattern') }}"
                            placeholder="πληρωμ\S*\s*:?\s*([\d.,]+)\s*€"
                            class="w-full font-mono bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 transition">
                     <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">{{ __('messages.amount_pattern_hint') }}</p>
