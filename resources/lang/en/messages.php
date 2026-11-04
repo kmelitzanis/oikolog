@@ -33,6 +33,7 @@ return [
     'monthly_total' => 'Monthly Total',
     'upcoming_income' => 'Upcoming Income',
     'net_this_month' => 'Net this month',
+    'net_month_short' => 'Net',
     'expenses' => 'Expenses',
     'yearly' => 'Yearly',
     'month_paid' => ':percent% of the bills paid',

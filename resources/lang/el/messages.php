@@ -33,6 +33,7 @@ return [
     'monthly_total' => 'Μηνιαίο Σύνολο',
     'upcoming_income' => 'Επερχόμενα Εισοδήματα',
     'net_this_month' => 'Καθαρό αυτόν τον μήνα',
+    'net_month_short' => 'Καθαρό',
     'expenses' => 'Έξοδα',
     'yearly' => 'Ετησίως',
     'month_paid' => ':percent% των λογαριασμών πληρωμένο',
