@@ -31,7 +31,7 @@ family. Around that sits the day-to-day: shopping lists, and recipes whose ingre
 
 **Money**
 
-- Recurring and one-off bills, weekly through yearly, with automatic next-due-date calculation
+- Recurring and one-off bills, weekly through yearly (every two months included), with automatic next-due-date calculation
 - Full and **partial** payments, with per-payment history and one-click undo
 - Bills with a variable amount ("cost varies"): enter the real figure at payment time
 - **Debt tracking** for loans and credit cards: a bill carries the total still owed, each payment draws it
