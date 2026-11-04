@@ -269,124 +269,199 @@
             @yield('content')
         </main>
     </div>
-    {{-- ── Mobile FAB action sheet (mockup 2a) ───────────────────────────
-         The FAB used to link straight to "new bill"; the mockup opens a set of
-         choices above the bar instead. The mockup's fourth action is receipt
-         scanning, which the app has no feature for, so that slot carries a
-         real one — a new shopping list. --}}
-    <div x-data="{ fabOpen: false }" @keydown.escape.window="fabOpen = false" class="lg:hidden">
+    {{-- ── Mobile "+" sheet ─────────────────────────────────────────────
+         Four things done on the go, each finished from here: a purchase, a
+         bill paid, income that came in, a fill-up. Paying and receiving open
+         a short list of what is due, so a tap acts on the right one instead
+         of landing on a page to look for it. Adding a bill or a source is
+         rarer and lives on those pages' own buttons. --}}
+    @php
+        $qa = $quickActions ?? ['bills' => collect(), 'incomes' => collect(), 'vehicles' => collect()];
+        $sheetCard = 'rounded-[19px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800';
+        $sheetRow = 'flex items-center gap-[13px] p-4 w-full text-left transition active:scale-[0.98]';
+    @endphp
+    <div x-data="{ fabOpen: false, panel: null }"
+         @keydown.escape.window="fabOpen = false; panel = null" class="lg:hidden">
         <div x-show="fabOpen" x-cloak x-transition.opacity.duration.180ms
              class="fixed inset-0 z-[41] bg-slate-950/[0.72] backdrop-blur-md"
-             @click="fabOpen = false"></div>
+             @click="fabOpen = false; panel = null"></div>
 
         <div x-show="fabOpen" x-cloak
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="opacity-0 translate-y-2.5"
              x-transition:enter-end="opacity-100 translate-y-0"
-             class="fixed left-4 right-4 bottom-[calc(118px+env(safe-area-inset-bottom))] z-[42] flex flex-col gap-[9px]">
-            @php
-                $fabActions = [
-                    ['route' => route('bills.create'),  'icon' => 'credit_card',    'tint' => 'bg-amber-500/[0.18] text-amber-300',   'title' => __('messages.add_bill'),        'sub' => __('messages.fab_bill_sub')],
-                    ['route' => route('income.create'), 'icon' => 'savings',        'tint' => 'bg-emerald-500/[0.16] text-emerald-400','title' => __('messages.add_income'),      'sub' => __('messages.fab_income_sub')],
-                    ['route' => route('bills.index', ['status' => 'overdue']), 'icon' => 'check_circle', 'tint' => 'bg-orange-500/[0.16] text-orange-500', 'title' => __('messages.record_payment'), 'sub' => __('messages.fab_pay_sub')],
-                    ['route' => route('shopping-list.index'), 'icon' => 'shopping_cart', 'tint' => 'bg-amber-600/[0.16] text-amber-400', 'title' => __('messages.new_list'),  'sub' => __('messages.fab_list_sub')],
-                ];
-            @endphp
-            @foreach($fabActions as $action)
-                <a href="{{ $action['route'] }}"
-                   class="flex items-center gap-[13px] p-4 rounded-[19px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-left transition active:scale-[0.98]">
-                    <span class="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center {{ $action['tint'] }}">
-                        <span class="material-icons-round text-lg">{{ $action['icon'] }}</span>
+             class="fixed left-4 right-4 bottom-[calc(118px+env(safe-area-inset-bottom))] z-[42] flex flex-col gap-[9px] max-h-[calc(100dvh-140px-env(safe-area-inset-bottom)-env(safe-area-inset-top))] overflow-y-auto">
+
+            {{-- New purchase --}}
+            <a href="{{ route('expenses.create') }}" class="{{ $sheetCard }} {{ $sheetRow }}">
+                <span class="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center bg-amber-500/[0.18] text-amber-500 dark:text-amber-300">
+                    <span class="material-icons-round text-lg">shopping_bag</span>
+                </span>
+                <span class="flex-1 min-w-0">
+                    <span class="block text-[0.9rem] font-bold text-gray-900 dark:text-white">{{ __('messages.expense_add') }}</span>
+                    <span class="block text-[0.72rem] text-gray-400 dark:text-slate-500 mt-px">{{ __('messages.fab_purchase_sub') }}</span>
+                </span>
+            </a>
+
+            {{-- Pay a bill: the ones that want paying now, each opening the pay modal --}}
+            <div class="{{ $sheetCard }} overflow-hidden">
+                <button type="button" class="{{ $sheetRow }}" @click="panel = panel === 'pay' ? null : 'pay'"
+                        :aria-expanded="panel === 'pay' ? 'true' : 'false'">
+                    <span class="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center bg-orange-500/[0.16] text-orange-500">
+                        <span class="material-icons-round text-lg">check_circle</span>
                     </span>
                     <span class="flex-1 min-w-0">
-                        <span class="block text-[0.9rem] font-bold text-gray-900 dark:text-white">{{ $action['title'] }}</span>
-                        <span class="block text-[0.72rem] text-gray-400 dark:text-slate-500 mt-px">{{ $action['sub'] }}</span>
+                        <span class="block text-[0.9rem] font-bold text-gray-900 dark:text-white">{{ __('messages.fab_pay') }}</span>
+                        <span class="block text-[0.72rem] text-gray-400 dark:text-slate-500 mt-px">
+                            {{ trans_choice('messages.fab_pay_count', $qa['bills']->count(), ['count' => $qa['bills']->count()]) }}
+                        </span>
+                    </span>
+                    <span class="material-icons-round text-gray-400 transition" :class="panel === 'pay' && 'rotate-180'">expand_more</span>
+                </button>
+                <div x-show="panel === 'pay'" x-cloak x-collapse>
+                    @foreach($qa['bills'] as $bill)
+                        <button type="button"
+                                @click="fabOpen = false; panel = null; $dispatch('open-pay-modal', {{ \Illuminate\Support\Js::from($bill->payModalPayload()) }})"
+                                class="flex items-center justify-between gap-3 w-full px-4 py-3 border-t border-gray-100 dark:border-slate-700 text-left">
+                            <span class="min-w-0">
+                                <span class="block text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</span>
+                                <span class="block text-[0.7rem] {{ $bill->status() === 'overdue' ? 'text-red-500' : 'text-gray-400 dark:text-slate-500' }}">
+                                    {{ $bill->next_due_date?->translatedFormat('j M') }}
+                                </span>
+                            </span>
+                            <span class="text-sm font-bold text-gray-900 dark:text-white tabular-nums shrink-0">
+                                {{ $bill->amountIsUnknown() ? __('messages.varies') : $bill->currency_code . ' ' . number_format($bill->amountDueNow(), 2) }}
+                            </span>
+                        </button>
+                    @endforeach
+                    <a href="{{ route('bills.index') }}" class="block px-4 py-3 border-t border-gray-100 dark:border-slate-700 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                        {{ __('messages.fab_all_bills') }}
+                    </a>
+                </div>
+            </div>
+
+            {{-- Income that came in: the sources due now, recorded in one tap --}}
+            @if($qa['incomes']->isNotEmpty())
+                <div class="{{ $sheetCard }} overflow-hidden">
+                    <button type="button" class="{{ $sheetRow }}" @click="panel = panel === 'income' ? null : 'income'"
+                            :aria-expanded="panel === 'income' ? 'true' : 'false'">
+                        <span class="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center bg-emerald-500/[0.16] text-emerald-500 dark:text-emerald-400">
+                            <span class="material-icons-round text-lg">savings</span>
+                        </span>
+                        <span class="flex-1 min-w-0">
+                            <span class="block text-[0.9rem] font-bold text-gray-900 dark:text-white">{{ __('messages.fab_income') }}</span>
+                            <span class="block text-[0.72rem] text-gray-400 dark:text-slate-500 mt-px">
+                                {{ trans_choice('messages.fab_income_count', $qa['incomes']->count(), ['count' => $qa['incomes']->count()]) }}
+                            </span>
+                        </span>
+                        <span class="material-icons-round text-gray-400 transition" :class="panel === 'income' && 'rotate-180'">expand_more</span>
+                    </button>
+                    <div x-show="panel === 'income'" x-cloak x-collapse>
+                        @foreach($qa['incomes'] as $income)
+                            <form method="POST" action="{{ route('income.receive', $income) }}"
+                                  class="flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-100 dark:border-slate-700">
+                                @csrf
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $income->name }}</span>
+                                    <span class="block text-[0.7rem] text-gray-400 dark:text-slate-500">
+                                        {{ $income->currency_code }} {{ number_format((float) $income->amount, 2) }} · {{ $income->next_date?->translatedFormat('j M') }}
+                                    </span>
+                                </span>
+                                <button type="submit" class="shrink-0 h-9 px-3 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                                    {{ __('messages.fab_income_received') }}
+                                </button>
+                            </form>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Fill-up: straight to the fuel form, or a pick of vehicles --}}
+            @if($qa['vehicles']->count() === 1)
+                <a href="{{ route('vehicles.show', ['vehicle' => $qa['vehicles']->first(), 'add' => 'fuel']) }}" class="{{ $sheetCard }} {{ $sheetRow }}">
+                    <span class="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center bg-sky-500/[0.16] text-sky-500 dark:text-sky-400">
+                        <span class="material-icons-round text-lg">local_gas_station</span>
+                    </span>
+                    <span class="flex-1 min-w-0">
+                        <span class="block text-[0.9rem] font-bold text-gray-900 dark:text-white">{{ __('messages.vehicle_add_fuel') }}</span>
+                        <span class="block text-[0.72rem] text-gray-400 dark:text-slate-500 mt-px truncate">{{ $qa['vehicles']->first()->name }}</span>
                     </span>
                 </a>
-            @endforeach
+            @elseif($qa['vehicles']->count() > 1)
+                <div class="{{ $sheetCard }} overflow-hidden">
+                    <button type="button" class="{{ $sheetRow }}" @click="panel = panel === 'fuel' ? null : 'fuel'"
+                            :aria-expanded="panel === 'fuel' ? 'true' : 'false'">
+                        <span class="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center bg-sky-500/[0.16] text-sky-500 dark:text-sky-400">
+                            <span class="material-icons-round text-lg">local_gas_station</span>
+                        </span>
+                        <span class="flex-1 min-w-0">
+                            <span class="block text-[0.9rem] font-bold text-gray-900 dark:text-white">{{ __('messages.vehicle_add_fuel') }}</span>
+                            <span class="block text-[0.72rem] text-gray-400 dark:text-slate-500 mt-px">{{ __('messages.fab_fuel_pick') }}</span>
+                        </span>
+                        <span class="material-icons-round text-gray-400 transition" :class="panel === 'fuel' && 'rotate-180'">expand_more</span>
+                    </button>
+                    <div x-show="panel === 'fuel'" x-cloak x-collapse>
+                        @foreach($qa['vehicles'] as $vehicle)
+                            <a href="{{ route('vehicles.show', ['vehicle' => $vehicle, 'add' => 'fuel']) }}"
+                               class="flex items-center gap-3 px-4 py-3 border-t border-gray-100 dark:border-slate-700 text-sm font-semibold text-gray-900 dark:text-white">
+                                <span class="material-icons-round text-base text-gray-400">{{ $vehicle->icon() }}</span>{{ $vehicle->name }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
 
         {{-- The FAB itself sits above the sheet backdrop so it can close it --}}
-        <button type="button" @click="fabOpen = !fabOpen"
+        <button type="button" @click="fabOpen = !fabOpen; panel = null"
                 :aria-expanded="fabOpen ? 'true' : 'false'"
                 aria-label="{{ __('messages.add') }}"
-                class="fixed left-1/2 -translate-x-1/2 bottom-[calc(26px+env(safe-area-inset-bottom))] z-[43] flex items-center justify-center w-14 h-14 rounded-full border-4 border-white dark:border-slate-800 bg-amber-500 transition-transform"
+                class="fixed left-1/2 -translate-x-1/2 bottom-[calc(30px+env(safe-area-inset-bottom))] z-[43] flex items-center justify-center w-14 h-14 rounded-full border-4 border-white dark:border-slate-800 bg-amber-500 transition-transform"
                 :class="fabOpen ? 'rotate-45' : ''"
                 style="box-shadow: 0 4px 24px rgba(245,158,11,0.45);">
             <span class="material-icons-round text-slate-900 text-2xl">add</span>
         </button>
     </div>
 
-    {{-- Mobile Bottom Navigation Bar --}}
-    <nav class="lg:hidden fixed inset-x-0 bottom-0 z-40" aria-label="Mobile primary navigation">
-
+    {{-- Mobile bottom navigation: four labelled tabs either side of the "+".
+         Labels because icons alone did not say where they led. The rest of
+         the app is in the menu (☰) at the top. --}}
+    <nav class="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700"
+         style="box-shadow: 0 -6px 24px rgba(0,0,0,0.14); padding-bottom: env(safe-area-inset-bottom);"
+         aria-label="Mobile primary navigation">
         @php
             $bottomNavLinks = [
-                ['route' => 'dashboard',    'icon' => 'dashboard',    'match' => 'dashboard', 'label' => __('messages.dashboard')],
-                ['route' => 'bills.index',  'icon' => 'receipt_long', 'match' => 'bills.*', 'count' => $overdueBillCount ?? 0, 'label' => __('messages.bills')],
-                ['route' => 'recipes.index','icon' => 'restaurant_menu','match' => 'recipes.*', 'label' => __('messages.recipes')],
-                ['route' => 'income.index', 'icon' => 'trending_up',  'match' => ['income.*', 'accounts.*'], 'label' => __('messages.income')],
+                ['route' => 'dashboard',      'icon' => 'dashboard',    'match' => 'dashboard', 'label' => __('messages.nav_home')],
+                ['route' => 'bills.index',    'icon' => 'receipt_long', 'match' => 'bills.*', 'count' => $overdueBillCount ?? 0, 'label' => __('messages.bills')],
+                ['route' => 'expenses.index', 'icon' => 'shopping_bag', 'match' => 'expenses.*', 'label' => __('messages.expenses_menu')],
+                ['route' => 'income.index',   'icon' => 'trending_up',  'match' => ['income.*', 'accounts.*'], 'label' => __('messages.nav_income_short')],
             ];
         @endphp
-
-        {{-- Flex column: items-center naturally centers the FAB; -mb-7 pulls the bar up underneath it --}}
-        <div class="flex flex-col items-center">
-
-            {{-- The FAB lives above, outside this bar, so it can sit over the
-                 action sheet's backdrop and double as its close control. --}}
-
-            {{-- Floating bottom bar --}}
-            <div class="w-full bg-white dark:bg-slate-800 h-16 flex items-center justify-between px-6"
-                 style="box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);">
-
-                @foreach(array_slice($bottomNavLinks, 0, 2) as $link)
-                    <a href="{{ route($link['route']) }}" aria-label="{{ $link['label'] }}" title="{{ $link['label'] }}"
-                       @if(request()->routeIs(...(array) $link['match'])) aria-current="page" @endif
-                       class="relative flex flex-col items-center justify-center gap-1 w-12
-                                  {{ request()->routeIs(...(array) $link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
-                        <span class="material-icons-round" style="font-size:22px;" aria-hidden="true">{{ $link['icon'] }}</span>
-                        {{-- Same counter, but as a corner dot on the icon: a tab
-                             bar has no room for a trailing pill. --}}
+        <div class="grid grid-cols-[1fr_1fr_4.5rem_1fr_1fr] h-16 items-stretch">
+            @foreach($bottomNavLinks as $i => $link)
+                @if($i === 2)
+                    {{-- Room for the "+" --}}
+                    <div aria-hidden="true"></div>
+                @endif
+                @php $active = request()->routeIs(...(array) $link['match']); @endphp
+                <a href="{{ route($link['route']) }}"
+                   @if($active) aria-current="page" @endif
+                   class="relative flex flex-col items-center justify-center gap-0.5 min-w-0
+                          {{ $active ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
+                    <span class="relative">
+                        <span class="material-icons-round" style="font-size:23px;" aria-hidden="true">{{ $link['icon'] }}</span>
                         @if(($link['count'] ?? 0) > 0)
-                            <span class="absolute -top-0.5 right-0 min-w-4 h-4 px-1 inline-flex items-center justify-center
+                            <span class="absolute -top-1 -right-2.5 min-w-4 h-4 px-1 inline-flex items-center justify-center
                                          rounded-full bg-red-500 text-white text-[0.6rem] font-bold leading-none"
                                   aria-label="{{ trans_choice('messages.overdue_count', $link['count'], ['count' => $link['count']]) }}">
                                 {{ $link['count'] > 9 ? '9+' : $link['count'] }}
                             </span>
                         @endif
-                        <span
-                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs(...(array) $link['match']) ? 'bg-amber-500' : 'bg-transparent' }}"></span>
-                    </a>
-                @endforeach
-
-                {{-- Spacer keeps icons away from center where FAB overlaps --}}
-                <div class="w-14 shrink-0"></div>
-
-                @foreach(array_slice($bottomNavLinks, 2, 2) as $link)
-                    <a href="{{ route($link['route']) }}" aria-label="{{ $link['label'] }}" title="{{ $link['label'] }}"
-                       @if(request()->routeIs(...(array) $link['match'])) aria-current="page" @endif
-                       class="relative flex flex-col items-center justify-center gap-1 w-12
-                                  {{ request()->routeIs(...(array) $link['match']) ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500' }}">
-                        <span class="material-icons-round" style="font-size:22px;" aria-hidden="true">{{ $link['icon'] }}</span>
-                        {{-- Same counter, but as a corner dot on the icon: a tab
-                             bar has no room for a trailing pill. --}}
-                        @if(($link['count'] ?? 0) > 0)
-                            <span class="absolute -top-0.5 right-0 min-w-4 h-4 px-1 inline-flex items-center justify-center
-                                         rounded-full bg-red-500 text-white text-[0.6rem] font-bold leading-none"
-                                  aria-label="{{ trans_choice('messages.overdue_count', $link['count'], ['count' => $link['count']]) }}">
-                                {{ $link['count'] > 9 ? '9+' : $link['count'] }}
-                            </span>
-                        @endif
-                        <span
-                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs(...(array) $link['match']) ? 'bg-amber-500' : 'bg-transparent' }}"></span>
-                    </a>
-                @endforeach
-            </div>
-
+                    </span>
+                    <span class="text-[0.66rem] leading-tight truncate max-w-full px-1 {{ $active ? 'font-bold' : 'font-medium' }}">{{ $link['label'] }}</span>
+                </a>
+            @endforeach
         </div>
-        {{-- Safe-area spacer for notched iPhones --}}
-        <div style="height: env(safe-area-inset-bottom);"></div>
-
     </nav>
 </div>
 @auth

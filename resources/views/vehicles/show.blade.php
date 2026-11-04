@@ -133,7 +133,9 @@
         <div class="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-5 items-start">
 
             {{-- ── History: services and expenses, newest first ─────────── --}}
-            <x-card x-data="{ adding: null }">
+            {{-- ?add=fuel, from the mobile "+" sheet, opens the fill-up form. --}}
+            @php $openForm = request('add') === 'fuel' ? 'fuel' : null; @endphp
+            <x-card x-data="{ adding: {{ \Illuminate\Support\Js::from($openForm) }} }">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <span class="material-icons-round text-amber-500 text-[20px]">history</span>

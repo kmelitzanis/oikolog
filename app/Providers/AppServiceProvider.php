@@ -70,6 +70,9 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('overdueBillCount', 0);
             }
         });
+
+        // What the mobile "+" sheet can act on directly.
+        View::composer('layouts.app', \App\View\Composers\QuickActionsComposer::class);
     }
 
     /**
