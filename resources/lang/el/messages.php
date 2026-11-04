@@ -85,6 +85,7 @@ return [
     'weekly' => 'Εβδομαδιαία',
     'biweekly' => 'Δεκαπενθήμερα',
     'monthly' => 'Μηνιαία',
+    'bimonthly' => 'Διμηνιαία',
     'quarterly' => 'Τριμηνιαία',
     'yearly' => 'Ετήσια',
     'daily' => 'Ημερήσια',

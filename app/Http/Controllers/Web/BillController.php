@@ -104,7 +104,7 @@ class BillController extends Controller
 
         $bill = Bill::create([
             ...$data,
-            'currency_code' => $request->user()->currency_code,
+            'currency_code' => $request->user()->currency_code ?? 'EUR',
             'cost_varies' => (bool)($data['cost_varies'] ?? false),
             'debt_remaining' => $data['debt_remaining'] ?? null,
             // Recorded once so the bill can show how far along it is.
@@ -536,7 +536,7 @@ class BillController extends Controller
             'cost_varies'        => ['nullable', 'boolean'],
             // Optional: the total still owed on a loan or a card.
             'debt_remaining'     => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,quarterly,yearly'],
+            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,bimonthly,quarterly,yearly'],
             'start_date'         => ['required', 'date'],
             'end_date'           => ['nullable', 'date', 'after:start_date'],
             'is_shared'          => ['nullable'],

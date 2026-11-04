@@ -186,6 +186,7 @@ class Bill extends Model implements HasMedia
             'daily'     => $amount * 30 / $interval,
             'weekly'    => $amount * 4.345 / $interval,
             'biweekly'  => $amount * 2.1725 / $interval,
+            'bimonthly' => $amount / (2 * $interval),
             'quarterly' => $amount / (3 * $interval),
             'yearly'    => $amount / (12 * $interval),
             default     => $amount / $interval,
@@ -320,6 +321,7 @@ class Bill extends Model implements HasMedia
             'daily' => $date->copy()->addDays(1 * $interval),
             'weekly' => $date->copy()->addWeeks(1 * $interval),
             'biweekly' => $date->copy()->addWeeks(2 * $interval),
+            'bimonthly' => self::addMonthsOnDay($date, 2 * $interval, $this->anchorDay($date)),
             'quarterly' => self::addMonthsOnDay($date, 3 * $interval, $this->anchorDay($date)),
             'yearly' => self::addMonthsOnDay($date, 12 * $interval, $this->anchorDay($date)),
             default => self::addMonthsOnDay($date, 1 * $interval, $this->anchorDay($date)),
@@ -362,6 +364,7 @@ class Bill extends Model implements HasMedia
             'daily' => $date->copy()->subDays($interval),
             'weekly' => $date->copy()->subWeeks($interval),
             'biweekly' => $date->copy()->subWeeks(2 * $interval),
+            'bimonthly' => self::addMonthsOnDay($date, -2 * $interval, $this->anchorDay($date)),
             'quarterly' => self::addMonthsOnDay($date, -3 * $interval, $this->anchorDay($date)),
             'yearly' => self::addMonthsOnDay($date, -12 * $interval, $this->anchorDay($date)),
             default => self::addMonthsOnDay($date, -$interval, $this->anchorDay($date)),
@@ -480,7 +483,7 @@ class Bill extends Model implements HasMedia
 
     private function recursMonthlyOrLonger(): bool
     {
-        return in_array($this->frequency ?? 'monthly', ['monthly', 'quarterly', 'yearly'], true);
+        return in_array($this->frequency ?? 'monthly', ['monthly', 'bimonthly', 'quarterly', 'yearly'], true);
     }
 
     /**

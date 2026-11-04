@@ -247,6 +247,43 @@ class BillStatusAndPaymentsTest extends TestCase
         $this->assertSame(70.0, (float) $bill->remaining_balance);
     }
 
+    public function test_a_bimonthly_bill_comes_round_every_two_months(): void
+    {
+        \Carbon\Carbon::setTestNow('2026-11-02 12:00');
+
+        $user = User::factory()->create();
+        $bill = $this->makeBill($user, [
+            'frequency' => 'bimonthly', 'amount' => 90,
+            'start_date' => '2026-07-31', 'next_due_date' => '2026-11-30',
+        ]);
+
+        $this->actingAs($user)->post(route('bills.pay', $bill))->assertRedirect();
+
+        $bill->refresh();
+        // On the schedule's own day: 31 January, not 30.
+        $this->assertSame('2027-01-31', $bill->next_due_date->toDateString());
+        $this->assertSame('paid', $bill->status(), 'Paid this month, due again in two.');
+        $this->assertSame(45.0, $bill->monthlyEquivalent());
+
+        $this->actingAs($user)->delete(route('bills.unpay', $bill))->assertRedirect();
+        $this->assertSame('2026-11-30', $bill->fresh()->next_due_date->toDateString());
+
+        \Carbon\Carbon::setTestNow();
+    }
+
+    public function test_the_bill_form_accepts_bimonthly(): void
+    {
+        $user = User::factory()->create();
+        $category = \App\Models\Category::create(['name' => 'Νερό', 'is_system' => false]);
+
+        $this->actingAs($user)->post(route('bills.store'), [
+            'name' => 'ΕΥΔΑΠ', 'category_id' => $category->id, 'amount' => '38.20',
+            'frequency' => 'bimonthly', 'start_date' => now()->toDateString(),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame('bimonthly', Bill::firstWhere('name', 'ΕΥΔΑΠ')->frequency);
+    }
+
     public function test_monthly_equivalent_divides_by_the_interval_and_skips_one_offs(): void
     {
         $user = User::factory()->create();

@@ -193,7 +193,7 @@
 
                 <x-field :label="__('messages.frequency')" name="frequency" required>
                     <div class="flex flex-wrap gap-2">
-                        @foreach(['once','weekly','biweekly','monthly','quarterly','yearly'] as $val)
+                        @foreach(['once','weekly','biweekly','monthly','bimonthly','quarterly','yearly'] as $val)
                             <label class="cursor-pointer">
                                 <input type="radio" name="frequency" value="{{ $val }}" x-model="freq" class="sr-only peer">
                                 <span :class="freq === '{{ $val }}'

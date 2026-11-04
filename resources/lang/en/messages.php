@@ -85,6 +85,7 @@ return [
     'weekly' => 'Weekly',
     'biweekly' => 'Bi-weekly',
     'monthly' => 'Monthly',
+    'bimonthly' => 'Every 2 months',
     'quarterly' => 'Quarterly',
     'yearly' => 'Yearly',
     'daily' => 'Daily',
