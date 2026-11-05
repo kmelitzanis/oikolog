@@ -278,4 +278,22 @@ class AccountLedgerTest extends TestCase
         $this->actingAs($user)->get(route('accounts.create'))->assertOk();
         $this->actingAs($user)->get(route('accounts.edit', $account))->assertOk();
     }
+
+    public function test_the_payment_history_says_which_account_paid(): void
+    {
+        $user = User::factory()->create(['currency_code' => 'EUR', 'locale' => 'el']);
+        $account = Account::create(['name' => 'Τρεχούμενος', 'opening_balance' => 500, 'currency_code' => 'EUR', 'created_by' => $user->id]);
+        $bill = Bill::create([
+            'name' => 'NOVA', 'category_id' => Category::create(['name' => 'Τηλεφωνία'])->id, 'created_by' => $user->id,
+            'amount' => 39.05, 'currency_code' => 'EUR', 'frequency' => 'monthly', 'start_date' => now()->toDateString(),
+            'next_due_date' => now()->toDateString(), 'is_active' => true, 'is_shared' => false,
+        ]);
+
+        $this->actingAs($user)->post(route('bills.pay', $bill), ['account_id' => $account->id])->assertRedirect();
+
+        $this->actingAs($user)->get(route('bills.show', $bill))
+            ->assertOk()
+            ->assertSee(__('messages.paid_from', ['source' => 'Τρεχούμενος']))
+            ->assertDontSee(__('messages.shared_with_family'));
+    }
 }

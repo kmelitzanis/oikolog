@@ -236,7 +236,7 @@
                     __('messages.frequency')  => __('messages.' . $bill->frequency),
                     __('messages.start_date') => $bill->start_date->translatedFormat('j M Y'),
                     __('messages.end_date')   => $bill->end_date?->translatedFormat('j M Y') ?? '—',
-                    __('messages.share_family') => $bill->is_shared ? __('messages.shared_with_family') : __('messages.not_shared'),
+                    __('messages.share_family') => $bill->is_shared ? __('messages.yes') : __('messages.no'),
                     __('messages.reminder')   => $bill->notify_enabled
                         ? __('messages.reminder_days_before', ['days' => $bill->notify_days_before])
                         : __('messages.reminder_off'),
@@ -316,6 +316,7 @@
                         </div>
                         <div class="text-xs text-gray-400 dark:text-slate-500 mt-0.5 truncate">
                             {{ $payment->paid_at->translatedFormat('j M Y, H:i') }} · {{ $payment->paidBy?->name ?? '—' }}
+                            @if($payment->account) · {{ __('messages.paid_from', ['source' => $payment->account->name]) }} @endif
                             @if($payment->income)
                                 · <span class="text-amber-500 dark:text-amber-400">{{ __('messages.paid_from', ['source' => $payment->income->name]) }}</span>
                             @endif
