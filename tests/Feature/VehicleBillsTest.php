@@ -38,6 +38,39 @@ class VehicleBillsTest extends TestCase
         $this->assertTrue($tolls->contains('Γέφυρα Ρίου-Αντιρρίου'));
     }
 
+    public function test_a_fresh_install_has_one_insurance_category_for_everything(): void
+    {
+        $this->seed();
+
+        $insurance = Category::where('name', 'Insurance')->get();
+        $this->assertCount(1, $insurance);
+        $this->assertSame('insurance', $insurance->first()->vehicle_expense);
+        $this->assertTrue($insurance->first()->providers->contains('name', 'Interamerican'));
+    }
+
+    public function test_the_car_insurance_category_merges_into_the_general_one(): void
+    {
+        // An install that ran the earlier migration: a general category and a car one.
+        $carCategory = Category::forVehicleExpense('insurance');
+        $carCategory->update(['name' => 'Ασφάλεια οχήματος']);
+        $general = Category::create(['name' => 'Ασφάλεια', 'is_system' => true]);
+        $insurer = Provider::create(['name' => 'Interamerican']);
+        $carCategory->providers()->attach($insurer);
+
+        $user = User::factory()->create(['currency_code' => 'EUR']);
+        $car = $this->vehicle($user);
+        $bill = Bill::create(['name' => 'Ασφάλεια · ΙΚΧ-1234', 'category_id' => $carCategory->id, 'amount' => 210,
+            'frequency' => 'yearly', 'start_date' => now(), 'next_due_date' => now(), 'vehicle_id' => $car->id, 'created_by' => $user->id]);
+
+        (require database_path('migrations/2026_11_09_120000_merge_vehicle_insurance_into_insurance.php'))->up();
+
+        $this->assertNull($carCategory->fresh());
+        $this->assertSame('insurance', $general->fresh()->vehicle_expense);
+        $this->assertSame($general->id, $bill->fresh()->category_id);
+        $this->assertSame($car->id, $bill->fresh()->vehicle_id);
+        $this->assertTrue($general->fresh()->providers->contains($insurer));
+    }
+
     public function test_a_recurring_insurance_recorded_on_the_car_becomes_a_bill(): void
     {
         $user = User::factory()->create(['currency_code' => 'EUR']);

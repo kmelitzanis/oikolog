@@ -23,7 +23,10 @@ use Illuminate\Support\Str;
  */
 return new class extends Migration {
     private const CATEGORIES = [
-        'insurance' => ['name' => 'Ασφάλεια οχήματος', 'icon' => 'shield',       'color_hex' => '#14B8A6'],
+        // Named as the seeder names it, so a fresh install ends up with one
+        // insurance category (the seeder finds this one rather than adding
+        // its own). Installs that ran this earlier get merged by the next migration.
+        'insurance' => ['name' => 'Insurance',         'icon' => 'shield',       'color_hex' => '#14B8A6'],
         'road_tax'  => ['name' => 'Τέλη κυκλοφορίας',  'icon' => 'receipt_long', 'color_hex' => '#0EA5E9'],
         'kteo'      => ['name' => 'ΚΤΕΟ',              'icon' => 'fact_check',   'color_hex' => '#6366F1'],
         'tolls'     => ['name' => 'Διόδια',            'icon' => 'toll',         'color_hex' => '#F59E0B'],
