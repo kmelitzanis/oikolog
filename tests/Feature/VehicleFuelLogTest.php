@@ -104,7 +104,7 @@ class VehicleFuelLogTest extends TestCase
         $vehicle = $this->vehicle($user);
 
         $this->actingAs($user)->post(route('vehicles.expenses.store', $vehicle), [
-            'category' => 'tax', 'spent_at' => '2026-10-20', 'amount' => '180', 'station' => 'nope',
+            'category' => 'road_tax', 'spent_at' => '2026-10-20', 'amount' => '180', 'station' => 'nope',
         ])->assertRedirect();
 
         $this->assertNull($vehicle->expenses()->first()->station);

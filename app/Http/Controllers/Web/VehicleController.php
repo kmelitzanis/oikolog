@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Bill;
+use App\Models\Category;
+use App\Models\Payment;
 use App\Models\Vehicle;
 use App\Models\VehicleExpense;
 use App\Models\VehicleReminder;
 use App\Models\VehicleScan;
 use App\Models\VehicleService;
+use App\Services\BillPayments;
 use App\Support\Obd\DtcDictionary;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -40,12 +44,22 @@ class VehicleController extends Controller
     {
         $this->authorizeVehicle($request, $vehicle);
 
-        $vehicle->load(['reminders', 'services', 'expenses', 'scans']);
+        $vehicle->load(['reminders', 'services', 'expenses.provider', 'scans']);
 
-        // One timeline: a workshop visit and a fill-up are both "something
-        // that happened to the car", and are looked up by date either way.
+        // The car's bills, as far as this user may see them: a bill shared
+        // with someone else's family is not theirs to see through the car.
+        $bills = Bill::forUser($request->user())->where('vehicle_id', $vehicle->id)
+            ->with(['category', 'provider', 'payments.paidBy'])
+            ->orderBy('next_due_date')
+            ->get();
+
+        // One timeline: a workshop visit, a fill-up and a paid insurance bill
+        // are all "something that happened to the car", looked up by date.
         $history = $vehicle->services->map(fn(VehicleService $s) => ['type' => 'service', 'date' => $s->performed_at, 'item' => $s])
             ->concat($vehicle->expenses->map(fn(VehicleExpense $e) => ['type' => 'expense', 'date' => $e->spent_at, 'item' => $e]))
+            ->concat($bills->flatMap(fn (Bill $bill) => $bill->payments->map(fn (Payment $p) => [
+                'type' => 'payment', 'date' => $p->paid_at, 'item' => $p->setRelation('bill', $bill),
+            ])))
             ->sortByDesc(fn($row) => $row['date']?->timestamp ?? 0)
             ->values();
 
@@ -58,6 +72,8 @@ class VehicleController extends Controller
             'breakdown' => $vehicle->expenseBreakdown(Carbon::today()->subYear()),
             'fuel'      => $vehicle->fuelLog(),
             'scans'     => $vehicle->scans,
+            'bills'     => $bills,
+            'providers' => $this->providersByCost(),
         ]);
     }
 
@@ -300,15 +316,71 @@ class VehicleController extends Controller
         return back()->with('success', __('messages.vehicle_service_deleted'));
     }
 
-    public function storeExpense(Request $request, Vehicle $vehicle)
+    public function storeExpense(Request $request, Vehicle $vehicle, BillPayments $payments)
     {
         $this->authorizeVehicle($request, $vehicle);
 
         $data = $this->validatedExpense($request);
-        $vehicle->expenses()->create($data + ['created_by' => $request->user()->id]);
         $this->advanceOdometer($vehicle, $data['odometer_km'] ?? null, $data['spent_at']);
 
+        // A recurring cost is a bill: it comes due again and belongs in the
+        // bills list. This one is its first payment, so it is recorded as
+        // one, and the vehicle counts it from there rather than twice.
+        if ($request->boolean('recurring') && in_array($data['category'], VehicleExpense::RECURRING, true)) {
+            $this->recordAsBill($request, $vehicle, $data, $payments);
+
+            return back()->with('success', __('messages.vehicle_expense_added_as_bill'));
+        }
+
+        $vehicle->expenses()->create(collect($data)->except('frequency')->all() + ['created_by' => $request->user()->id]);
+
         return back()->with('success', __($data['category'] === 'fuel' ? 'messages.vehicle_fuel_added' : 'messages.vehicle_expense_added'));
+    }
+
+    /** A recurring vehicle cost as a bill on the car's schedule, with today's payment against it. */
+    private function recordAsBill(Request $request, Vehicle $vehicle, array $data, BillPayments $payments): void
+    {
+        $category = Category::forVehicleExpense($data['category']);
+        abort_unless($category, 422, __('messages.vehicle_category_missing'));
+
+        $user = $request->user();
+        $start = Carbon::parse($data['spent_at'])->toDateString();
+
+        $bill = Bill::create([
+            'name'          => __('messages.vehicle_expense_' . $data['category']) . ' · ' . ($vehicle->plate ?: $vehicle->name),
+            'category_id'   => $category->id,
+            'provider_id'   => $data['provider_id'] ?? null,
+            'vehicle_id'    => $vehicle->id,
+            'amount'        => $data['amount'],
+            'currency_code' => $user->currency_code ?? 'EUR',
+            'frequency'     => $data['frequency'],
+            'start_date'    => $start,
+            'next_due_date' => $start,
+            'notes'         => $data['note'] ?? null,
+            'is_active'     => true,
+            // Shared the way the car is: the household that shares the car
+            // shares what it costs.
+            'is_shared'     => (bool) $vehicle->is_shared,
+            'family_id'     => $vehicle->is_shared ? $vehicle->family_id : null,
+            'created_by'    => $user->id,
+        ]);
+
+        $payments->pay($bill, $user, ['paid_at' => $start, 'notes' => $data['note'] ?? null]);
+    }
+
+    /**
+     * Providers for each vehicle cost that names one, from the bill
+     * category standing for it.
+     *
+     * @return array<string, array<int, array{id: string, name: string}>>
+     */
+    private function providersByCost(): array
+    {
+        return Category::whereNotNull('vehicle_expense')->with('providers:id,name')->get()
+            ->mapWithKeys(fn (Category $c) => [
+                $c->vehicle_expense => $c->providers->sortBy('name')->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])->values()->all(),
+            ])
+            ->all();
     }
 
     public function updateExpense(Request $request, Vehicle $vehicle, VehicleExpense $expense)
@@ -317,7 +389,7 @@ class VehicleController extends Controller
         abort_unless($expense->vehicle_id === $vehicle->id, 404);
 
         $data = $this->validatedExpense($request);
-        $expense->update($data);
+        $expense->update(collect($data)->except('frequency')->all());
         $this->advanceOdometer($vehicle, $data['odometer_km'] ?? null, $data['spent_at']);
 
         return back()->with('success', __('messages.vehicle_entry_updated'));
@@ -338,6 +410,9 @@ class VehicleController extends Controller
             'is_full_tank'    => ['nullable', 'boolean'],
             'fuel_type'       => ['nullable', Rule::in(VehicleExpense::FUEL_TYPES)],
             'station'         => ['nullable', 'string', 'max:120'],
+            'provider_id'     => ['nullable', 'string', 'exists:providers,id'],
+            'recurring'       => ['nullable', 'boolean'],
+            'frequency'       => ['nullable', 'required_if_accepted:recurring', Rule::in(VehicleExpense::FREQUENCIES)],
         ]);
 
         $isFuel = $data['category'] === 'fuel';
@@ -359,6 +434,10 @@ class VehicleController extends Controller
         $data['is_full_tank'] = $isFuel && $request->has('is_full_tank') ? $request->boolean('is_full_tank') : true;
         $data['fuel_type'] = $isFuel ? ($data['fuel_type'] ?? null) : null;
         $data['station'] = $isFuel ? ($data['station'] ?? null) : null;
+        $data['provider_id'] = in_array($data['category'], VehicleExpense::WITH_PROVIDER, true) ? ($data['provider_id'] ?? null) : null;
+        // Only a bill keeps a schedule; a loose expense has none to store.
+        $data['frequency'] ??= null;
+        unset($data['recurring']);
 
         return $data;
     }

@@ -25,7 +25,7 @@ class Bill extends Model implements HasMedia
         'remaining_balance', 'debt_remaining', 'debt_initial', 'currency_code', 'default_account_id',
         'frequency', 'frequency_interval', 'start_date', 'end_date', 'next_due_date',
         'last_paid_date', 'is_active', 'is_shared', 'notify_enabled', 'notify_days_before',
-        'url', 'notes', 'created_by', 'family_id', 'created_at', 'updated_at',
+        'url', 'notes', 'created_by', 'family_id', 'created_at', 'updated_at', 'vehicle_id',
     ];
 
     protected function casts(): array
@@ -79,6 +79,12 @@ class Bill extends Model implements HasMedia
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /** The car this is a cost of: its insurance, road tax, KTEO or tolls. */
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
     }
 
     public function payments(): HasMany
@@ -187,6 +193,7 @@ class Bill extends Model implements HasMedia
             'weekly'    => $amount * 4.345 / $interval,
             'biweekly'  => $amount * 2.1725 / $interval,
             'bimonthly' => $amount / (2 * $interval),
+            'semiannual' => $amount / (6 * $interval),
             'quarterly' => $amount / (3 * $interval),
             'yearly'    => $amount / (12 * $interval),
             default     => $amount / $interval,
@@ -322,6 +329,7 @@ class Bill extends Model implements HasMedia
             'weekly' => $date->copy()->addWeeks(1 * $interval),
             'biweekly' => $date->copy()->addWeeks(2 * $interval),
             'bimonthly' => self::addMonthsOnDay($date, 2 * $interval, $this->anchorDay($date)),
+            'semiannual' => self::addMonthsOnDay($date, 6 * $interval, $this->anchorDay($date)),
             'quarterly' => self::addMonthsOnDay($date, 3 * $interval, $this->anchorDay($date)),
             'yearly' => self::addMonthsOnDay($date, 12 * $interval, $this->anchorDay($date)),
             default => self::addMonthsOnDay($date, 1 * $interval, $this->anchorDay($date)),
@@ -365,6 +373,7 @@ class Bill extends Model implements HasMedia
             'weekly' => $date->copy()->subWeeks($interval),
             'biweekly' => $date->copy()->subWeeks(2 * $interval),
             'bimonthly' => self::addMonthsOnDay($date, -2 * $interval, $this->anchorDay($date)),
+            'semiannual' => self::addMonthsOnDay($date, -6 * $interval, $this->anchorDay($date)),
             'quarterly' => self::addMonthsOnDay($date, -3 * $interval, $this->anchorDay($date)),
             'yearly' => self::addMonthsOnDay($date, -12 * $interval, $this->anchorDay($date)),
             default => self::addMonthsOnDay($date, -$interval, $this->anchorDay($date)),
@@ -483,7 +492,7 @@ class Bill extends Model implements HasMedia
 
     private function recursMonthlyOrLonger(): bool
     {
-        return in_array($this->frequency ?? 'monthly', ['monthly', 'bimonthly', 'quarterly', 'yearly'], true);
+        return in_array($this->frequency ?? 'monthly', ['monthly', 'bimonthly', 'quarterly', 'semiannual', 'yearly'], true);
     }
 
     /**

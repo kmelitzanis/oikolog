@@ -58,6 +58,7 @@
                   categoryId: @js(old('category_id', $editing ? $bill->category_id : '')),
                   providerId: @js(old('provider_id', $editing ? $bill->provider_id : '')),
                   costVaries: {{ old('cost_varies', $editing ? ($bill->cost_varies ? '1' : '0') : '0') ? 'true' : 'false' }},
+                  vehicleCategories: @js($categories->whereNotNull('vehicle_expense')->pluck('id')->values()),
                   allProviders: window.__providers || [],
                   get providers() {
                       return this.categoryId
@@ -168,6 +169,25 @@
                     </template>
                 </div>
 
+                {{-- The car an insurance, road tax, KTEO or tolls bill is for, so
+                     its payments count as that car's costs. --}}
+                @if(($vehicles ?? collect())->isNotEmpty())
+                    <div x-show="vehicleCategories.includes(categoryId)" x-cloak>
+                        <x-field :label="__('messages.bill_vehicle')" name="vehicle_id" optional
+                                 :hint="__('messages.bill_vehicle_hint')">
+                            <x-input as="select" name="vehicle_id" id="vehicle_id" ::disabled="!vehicleCategories.includes(categoryId)">
+                                <option value="">{{ __('messages.bill_no_vehicle') }}</option>
+                                @php $selectedVehicle = old('vehicle_id', $editing ? $bill->vehicle_id : request('vehicle_id')); @endphp
+                                @foreach($vehicles as $v)
+                                    <option value="{{ $v->id }}" @selected((string) $selectedVehicle === (string) $v->id)>
+                                        {{ $v->plate ? $v->plate . ' · ' . $v->name : $v->name }}
+                                    </option>
+                                @endforeach
+                            </x-input>
+                        </x-field>
+                    </div>
+                @endif
+
                 @isset($accounts)
                     @if($accounts->count() > 0)
                         <x-field :label="__('messages.default_account')" name="default_account_id" optional
@@ -193,7 +213,7 @@
 
                 <x-field :label="__('messages.frequency')" name="frequency" required>
                     <div class="flex flex-wrap gap-2">
-                        @foreach(['once','weekly','biweekly','monthly','bimonthly','quarterly','yearly'] as $val)
+                        @foreach(['once','weekly','biweekly','monthly','bimonthly','quarterly','semiannual','yearly'] as $val)
                             <label class="cursor-pointer">
                                 <input type="radio" name="frequency" value="{{ $val }}" x-model="freq" class="sr-only peer">
                                 <span :class="freq === '{{ $val }}'

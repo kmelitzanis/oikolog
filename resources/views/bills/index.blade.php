@@ -185,6 +185,7 @@
                 'biweekly'  => __('messages.biweekly'),
                 'monthly'   => __('messages.monthly'),
                 'bimonthly' => __('messages.bimonthly'),
+                'semiannual' => __('messages.semiannual'),
                 'quarterly' => __('messages.quarterly'),
                 'yearly'    => __('messages.yearly'),
             ] as $f => $fl)

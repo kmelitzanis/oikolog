@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Account;
 use App\Models\Payment;
 use App\Models\Provider;
+use App\Models\Vehicle;
 use App\Services\BillPayments;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -94,13 +95,16 @@ class BillController extends Controller
             ]);
         $accounts = Account::forUser(request()->user())->active()->orderBy('name')->get();
 
-        return view('bills.form', compact('categories', 'providers', 'accounts'));
+        $vehicles = $this->vehicles();
+
+        return view('bills.form', compact('categories', 'providers', 'accounts', 'vehicles'));
     }
 
     public function store(Request $request)
     {
         // Files are handled on their own below, not mass-assigned.
         $data = Arr::except($request->validate($this->billRules($request)), ['receipts']);
+        $data['vehicle_id'] = $this->keepVehicleFor($data);
 
         $bill = Bill::create([
             ...$data,
@@ -125,7 +129,7 @@ class BillController extends Controller
     public function show(Bill $bill)
     {
         $this->authorizeView($bill);
-        $bill->load(['category', 'provider']);
+        $bill->load(['category', 'provider', 'vehicle:id,name,plate']);
         $payments = $bill->payments()->with(['paidBy', 'account'])->orderByDesc('paid_at')->get();
         // One query for both the history and the pay modal's last amount.
         $bill->setRelation('payments', $payments);
@@ -278,7 +282,9 @@ class BillController extends Controller
             ]);
         $accounts = Account::forUser(request()->user())->active()->orderBy('name')->get();
 
-        return view('bills.form', compact('bill', 'categories', 'providers', 'accounts'));
+        $vehicles = $this->vehicles();
+
+        return view('bills.form', compact('bill', 'categories', 'providers', 'accounts', 'vehicles'));
     }
 
     public function update(Request $request, Bill $bill)
@@ -287,6 +293,7 @@ class BillController extends Controller
 
         // Files are handled on their own below, not mass-assigned.
         $data = Arr::except($request->validate($this->billRules($request)), ['receipts']);
+        $data['vehicle_id'] = $this->keepVehicleFor($data);
 
         $data['cost_varies'] = (bool)($data['cost_varies'] ?? false);
         $data['is_shared']      = (bool) ($data['is_shared'] ?? false) && $request->user()->family_id;
@@ -536,7 +543,14 @@ class BillController extends Controller
             'cost_varies'        => ['nullable', 'boolean'],
             // Optional: the total still owed on a loan or a card.
             'debt_remaining'     => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,bimonthly,quarterly,yearly'],
+            'frequency'          => ['required', 'in:once,daily,weekly,biweekly,monthly,bimonthly,quarterly,semiannual,yearly'],
+            // The car an insurance, road tax, KTEO or tolls bill is for: one
+            // of the user's own, and only kept for those categories.
+            'vehicle_id'         => ['nullable', 'string', function (string $attribute, $value, \Closure $fail) use ($request) {
+                if (! Vehicle::forUser($request->user())->whereKey($value)->exists()) {
+                    $fail(__('messages.invalid_selection'));
+                }
+            }],
             'start_date'         => ['required', 'date'],
             'end_date'           => ['nullable', 'date', 'after:start_date'],
             'is_shared'          => ['nullable'],
@@ -548,6 +562,20 @@ class BillController extends Controller
             'receipts'           => ['nullable', 'array', 'max:10'],
             'receipts.*'         => ['file', 'mimes:jpg,jpeg,png,webp,gif,pdf', 'max:10240'],
         ];
+    }
+
+    /** The user's vehicles, for the bill form's "which car" field. */
+    private function vehicles()
+    {
+        return Vehicle::forUser(request()->user())->active()->orderBy('name')->get(['id', 'name', 'plate']);
+    }
+
+    /** A vehicle only stays on a bill whose category is a vehicle cost. */
+    private function keepVehicleFor(array $data): ?string
+    {
+        return ! empty($data['vehicle_id']) && Category::whereKey($data['category_id'] ?? null)->whereNotNull('vehicle_expense')->exists()
+            ? $data['vehicle_id']
+            : null;
     }
 
     private function authorizeView(Bill $bill): void

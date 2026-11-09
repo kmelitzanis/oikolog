@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -62,6 +63,28 @@ class Vehicle extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(VehicleExpense::class)->orderByDesc('spent_at');
+    }
+
+    /** Bills for this car: insurance, road tax, KTEO, tolls. */
+    public function bills(): HasMany
+    {
+        return $this->hasMany(Bill::class);
+    }
+
+    /**
+     * Payments of this car's bills. They are its costs, counted alongside
+     * loose expenses and services, and never entered a second time as an
+     * expense.
+     */
+    public function billPayments(): HasManyThrough
+    {
+        return $this->hasManyThrough(Payment::class, Bill::class);
+    }
+
+    /** The vehicle-cost key a bill's payments count under (insurance, road_tax…). */
+    public static function costKeyFor(?Bill $bill): string
+    {
+        return $bill?->category?->vehicle_expense ?? 'other';
     }
 
     public function scans(): HasMany
@@ -173,7 +196,11 @@ class Vehicle extends Model
             ->get()
             ->sum(fn(VehicleService $s) => $s->effectiveTotal());
 
-        return round((float) $expenses + (float) $services, 2);
+        $billPayments = $this->billPayments()
+            ->when($since, fn($q) => $q->where('payments.paid_at', '>=', $since))
+            ->sum('payments.amount');
+
+        return round((float) $expenses + (float) $services + (float) $billPayments, 2);
     }
 
     /** Spend over the last twelve months — what "per year" means on the card. */
@@ -233,6 +260,18 @@ class Vehicle extends Model
                     2
                 ),
                 'count' => ($rows['service']['count'] ?? 0) + $services->count(),
+            ];
+        }
+
+        $payments = $this->billPayments()
+            ->when($since, fn($q) => $q->where('payments.paid_at', '>=', $since))
+            ->with('bill.category')
+            ->get();
+
+        foreach ($payments->groupBy(fn (Payment $p) => self::costKeyFor($p->bill)) as $key => $group) {
+            $rows[$key] = [
+                'amount' => round(($rows[$key]['amount'] ?? 0) + (float) $group->sum('amount'), 2),
+                'count'  => ($rows[$key]['count'] ?? 0) + $group->count(),
             ];
         }
 

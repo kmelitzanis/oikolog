@@ -233,6 +233,7 @@
                 $details = [
                     __('messages.category')   => $bill->category?->name ?? '—',
                     __('messages.provider')   => $bill->provider?->name ?? '—',
+                    ...($bill->vehicle ? [__('messages.bill_vehicle') => trim(($bill->vehicle->plate ? $bill->vehicle->plate . ' · ' : '') . $bill->vehicle->name)] : []),
                     __('messages.frequency')  => __('messages.' . $bill->frequency),
                     __('messages.start_date') => $bill->start_date->translatedFormat('j M Y'),
                     __('messages.end_date')   => $bill->end_date?->translatedFormat('j M Y') ?? '—',

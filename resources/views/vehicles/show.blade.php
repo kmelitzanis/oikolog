@@ -19,7 +19,7 @@
         $kmFmt   = fn($km) => number_format((int) $km, 0, ',', '.');
         $money   = fn($v) => $symbol . number_format((float) $v, 2);
         $nextDue = $reminders->first();
-        $expenseIcons = ['fuel' => 'local_gas_station', 'service' => 'build', 'insurance' => 'shield', 'tax' => 'receipt_long', 'other' => 'more_horiz'];
+        $expenseIcons = \App\Models\VehicleExpense::ICONS;
         $breakdownTotal = collect($breakdown)->sum('amount');
         $actionBtn = 'w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition';
     @endphp
@@ -158,10 +158,41 @@
                     @include('vehicles.partials.fuel-form', ['action' => route('vehicles.expenses.store', $vehicle), 'onCancel' => 'adding = null'])
                 </div>
                 <div x-show="adding === 'expense'" x-cloak class="mb-4">
-                    @include('vehicles.partials.expense-form', ['action' => route('vehicles.expenses.store', $vehicle), 'onCancel' => 'adding = null'])
+                    @include('vehicles.partials.expense-form', ['action' => route('vehicles.expenses.store', $vehicle), 'onCancel' => 'adding = null', 'providers' => $providers])
                 </div>
 
                 @forelse($history as $row)
+                    {{-- A payment of one of the car's bills: shown here because it is
+                         a cost of the car, changed on the bill it belongs to. --}}
+                    @if($row['type'] === 'payment')
+                        @php
+                            $bill = $row['item']->bill;
+                            $costKey = \App\Models\Vehicle::costKeyFor($bill);
+                        @endphp
+                        <div class="py-3.5 border-t border-gray-100 dark:border-slate-700/70 first-of-type:border-t-0">
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                    <span class="material-icons-round text-lg">{{ $expenseIcons[$costKey] ?? 'receipt_long' }}</span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-baseline justify-between gap-3">
+                                        <div class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ __('messages.vehicle_expense_' . $costKey) }}</div>
+                                        <div class="text-sm font-extrabold text-gray-900 dark:text-white tabular-nums shrink-0">{{ $money($row['item']->amount) }}</div>
+                                    </div>
+                                    <div class="text-[0.72rem] text-gray-400 dark:text-slate-500 mt-0.5">
+                                        {{ $row['date']?->translatedFormat('j M Y') }}
+                                        @if($bill->provider) · {{ $bill->provider->name }} @endif
+                                        · {{ __('messages.vehicle_from_bill') }}
+                                    </div>
+                                </div>
+                                <a href="{{ route('bills.show', $bill) }}" class="{{ $actionBtn }} hover:text-amber-600 -me-1"
+                                   title="{{ __('messages.vehicle_open_bill') }}" aria-label="{{ __('messages.vehicle_open_bill') }}">
+                                    <span class="material-icons-round text-[18px]">open_in_new</span>
+                                </a>
+                            </div>
+                        </div>
+                        @continue
+                    @endif
                     @php
                         $item = $row['item'];
                         $isService = $row['type'] === 'service';
@@ -197,6 +228,7 @@
                                     @if($isFuel && $item->pricePerLitre()) · {{ $symbol }}{{ number_format($item->pricePerLitre(), 3) }}/L @endif
                                     @if($isFuel && ! $item->is_full_tank) · {{ __('messages.vehicle_fuel_partial') }} @endif
                                     @if($isFuel && $item->station) · {{ $item->station }} @endif
+                                    @if(! $isService && $item->provider) · {{ $item->provider->name }} @endif
                                     @if(! $isService && $item->note) · {{ $item->note }} @endif
                                 </div>
                                 @if($consumption !== null)
@@ -246,7 +278,7 @@
                             @elseif($isFuel)
                                 @include('vehicles.partials.fuel-form', ['action' => $updateRoute, 'expense' => $item, 'onCancel' => 'editing = false'])
                             @else
-                                @include('vehicles.partials.expense-form', ['action' => $updateRoute, 'expense' => $item, 'onCancel' => 'editing = false'])
+                                @include('vehicles.partials.expense-form', ['action' => $updateRoute, 'expense' => $item, 'onCancel' => 'editing = false', 'providers' => $providers])
                             @endif
                         </div>
                     </div>
@@ -374,6 +406,38 @@
                         @endif
                     </x-card>
                 @endif
+
+                {{-- The car's bills: insurance, road tax, KTEO and tolls that come
+                     round on a schedule. Added here or from the bills page. --}}
+                <x-card>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <span class="material-icons-round text-amber-500 text-[20px]">event_repeat</span>
+                            {{ __('messages.vehicle_section_bills') }}
+                        </h2>
+                        <a href="{{ route('bills.create', ['vehicle_id' => $vehicle->id]) }}" class="{{ $actionBtn }} hover:text-amber-600"
+                           title="{{ __('messages.add_bill') }}" aria-label="{{ __('messages.add_bill') }}">
+                            <span class="material-icons-round text-[20px]">add</span>
+                        </a>
+                    </div>
+                    @forelse($bills as $bill)
+                        @php $status = $bill->status(); @endphp
+                        <a href="{{ route('bills.show', $bill) }}"
+                           class="flex items-center gap-3 py-2.5 border-t border-gray-100 dark:border-slate-700/70 first-of-type:border-t-0">
+                            <span class="material-icons-round text-base text-gray-400">{{ $expenseIcons[\App\Models\Vehicle::costKeyFor($bill)] ?? 'receipt_long' }}</span>
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $bill->name }}</span>
+                                <span class="block text-[0.7rem] {{ $status === 'overdue' ? 'text-red-500' : 'text-gray-400 dark:text-slate-500' }}">
+                                    {{ __('messages.' . $bill->frequency) }}
+                                    @if($bill->next_due_date) · {{ __('messages.vehicle_next_due') }} {{ $bill->next_due_date->translatedFormat('j M Y') }} @endif
+                                </span>
+                            </span>
+                            <span class="text-sm font-bold text-gray-900 dark:text-white tabular-nums shrink-0">{{ $money($bill->amount) }}</span>
+                        </a>
+                    @empty
+                        <p class="text-sm text-gray-400 dark:text-slate-500">{{ __('messages.vehicle_no_bills') }}</p>
+                    @endforelse
+                </x-card>
 
                 {{-- Where the money went --}}
                 <x-card>
