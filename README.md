@@ -31,7 +31,7 @@ family. Around that sits the day-to-day: shopping lists, and recipes whose ingre
 
 **Money**
 
-- Recurring and one-off bills, weekly through yearly (every two months included), with automatic next-due-date calculation
+- Recurring and one-off bills, weekly through yearly (every two and every six months included), with automatic next-due-date calculation
 - Full and **partial** payments, with per-payment history and one-click undo
 - Bills with a variable amount ("cost varies"): enter the real figure at payment time
 - **Debt tracking** for loans and credit cards: a bill carries the total still owed, each payment draws it
@@ -59,6 +59,9 @@ family. Around that sits the day-to-day: shopping lists, and recipes whose ingre
 - Recipe nutrition worked out from the ingredients that match a catalogue product by weight
 - **SparkyFitness integration**: your recipes show up in SparkyFitness for food logging
 - Vehicles with service reminders (by date or mileage), running costs and maintenance history
+- **Vehicle costs** by kind (service, insurance, road tax, KTEO inspection, tolls), each with its provider: the Greek
+  motorway operators and AADE come preloaded. Insurance, road tax and KTEO can be recorded as recurring, which makes
+  them bills that remind you when they are next due, and any bill tagged with a car's plate counts towards its costs
 - **Fuel log** per vehicle: fill-ups with litres and price, consumption in L/100km from full tank to full tank,
   and fuel cost per km
 
