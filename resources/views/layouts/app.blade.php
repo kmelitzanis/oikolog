@@ -57,6 +57,7 @@
                     ['route' => 'income.index',      'icon' => 'trending_up',  'label' => __('messages.income'),       'match' => ['income.*', 'accounts.*']],
                     ['route' => 'expenses.index',    'icon' => 'shopping_bag', 'label' => __('messages.expenses_menu'), 'match' => 'expenses.*'],
                     ['route' => 'vehicles.index',    'icon' => 'directions_car', 'label' => __('messages.vehicles'),   'match' => 'vehicles.*'],
+                    ['route' => 'reports.index',     'icon' => 'insights',     'label' => __('messages.reports'),      'match' => 'reports.*'],
                     ['route' => 'family.index',      'icon' => 'group',        'label' => __('messages.family'),       'match' => 'family.*'],
                     ['route' => 'shopping-list.index', 'icon' => 'shopping_cart', 'label' => __('messages.shopping_lists'), 'match' => ['shopping-list.*', 'products.*']],
                     ['route' => 'recipes.index',     'icon' => 'restaurant_menu','label' => __('messages.recipes'),      'match' => 'recipes.*'],

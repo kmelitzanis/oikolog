@@ -10,6 +10,7 @@ Alpine.start();
 // After Alpine, so x-model is already bound to the inputs it replaces.
 import './date-inputs';
 
+import './charts';
 import './pages/dashboard';
 import './pages/bills';
 import './pages/shopping-lists';

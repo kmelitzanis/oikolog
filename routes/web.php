@@ -34,6 +34,8 @@ Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallen
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/month', [DashboardController::class, 'month'])->name('dashboard.month');
+    Route::get('/reports', [App\Http\Controllers\Web\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [App\Http\Controllers\Web\ReportController::class, 'export'])->name('reports.export');
 
     // Calendar events API (used by the inline calendar on the bills page)
     // Must be defined BEFORE the bills resource routes to avoid /{bill} pattern matching
