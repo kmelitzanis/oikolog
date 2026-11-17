@@ -563,8 +563,12 @@ class Bill extends Model implements HasMedia
      * total" instead of pretending the extra debt was always there or that
      * payments vanished. A balance of zero retires the bill, as the last
      * instalment does, and a balance on a retired bill brings it back.
+     *
+     * A $total, when given, is the debt's whole amount as the lender states
+     * it, and what has been paid off becomes the difference. It is never
+     * less than the balance.
      */
-    public function setDebtRemaining(?float $remaining): void
+    public function setDebtRemaining(?float $remaining, ?float $total = null): void
     {
         if ($remaining === null) {
             $this->debt_remaining = null;
@@ -585,7 +589,9 @@ class Bill extends Model implements HasMedia
         }
 
         $this->debt_remaining = $remaining;
-        $this->debt_initial = round($remaining + $paidOff, 2);
+        $this->debt_initial = $total !== null
+            ? round(max($total, $remaining), 2)
+            : round($remaining + $paidOff, 2);
     }
 
     /** Whether the debt is cleared, so the schedule has run its course. */

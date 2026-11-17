@@ -176,25 +176,45 @@
 
                 {{-- A card limit goes up, a loan gets topped up: the balance is
                      set by hand and what was paid so far keeps counting. --}}
-                <div x-data="{ open: {{ $errors->has('debt_remaining') ? 'true' : 'false' }} }" class="mt-3">
+                {{-- Both figures can be set. Changing only the balance moves the
+                     total with it, so what was paid off stays paid off; the
+                     total is there for when the lender states a new one. --}}
+                @php
+                    $debtBalance = (float) old('debt_remaining', $bill->debt_remaining);
+                    $debtTotal = (float) old('debt_initial', $bill->debt_initial ?? $bill->debt_remaining);
+                    $debtState = ['balance' => $debtBalance, 'total' => $debtTotal, 'paid' => max(0, round($debtTotal - $debtBalance, 2))];
+                @endphp
+                <div x-data="{ open: {{ $errors->hasAny(['debt_remaining', 'debt_initial']) ? 'true' : 'false' }}, ...{{ \Illuminate\Support\Js::from($debtState) }} }" class="mt-3">
                     <button type="button" x-show="!open" @click="open = true; $nextTick(() => $refs.debt.focus())"
                             class="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-500">
                         <span class="material-icons-round" style="font-size:15px;">edit</span>{{ __('messages.debt_update') }}
                     </button>
-                    <form x-show="open" x-cloak method="POST" action="{{ route('bills.debt', $bill) }}">
+                    <form x-show="open" x-cloak method="POST" action="{{ route('bills.debt', $bill) }}" class="@container">
                         @csrf
                         @method('PATCH')
-                        <div class="flex items-center gap-2">
-                            <x-input type="number" name="debt_remaining" step="0.01" min="0" required x-ref="debt"
-                                     :invalid="$errors->has('debt_remaining')"
-                                     value="{{ old('debt_remaining', number_format((float) $bill->debt_remaining, 2, '.', '')) }}" />
-                            <x-btn size="sm" icon="check">{{ __('messages.save') }}</x-btn>
-                            <x-btn size="sm" variant="ghost" type="button" @click="open = false">{{ __('messages.cancel') }}</x-btn>
+                        <div class="grid grid-cols-1 @md:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+                            <x-field :label="__('messages.debt_balance')" name="debt_remaining">
+                                <x-input type="number" id="debt_remaining" name="debt_remaining" step="0.01" min="0" required x-ref="debt"
+                                         x-model.number="balance" x-on:input="total = Math.round(((Number(balance) || 0) + paid) * 100) / 100"
+                                         :invalid="$errors->has('debt_remaining')"
+                                         value="{{ number_format($debtBalance, 2, '.', '') }}" />
+                            </x-field>
+                            <x-field :label="__('messages.debt_total')" name="debt_initial">
+                                <x-input type="number" id="debt_initial" name="debt_initial" step="0.01" min="0" required
+                                         x-model.number="total" x-on:input="paid = Math.max(0, Math.round(((Number(total) || 0) - (Number(balance) || 0)) * 100) / 100)"
+                                         :invalid="$errors->has('debt_initial')"
+                                         value="{{ number_format($debtTotal, 2, '.', '') }}" />
+                            </x-field>
+                            <div class="flex gap-2">
+                                <x-btn size="sm" icon="check">{{ __('messages.save') }}</x-btn>
+                                <x-btn size="sm" variant="ghost" type="button" @click="open = false">{{ __('messages.cancel') }}</x-btn>
+                            </div>
                         </div>
-                        @error('debt_remaining')
-                            <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1.5 text-xs text-gray-500 dark:text-slate-400">{{ __('messages.debt_update_hint') }}</p>
+                        <p class="mt-2 text-xs text-gray-600 dark:text-slate-300">
+                            {{ __('messages.debt_paid_so_far') }}:
+                            <span class="font-semibold">{{ $bill->currency_code }} <span x-text="paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })">{{ number_format($debtState['paid'], 2) }}</span></span>
+                        </p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-slate-400">{{ __('messages.debt_update_hint') }}</p>
                     </form>
                 </div>
             </x-card>

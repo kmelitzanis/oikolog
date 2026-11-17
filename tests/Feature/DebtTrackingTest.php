@@ -62,6 +62,34 @@ class DebtTrackingTest extends TestCase
         $this->assertSame(12, $bill->debtProgress());
     }
 
+    public function test_the_total_can_be_set_with_the_balance(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->card($user, ['debt_remaining' => 8981, 'debt_initial' => 9773.90]);
+
+        // The lender's statement: 10,000 in all, 8,500 still owed.
+        $this->actingAs($user)
+            ->patch(route('bills.debt', $bill), ['debt_remaining' => '8500', 'debt_initial' => '10000'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $bill->refresh();
+        $this->assertSame(8500.0, (float) $bill->debt_remaining);
+        $this->assertSame(10000.0, (float) $bill->debt_initial);
+        $this->assertSame(15, $bill->debtProgress());
+    }
+
+    public function test_the_total_cannot_be_below_the_balance(): void
+    {
+        $user = User::factory()->create();
+        $bill = $this->card($user, ['debt_remaining' => 600, 'debt_initial' => 1000]);
+
+        $this->actingAs($user)
+            ->patch(route('bills.debt', $bill), ['debt_remaining' => '900', 'debt_initial' => '800'])
+            ->assertSessionHasErrors('debt_initial');
+
+        $this->assertSame(1000.0, (float) $bill->fresh()->debt_initial);
+    }
+
     public function test_lowering_the_balance_also_keeps_what_was_paid(): void
     {
         $bill = $this->card(User::factory()->create(), ['debt_remaining' => 600, 'debt_initial' => 1000]);

@@ -338,9 +338,16 @@ class BillController extends Controller
 
         $data = $request->validate([
             'debt_remaining' => ['required', 'numeric', 'min:0', 'max:99999999'],
+            'debt_initial'   => ['nullable', 'numeric', 'min:0', 'max:99999999', 'gte:debt_remaining'],
+        ], [
+            'debt_initial.gte' => __('messages.debt_total_below_balance'),
         ]);
 
-        $bill->setDebtRemaining((float) $data['debt_remaining']);
+        // Without a total, what was paid off so far stays paid off.
+        $bill->setDebtRemaining(
+            (float) $data['debt_remaining'],
+            isset($data['debt_initial']) ? (float) $data['debt_initial'] : null,
+        );
         $bill->save();
 
         return back()->with('success', __('messages.debt_updated'));
